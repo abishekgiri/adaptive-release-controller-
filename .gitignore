@@ -1,5 +1,8 @@
 __pycache__/
 *.py[cod]
 .venv/
-knowledge_base/*.db
+*.db
+CLAUDE.md
+experiments/results/
+data/raw/
 
