@@ -62,6 +62,20 @@ This means the same input record always produces the same baseline decision and 
 experiments/baseline.py
 ```
 
+## Running Against a Dataset
+
+If the database has no deployment records, generate the first simulated dataset:
+
+```bash
+python3 -m experiments.generate_dataset --db knowledge_base/deployments.db --count 100 --reset
+```
+
+Then run the baseline over the stored records:
+
+```bash
+python3 -m experiments.baseline --db knowledge_base/deployments.db --limit 200
+```
+
 ## Metrics Collected
 
 | Metric | Meaning |
@@ -86,4 +100,3 @@ Phase 2 is complete when:
 ## Research Importance
 
 This phase is important because the adaptive system needs a fair comparison. The baseline establishes the performance of a normal static CI/CD gate before feedback, learning, or adaptive rollback decisions are introduced.
-
