@@ -1,0 +1,121 @@
+{
+  "best_system": "Adaptive",
+  "cost_model": {
+    "canary_cost": 1.0,
+    "failure_cost": 10.0,
+    "false_positive_cost": 2.0,
+    "rollback_cost": 6.0
+  },
+  "costs": {
+    "Adaptive": {
+      "canary_component": 15.0,
+      "canary_deployments": 15,
+      "cost_per_record": 1.69,
+      "deployment_velocity": 0.15,
+      "failed_deployments": 6,
+      "failure_component": 60.0,
+      "false_positive_component": 58.0,
+      "false_positives": 29,
+      "rollback_component": 36.0,
+      "rollbacks": 6,
+      "system": "Adaptive",
+      "total_cost": 169.0,
+      "total_records": 100
+    },
+    "Risk-only": {
+      "canary_component": 30.0,
+      "canary_deployments": 30,
+      "cost_per_record": 2.8,
+      "deployment_velocity": 0.3,
+      "failed_deployments": 13,
+      "failure_component": 130.0,
+      "false_positive_component": 42.0,
+      "false_positives": 21,
+      "rollback_component": 78.0,
+      "rollbacks": 13,
+      "system": "Risk-only",
+      "total_cost": 280.0,
+      "total_records": 100
+    },
+    "Static": {
+      "canary_component": 0.0,
+      "canary_deployments": 0,
+      "cost_per_record": 3.18,
+      "deployment_velocity": 0.32,
+      "failed_deployments": 17,
+      "failure_component": 170.0,
+      "false_positive_component": 46.0,
+      "false_positives": 23,
+      "rollback_component": 102.0,
+      "rollbacks": 17,
+      "system": "Static",
+      "total_cost": 318.0,
+      "total_records": 100
+    }
+  },
+  "metrics": {
+    "Adaptive": {
+      "blocked": 85,
+      "decision_accuracy": 0.65,
+      "decision_distribution": {
+        "BLOCK": 85,
+        "CANARY": 15,
+        "DEPLOY": 0
+      },
+      "deployed_or_canaried": 15,
+      "deployed_or_canary_failures": 6,
+      "deployed_or_canary_successes": 9,
+      "failure_rate": 0.4,
+      "false_negative_rate": 0.06,
+      "false_negatives": 6,
+      "false_positive_rate": 0.29,
+      "false_positives": 29,
+      "mttr": 30.0,
+      "success_rate": 0.6,
+      "system": "Adaptive",
+      "total_records": 100
+    },
+    "Risk-only": {
+      "blocked": 70,
+      "decision_accuracy": 0.66,
+      "decision_distribution": {
+        "BLOCK": 70,
+        "CANARY": 30,
+        "DEPLOY": 0
+      },
+      "deployed_or_canaried": 30,
+      "deployed_or_canary_failures": 13,
+      "deployed_or_canary_successes": 17,
+      "failure_rate": 0.4333,
+      "false_negative_rate": 0.13,
+      "false_negatives": 13,
+      "false_positive_rate": 0.21,
+      "false_positives": 21,
+      "mttr": 30.0,
+      "success_rate": 0.5667,
+      "system": "Risk-only",
+      "total_records": 100
+    },
+    "Static": {
+      "blocked": 68,
+      "decision_accuracy": 0.6,
+      "decision_distribution": {
+        "BLOCK": 68,
+        "CANARY": 0,
+        "DEPLOY": 32
+      },
+      "deployed_or_canaried": 32,
+      "deployed_or_canary_failures": 17,
+      "deployed_or_canary_successes": 15,
+      "failure_rate": 0.5312,
+      "false_negative_rate": 0.17,
+      "false_negatives": 17,
+      "false_positive_rate": 0.23,
+      "false_positives": 23,
+      "mttr": 60.0,
+      "success_rate": 0.4688,
+      "system": "Static",
+      "total_records": 100
+    }
+  }
+}
