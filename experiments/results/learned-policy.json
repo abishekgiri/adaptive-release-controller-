@@ -1,0 +1,21 @@
+{
+  "adjustment": "unchanged",
+  "block_threshold": 0.7,
+  "deploy_threshold": 0.4,
+  "metrics": {
+    "blocked": 70,
+    "deployed_or_canaried": 30,
+    "failure_rate": 0.62,
+    "failures": 62,
+    "false_negative_rate": 0.13,
+    "false_negatives": 13,
+    "false_positive_rate": 0.21,
+    "false_positives": 21,
+    "success_rate": 0.38,
+    "successes": 38,
+    "total_records": 100
+  },
+  "previous_block_threshold": 0.7,
+  "previous_deploy_threshold": 0.4,
+  "reason": "Error rates are within acceptable limits."
+}
