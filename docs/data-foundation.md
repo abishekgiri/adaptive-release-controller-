@@ -91,7 +91,16 @@ Phase 1 is complete when:
 - feature extraction works consistently
 - each record includes both CI signals and deployment outcome
 
+## Simulated Dataset Command
+
+Use the local generator when real GitHub Actions or production outcomes are not available yet:
+
+```bash
+python3 -m experiments.generate_dataset --db knowledge_base/deployments.db --count 100 --reset
+```
+
+This creates deterministic deployment records, so repeated runs with the same count produce the same record values.
+
 ## Research Importance
 
 This phase is critical because the quality of the adaptive system depends directly on the quality of the data. Bad data will produce unreliable risk scores, poor rollback decisions, and weak research results.
-
