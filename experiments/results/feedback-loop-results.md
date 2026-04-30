@@ -9,9 +9,11 @@
 | Policy artifact | `experiments/results/learned-policy.json` |
 | Deploy threshold before | 0.40 |
 | Block threshold before | 0.70 |
-| Deploy threshold after | 0.40 |
-| Block threshold after | 0.70 |
-| Adjustment | unchanged |
+| Deploy threshold after | 0.35 |
+| Block threshold after | 0.65 |
+| Sensitivity threshold | 0.10 |
+| Observed false negative rate | 0.13 |
+| Adjustment | increase_risk_sensitivity |
 
 ## Feedback Metrics
 
@@ -35,9 +37,10 @@
 | --- | --- |
 | Previous deploy threshold | 0.40 |
 | Previous block threshold | 0.70 |
-| New deploy threshold | 0.40 |
-| New block threshold | 0.70 |
-| Reason | Error rates are within acceptable limits. |
+| New deploy threshold | 0.35 |
+| New block threshold | 0.65 |
+| Sensitivity threshold | 0.10 |
+| Reason | False negative rate is above the sensitivity threshold; lower thresholds to make deployment decisions more conservative. |
 
 ## Decision Sample
 
@@ -74,4 +77,4 @@
 
 ## Interpretation
 
-The observed false positive and false negative rates are acceptable, so the feedback loop kept the policy unchanged.
+The feedback loop detected a high false negative rate, so it lowered both thresholds. Future decisions become more conservative because more deployments move from DEPLOY to CANARY or from CANARY to BLOCK.

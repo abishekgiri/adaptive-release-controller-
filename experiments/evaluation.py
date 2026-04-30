@@ -84,6 +84,19 @@ class SystemMetrics:
     decision_distribution: dict[str, int]
 
 
+@dataclass(frozen=True)
+class PolicyConfig:
+    """Threshold configuration used by the adaptive evaluator."""
+
+    deploy_threshold: float
+    block_threshold: float
+    source: str
+    previous_deploy_threshold: float = DEFAULT_DEPLOY_THRESHOLD
+    previous_block_threshold: float = DEFAULT_BLOCK_THRESHOLD
+    sensitivity_threshold: float | None = None
+    adjustment: str = "default_policy"
+
+
 def load_records(
     db_path: str | Path = DEFAULT_DB_PATH,
     limit: int = 200,
@@ -121,20 +134,40 @@ def load_records(
     return records
 
 
-def load_policy_thresholds(
+def load_policy_config(
     policy_path: str | Path = DEFAULT_POLICY_PATH,
-) -> tuple[float, float, str]:
+    use_adaptive_policy: bool = False,
+) -> PolicyConfig:
     """Load learned thresholds with a safe default fallback."""
+
+    if not use_adaptive_policy:
+        return PolicyConfig(
+            deploy_threshold=DEFAULT_DEPLOY_THRESHOLD,
+            block_threshold=DEFAULT_BLOCK_THRESHOLD,
+            source="default_policy",
+        )
 
     path = Path(policy_path)
     if not path.exists():
-        return DEFAULT_DEPLOY_THRESHOLD, DEFAULT_BLOCK_THRESHOLD, "default_fallback"
+        return PolicyConfig(
+            deploy_threshold=DEFAULT_DEPLOY_THRESHOLD,
+            block_threshold=DEFAULT_BLOCK_THRESHOLD,
+            source="default_fallback",
+        )
 
     payload = json.loads(path.read_text(encoding="utf-8"))
-    return (
-        float(payload.get("deploy_threshold", DEFAULT_DEPLOY_THRESHOLD)),
-        float(payload.get("block_threshold", DEFAULT_BLOCK_THRESHOLD)),
-        "learned_policy",
+    return PolicyConfig(
+        deploy_threshold=float(payload.get("deploy_threshold", DEFAULT_DEPLOY_THRESHOLD)),
+        block_threshold=float(payload.get("block_threshold", DEFAULT_BLOCK_THRESHOLD)),
+        previous_deploy_threshold=float(
+            payload.get("previous_deploy_threshold", DEFAULT_DEPLOY_THRESHOLD)
+        ),
+        previous_block_threshold=float(
+            payload.get("previous_block_threshold", DEFAULT_BLOCK_THRESHOLD)
+        ),
+        sensitivity_threshold=payload.get("sensitivity_threshold"),
+        adjustment=str(payload.get("adjustment", "learned_policy")),
+        source="learned_policy",
     )
 
 
@@ -298,9 +331,7 @@ def is_correct_decision(decision: str, outcome: str) -> bool:
 def write_outputs(
     metrics: dict[str, SystemMetrics],
     decisions: dict[str, list[SystemDecision]],
-    deploy_threshold: float,
-    block_threshold: float,
-    policy_source: str,
+    policy_config: PolicyConfig,
     markdown_path: str | Path = DEFAULT_MARKDOWN_PATH,
     json_path: str | Path = DEFAULT_JSON_PATH,
     graphs_dir: str | Path = DEFAULT_GRAPHS_DIR,
@@ -309,22 +340,17 @@ def write_outputs(
 
     markdown = evaluation_markdown(
         metrics=metrics,
-        deploy_threshold=deploy_threshold,
-        block_threshold=block_threshold,
-        policy_source=policy_source,
+        policy_config=policy_config,
     )
     Path(markdown_path).write_text(markdown, encoding="utf-8")
 
     payload = {
-        "policy": {
-            "source": policy_source,
-            "deploy_threshold": deploy_threshold,
-            "block_threshold": block_threshold,
-        },
+        "policy": asdict(policy_config),
         "metrics": {
             system: asdict(system_metrics)
             for system, system_metrics in metrics.items()
         },
+        "adaptive_behavior": adaptive_behavior_payload(metrics, policy_config),
         "decisions_sample": {
             system: [asdict(item) for item in system_decisions[:20]]
             for system, system_decisions in decisions.items()
@@ -339,9 +365,7 @@ def write_outputs(
 
 def evaluation_markdown(
     metrics: dict[str, SystemMetrics],
-    deploy_threshold: float,
-    block_threshold: float,
-    policy_source: str,
+    policy_config: PolicyConfig,
 ) -> str:
     """Build the Markdown evaluation report."""
 
@@ -356,9 +380,9 @@ def evaluation_markdown(
                 ("Phase", "Phase 6 - Experimentation & Evaluation"),
                 ("Dataset", "`knowledge_base/deployments.db`"),
                 ("Dataset size", next(iter(metrics.values())).total_records if metrics else 0),
-                ("Adaptive policy source", policy_source),
-                ("Adaptive deploy threshold", f"{deploy_threshold:.2f}"),
-                ("Adaptive block threshold", f"{block_threshold:.2f}"),
+                ("Adaptive policy source", policy_config.source),
+                ("Adaptive deploy threshold", f"{policy_config.deploy_threshold:.2f}"),
+                ("Adaptive block threshold", f"{policy_config.block_threshold:.2f}"),
             ],
         ),
         "",
@@ -370,6 +394,10 @@ def evaluation_markdown(
         "",
         decision_distribution_markdown(metrics),
         "",
+        "## Adaptive Behavior Under Increased Sensitivity",
+        "",
+        adaptive_behavior_markdown(metrics, policy_config),
+        "",
         "## Graph Outputs",
         "",
         markdown_table(
@@ -380,6 +408,7 @@ def evaluation_markdown(
                 ("False positive vs false negative comparison", "`experiments/results/graphs/error_rate_comparison.png`"),
                 ("MTTR comparison", "`experiments/results/graphs/mttr_comparison.png`"),
                 ("Decision distribution comparison", "`experiments/results/graphs/decision_distribution_comparison.png`"),
+                ("Adaptive improvement comparison", "`experiments/results/graphs/adaptive_improvement_comparison.png`"),
             ],
         ),
         "",
@@ -387,8 +416,7 @@ def evaluation_markdown(
         "",
         research_interpretation(
             metrics=metrics,
-            deploy_threshold=deploy_threshold,
-            block_threshold=block_threshold,
+            policy_config=policy_config,
         ),
         "",
     ]
@@ -445,13 +473,13 @@ def decision_distribution_markdown(metrics: dict[str, SystemMetrics]) -> str:
 
 def research_interpretation(
     metrics: dict[str, SystemMetrics],
-    deploy_threshold: float,
-    block_threshold: float,
+    policy_config: PolicyConfig,
 ) -> str:
     """Explain whether adaptive improved over static baseline."""
 
     static = metrics["Static"]
     adaptive = metrics["Adaptive"]
+    risk_only = metrics["Risk-only"]
 
     improvements = []
     if adaptive.failure_rate < static.failure_rate:
@@ -475,9 +503,14 @@ def research_interpretation(
             "on the primary reliability metrics in this run."
         )
 
-    if (
-        deploy_threshold == DEFAULT_DEPLOY_THRESHOLD
-        and block_threshold == DEFAULT_BLOCK_THRESHOLD
+    if policy_config.source != "learned_policy":
+        second_sentence = (
+            "The adaptive system used default thresholds because learned policy "
+            "loading was not enabled for this run."
+        )
+    elif (
+        policy_config.deploy_threshold == DEFAULT_DEPLOY_THRESHOLD
+        and policy_config.block_threshold == DEFAULT_BLOCK_THRESHOLD
     ):
         second_sentence = (
             "The adaptive and risk-only systems match because the learned policy "
@@ -489,11 +522,86 @@ def research_interpretation(
             "learned MAPE-K thresholds."
         )
 
+    if adaptive.failure_rate < risk_only.failure_rate:
+        third_sentence = (
+            "Compared with risk-only control, the adaptive policy reduces failure "
+            f"rate from {format_percent(risk_only.failure_rate)} to "
+            f"{format_percent(adaptive.failure_rate)} by blocking more risky "
+            "deployments."
+        )
+    else:
+        third_sentence = (
+            "Compared with risk-only control, the adaptive policy does not reduce "
+            "failure rate in this run."
+        )
+
     return (
-        f"{first_sentence} {second_sentence} This provides the Phase 6 comparison "
-        "needed to evaluate whether feedback-adjusted deployment control improves "
-        "reliability compared to static CI/CD."
+        f"{first_sentence} {second_sentence} {third_sentence} This provides the "
+        "Phase 6 comparison needed to evaluate whether feedback-adjusted deployment "
+        "control improves reliability compared to static CI/CD."
     )
+
+
+def adaptive_behavior_markdown(
+    metrics: dict[str, SystemMetrics],
+    policy_config: PolicyConfig,
+) -> str:
+    """Format the adaptive threshold change and tradeoff."""
+
+    risk_only = metrics["Risk-only"]
+    adaptive = metrics["Adaptive"]
+    rows = [
+        ("Deploy threshold before", f"{policy_config.previous_deploy_threshold:.2f}"),
+        ("Deploy threshold after", f"{policy_config.deploy_threshold:.2f}"),
+        ("Block threshold before", f"{policy_config.previous_block_threshold:.2f}"),
+        ("Block threshold after", f"{policy_config.block_threshold:.2f}"),
+        ("Sensitivity threshold", format_optional_rate(policy_config.sensitivity_threshold)),
+        ("Adjustment", policy_config.adjustment),
+        (
+            "Risk-only failure rate",
+            format_percent(risk_only.failure_rate),
+        ),
+        (
+            "Adaptive failure rate",
+            format_percent(adaptive.failure_rate),
+        ),
+        (
+            "Risk-only decision accuracy",
+            format_percent(risk_only.decision_accuracy),
+        ),
+        (
+            "Adaptive decision accuracy",
+            format_percent(adaptive.decision_accuracy),
+        ),
+    ]
+    return markdown_table(("Field", "Value"), rows)
+
+
+def adaptive_behavior_payload(
+    metrics: dict[str, SystemMetrics],
+    policy_config: PolicyConfig,
+) -> dict[str, Any]:
+    """Return machine-readable adaptive behavior summary."""
+
+    return {
+        "policy": asdict(policy_config),
+        "risk_only_failure_rate": metrics["Risk-only"].failure_rate,
+        "adaptive_failure_rate": metrics["Adaptive"].failure_rate,
+        "risk_only_accuracy": metrics["Risk-only"].decision_accuracy,
+        "adaptive_accuracy": metrics["Adaptive"].decision_accuracy,
+        "adaptive_differs_from_risk_only": (
+            metrics["Adaptive"].decision_distribution
+            != metrics["Risk-only"].decision_distribution
+        ),
+    }
+
+
+def format_optional_rate(value: float | None) -> str:
+    """Format an optional normalized rate."""
+
+    if value is None:
+        return "n/a"
+    return format_percent(float(value))
 
 
 def get_optional_recovery_time(row: Any) -> float | None:
@@ -543,6 +651,10 @@ def generate_graphs(
     decision_distribution_chart(
         metrics=metrics,
         output_path=output_dir / "decision_distribution_comparison.png",
+    )
+    adaptive_improvement_chart(
+        metrics=metrics,
+        output_path=output_dir / "adaptive_improvement_comparison.png",
     )
 
 
@@ -653,6 +765,51 @@ def decision_distribution_chart(
     plt.close(fig)
 
 
+def adaptive_improvement_chart(
+    metrics: dict[str, SystemMetrics],
+    output_path: Path,
+) -> None:
+    """Create focused risk-only vs adaptive tradeoff chart."""
+
+    fig, ax = plt.subplots(figsize=(8, 5))
+    labels = ("Failure Rate", "False Negative Rate", "False Positive Rate")
+    risk_only_values = [
+        metrics["Risk-only"].failure_rate * 100,
+        metrics["Risk-only"].false_negative_rate * 100,
+        metrics["Risk-only"].false_positive_rate * 100,
+    ]
+    adaptive_values = [
+        metrics["Adaptive"].failure_rate * 100,
+        metrics["Adaptive"].false_negative_rate * 100,
+        metrics["Adaptive"].false_positive_rate * 100,
+    ]
+    positions = range(len(labels))
+    width = 0.35
+    ax.bar(
+        [position - width / 2 for position in positions],
+        risk_only_values,
+        width,
+        label="Risk-only",
+        color="#f58518",
+    )
+    ax.bar(
+        [position + width / 2 for position in positions],
+        adaptive_values,
+        width,
+        label="Adaptive",
+        color="#54a24b",
+    )
+    ax.set_title("Adaptive Improvement Comparison")
+    ax.set_ylabel("Rate (%)")
+    ax.set_xticks(list(positions))
+    ax.set_xticklabels(labels)
+    ax.legend()
+    ax.set_ylim(bottom=0)
+    fig.tight_layout()
+    fig.savefig(output_path)
+    plt.close(fig)
+
+
 def markdown_table(headers: tuple[str, ...], rows: list[tuple[Any, ...]]) -> str:
     """Build a Markdown table."""
 
@@ -701,6 +858,11 @@ def parse_args() -> argparse.Namespace:
         default=str(DEFAULT_POLICY_PATH),
         help="Path to learned policy JSON.",
     )
+    parser.add_argument(
+        "--use-adaptive-policy",
+        action="store_true",
+        help="Use thresholds from learned-policy.json for the adaptive system.",
+    )
     return parser.parse_args()
 
 
@@ -709,18 +871,19 @@ def main() -> None:
 
     args = parse_args()
     records = load_records(db_path=args.db, limit=args.limit)
-    deploy_threshold, block_threshold, policy_source = load_policy_thresholds(args.policy)
+    policy_config = load_policy_config(
+        policy_path=args.policy,
+        use_adaptive_policy=args.use_adaptive_policy,
+    )
     decisions, metrics = evaluate_all_systems(
         records=records,
-        deploy_threshold=deploy_threshold,
-        block_threshold=block_threshold,
+        deploy_threshold=policy_config.deploy_threshold,
+        block_threshold=policy_config.block_threshold,
     )
     write_outputs(
         metrics=metrics,
         decisions=decisions,
-        deploy_threshold=deploy_threshold,
-        block_threshold=block_threshold,
-        policy_source=policy_source,
+        policy_config=policy_config,
     )
 
     print("# Experimentation & Evaluation Results\n")

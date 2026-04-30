@@ -30,6 +30,7 @@ def run_feedback_loop(
     limit: int = 200,
     deploy_threshold: float = DEFAULT_DEPLOY_THRESHOLD,
     block_threshold: float = DEFAULT_BLOCK_THRESHOLD,
+    sensitivity_threshold: float = 0.20,
 ) -> tuple[list[DeploymentOutcomeRecord], FeedbackMetrics, LearnedPolicy]:
     """Load history, compute metrics, and adapt thresholds."""
 
@@ -43,6 +44,7 @@ def run_feedback_loop(
     policy = FeedbackLoop(
         deploy_threshold=deploy_threshold,
         block_threshold=block_threshold,
+        sensitivity_threshold=sensitivity_threshold,
     ).run(baseline_policy_records)
     return baseline_policy_records, baseline_metrics, policy
 
@@ -158,6 +160,14 @@ def results_markdown(
                 ("Block threshold before", f"{policy.previous_block_threshold:.2f}"),
                 ("Deploy threshold after", f"{policy.deploy_threshold:.2f}"),
                 ("Block threshold after", f"{policy.block_threshold:.2f}"),
+                (
+                    "Sensitivity threshold",
+                    f"{policy.sensitivity_threshold:.2f}",
+                ),
+                (
+                    "Observed false negative rate",
+                    f"{policy.metrics.false_negative_rate:.2f}",
+                ),
                 ("Adjustment", policy.adjustment),
             ],
         ),
@@ -175,6 +185,7 @@ def results_markdown(
                 ("Previous block threshold", f"{policy.previous_block_threshold:.2f}"),
                 ("New deploy threshold", f"{policy.deploy_threshold:.2f}"),
                 ("New block threshold", f"{policy.block_threshold:.2f}"),
+                ("Sensitivity threshold", f"{policy.sensitivity_threshold:.2f}"),
                 ("Reason", policy.reason),
             ],
         ),
@@ -308,6 +319,12 @@ def parse_args() -> argparse.Namespace:
         default=str(DEFAULT_RESULTS_PATH),
         help="Path for feedback-loop Markdown output.",
     )
+    parser.add_argument(
+        "--sensitivity",
+        type=float,
+        default=0.20,
+        help="False negative rate threshold that triggers conservative adaptation.",
+    )
     return parser.parse_args()
 
 
@@ -316,7 +333,11 @@ def main() -> None:
 
     args = parse_args()
     validate_adaptation_examples()
-    records, metrics, policy = run_feedback_loop(db_path=args.db, limit=args.limit)
+    records, metrics, policy = run_feedback_loop(
+        db_path=args.db,
+        limit=args.limit,
+        sensitivity_threshold=args.sensitivity,
+    )
     save_policy(policy, args.policy_output)
     markdown = results_markdown(metrics=metrics, policy=policy, records=records)
     save_results(markdown, args.results_output)

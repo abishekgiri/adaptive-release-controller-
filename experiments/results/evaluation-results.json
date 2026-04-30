@@ -1,4 +1,20 @@
 {
+  "adaptive_behavior": {
+    "adaptive_accuracy": 0.65,
+    "adaptive_differs_from_risk_only": true,
+    "adaptive_failure_rate": 0.4,
+    "policy": {
+      "adjustment": "increase_risk_sensitivity",
+      "block_threshold": 0.65,
+      "deploy_threshold": 0.35,
+      "previous_block_threshold": 0.7,
+      "previous_deploy_threshold": 0.4,
+      "sensitivity_threshold": 0.1,
+      "source": "learned_policy"
+    },
+    "risk_only_accuracy": 0.66,
+    "risk_only_failure_rate": 0.4333
+  },
   "decisions_sample": {
     "Adaptive": [
       {
@@ -12,8 +28,8 @@
       },
       {
         "commit_sha": "812fa8378bc6ffdb4f8ab07034ddc07fa9ff8b06",
-        "correct": true,
-        "decision": "CANARY",
+        "correct": false,
+        "decision": "BLOCK",
         "mttr": 0.0,
         "outcome": "success",
         "risk_score": 0.65,
@@ -21,9 +37,9 @@
       },
       {
         "commit_sha": "db61d5f7a1d9ec443e39988e78a55f53e01845b8",
-        "correct": false,
-        "decision": "CANARY",
-        "mttr": 30.0,
+        "correct": true,
+        "decision": "BLOCK",
+        "mttr": 0.0,
         "outcome": "failure",
         "risk_score": 0.65,
         "system": "Adaptive"
@@ -84,9 +100,9 @@
       },
       {
         "commit_sha": "5b9cc2d476ca81e4c2e63f70e134d073f8174420",
-        "correct": false,
-        "decision": "CANARY",
-        "mttr": 30.0,
+        "correct": true,
+        "decision": "BLOCK",
+        "mttr": 0.0,
         "outcome": "failure",
         "risk_score": 0.65,
         "system": "Adaptive"
@@ -549,23 +565,23 @@
   },
   "metrics": {
     "Adaptive": {
-      "blocked": 70,
-      "decision_accuracy": 0.66,
+      "blocked": 85,
+      "decision_accuracy": 0.65,
       "decision_distribution": {
-        "BLOCK": 70,
-        "CANARY": 30,
+        "BLOCK": 85,
+        "CANARY": 15,
         "DEPLOY": 0
       },
-      "deployed_or_canaried": 30,
-      "deployed_or_canary_failures": 13,
-      "deployed_or_canary_successes": 17,
-      "failure_rate": 0.4333,
-      "false_negative_rate": 0.13,
-      "false_negatives": 13,
-      "false_positive_rate": 0.21,
-      "false_positives": 21,
+      "deployed_or_canaried": 15,
+      "deployed_or_canary_failures": 6,
+      "deployed_or_canary_successes": 9,
+      "failure_rate": 0.4,
+      "false_negative_rate": 0.06,
+      "false_negatives": 6,
+      "false_positive_rate": 0.29,
+      "false_positives": 29,
       "mttr": 30.0,
-      "success_rate": 0.5667,
+      "success_rate": 0.6,
       "system": "Adaptive",
       "total_records": 100
     },
@@ -613,8 +629,12 @@
     }
   },
   "policy": {
-    "block_threshold": 0.7,
-    "deploy_threshold": 0.4,
+    "adjustment": "increase_risk_sensitivity",
+    "block_threshold": 0.65,
+    "deploy_threshold": 0.35,
+    "previous_block_threshold": 0.7,
+    "previous_deploy_threshold": 0.4,
+    "sensitivity_threshold": 0.1,
     "source": "learned_policy"
   }
 }

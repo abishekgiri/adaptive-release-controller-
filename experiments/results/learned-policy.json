@@ -1,7 +1,7 @@
 {
-  "adjustment": "unchanged",
-  "block_threshold": 0.7,
-  "deploy_threshold": 0.4,
+  "adjustment": "increase_risk_sensitivity",
+  "block_threshold": 0.65,
+  "deploy_threshold": 0.35,
   "metrics": {
     "blocked": 70,
     "deployed_or_canaried": 30,
@@ -17,5 +17,6 @@
   },
   "previous_block_threshold": 0.7,
   "previous_deploy_threshold": 0.4,
-  "reason": "Error rates are within acceptable limits."
+  "reason": "False negative rate is above the sensitivity threshold; lower thresholds to make deployment decisions more conservative.",
+  "sensitivity_threshold": 0.1
 }

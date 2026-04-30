@@ -62,6 +62,7 @@ class LearnedPolicy:
     block_threshold: float
     previous_deploy_threshold: float
     previous_block_threshold: float
+    sensitivity_threshold: float
     adjustment: str
     reason: str
     metrics: FeedbackMetrics
@@ -82,11 +83,14 @@ class FeedbackLoop:
         deploy_threshold: float = DEFAULT_DEPLOY_THRESHOLD,
         block_threshold: float = DEFAULT_BLOCK_THRESHOLD,
         adjustment_step: float = DEFAULT_ADJUSTMENT_STEP,
+        sensitivity_threshold: float = FALSE_NEGATIVE_LIMIT,
     ) -> None:
         validate_thresholds(deploy_threshold, block_threshold)
+        validate_rate(sensitivity_threshold, "sensitivity_threshold")
         self.deploy_threshold = deploy_threshold
         self.block_threshold = block_threshold
         self.adjustment_step = adjustment_step
+        self.sensitivity_threshold = sensitivity_threshold
 
     def run(self, records: list[DeploymentOutcomeRecord]) -> LearnedPolicy:
         """Analyze historical outcomes and return an adapted policy."""
@@ -97,13 +101,13 @@ class FeedbackLoop:
         adjustment = "unchanged"
         reason = "Error rates are within acceptable limits."
 
-        if metrics.false_negative_rate > FALSE_NEGATIVE_LIMIT:
+        if metrics.false_negative_rate > self.sensitivity_threshold:
             new_deploy_threshold = self.deploy_threshold - self.adjustment_step
             new_block_threshold = self.block_threshold - self.adjustment_step
             adjustment = "increase_risk_sensitivity"
             reason = (
-                "False negative rate is above the limit; lower thresholds to "
-                "make deployment decisions more conservative."
+                "False negative rate is above the sensitivity threshold; lower "
+                "thresholds to make deployment decisions more conservative."
             )
         elif metrics.false_positive_rate > FALSE_POSITIVE_LIMIT:
             new_deploy_threshold = self.deploy_threshold + self.adjustment_step
@@ -124,6 +128,7 @@ class FeedbackLoop:
             block_threshold=bounded_block,
             previous_deploy_threshold=self.deploy_threshold,
             previous_block_threshold=self.block_threshold,
+            sensitivity_threshold=self.sensitivity_threshold,
             adjustment=adjustment,
             reason=reason,
             metrics=metrics,
@@ -281,6 +286,13 @@ def validate_thresholds(deploy_threshold: float, block_threshold: float) -> None
         raise ValueError("deploy_threshold must be lower than block_threshold")
 
 
+def validate_rate(value: float, name: str) -> None:
+    """Validate a normalized rate."""
+
+    if not 0.0 <= value <= 1.0:
+        raise ValueError(f"{name} must be between 0.0 and 1.0")
+
+
 def clamp(value: float, minimum: float, maximum: float) -> float:
     """Clamp a value between two bounds."""
 
@@ -293,4 +305,3 @@ def safe_divide(numerator: float, denominator: float) -> float:
     if denominator == 0:
         return 0.0
     return round(numerator / denominator, 4)
-

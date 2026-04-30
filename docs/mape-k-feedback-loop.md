@@ -38,6 +38,12 @@ Run:
 python3 -m experiments.feedback_loop_eval --db knowledge_base/deployments.db --limit 200
 ```
 
+To increase sensitivity for demonstration or experimentation:
+
+```bash
+python3 -m experiments.feedback_loop_eval --db knowledge_base/deployments.db --limit 200 --sensitivity 0.10
+```
+
 The experiment saves:
 
 ```text
@@ -57,6 +63,7 @@ The default thresholds are:
 Rules:
 
 - If `false_negative_rate > 0.20`, lower thresholds by `0.05`.
+- The false negative threshold is configurable with `--sensitivity`.
 - If `false_positive_rate > 0.30`, raise thresholds by `0.05`.
 - If both rates are acceptable, keep thresholds unchanged.
 - `deploy_threshold` must always remain lower than `block_threshold`.
@@ -96,4 +103,3 @@ Phase 5 is complete when:
 - learned thresholds stay within safe bounds
 - learned policy is saved as JSON
 - results are saved as Markdown
-
