@@ -1,0 +1,620 @@
+{
+  "decisions_sample": {
+    "Adaptive": [
+      {
+        "commit_sha": "a2a59b2d9dbb71edc1b8f48b7145b0b58157b64e",
+        "correct": false,
+        "decision": "BLOCK",
+        "mttr": 0.0,
+        "outcome": "success",
+        "risk_score": 0.7,
+        "system": "Adaptive"
+      },
+      {
+        "commit_sha": "812fa8378bc6ffdb4f8ab07034ddc07fa9ff8b06",
+        "correct": true,
+        "decision": "CANARY",
+        "mttr": 0.0,
+        "outcome": "success",
+        "risk_score": 0.65,
+        "system": "Adaptive"
+      },
+      {
+        "commit_sha": "db61d5f7a1d9ec443e39988e78a55f53e01845b8",
+        "correct": false,
+        "decision": "CANARY",
+        "mttr": 30.0,
+        "outcome": "failure",
+        "risk_score": 0.65,
+        "system": "Adaptive"
+      },
+      {
+        "commit_sha": "68c88137c1255a661a2424ecf874a3fc4f8de225",
+        "correct": false,
+        "decision": "BLOCK",
+        "mttr": 0.0,
+        "outcome": "success",
+        "risk_score": 0.8,
+        "system": "Adaptive"
+      },
+      {
+        "commit_sha": "36e77601ee8dea96590a06f654ea1849fdaf345d",
+        "correct": true,
+        "decision": "BLOCK",
+        "mttr": 0.0,
+        "outcome": "failure",
+        "risk_score": 0.82,
+        "system": "Adaptive"
+      },
+      {
+        "commit_sha": "e59160ad66a8143806c433c77ec73928e736c349",
+        "correct": true,
+        "decision": "BLOCK",
+        "mttr": 0.0,
+        "outcome": "failure",
+        "risk_score": 0.7,
+        "system": "Adaptive"
+      },
+      {
+        "commit_sha": "255721d93c733631a5ba6d611279c8325a9b5f37",
+        "correct": false,
+        "decision": "BLOCK",
+        "mttr": 0.0,
+        "outcome": "success",
+        "risk_score": 1.0,
+        "system": "Adaptive"
+      },
+      {
+        "commit_sha": "f12b017ed15b7b2a0186e08e04b4b70317469777",
+        "correct": false,
+        "decision": "BLOCK",
+        "mttr": 0.0,
+        "outcome": "success",
+        "risk_score": 1.0,
+        "system": "Adaptive"
+      },
+      {
+        "commit_sha": "4fc5f941d555c69acc05d78d87afad0d5e7d6e5a",
+        "correct": true,
+        "decision": "BLOCK",
+        "mttr": 0.0,
+        "outcome": "failure",
+        "risk_score": 0.992,
+        "system": "Adaptive"
+      },
+      {
+        "commit_sha": "5b9cc2d476ca81e4c2e63f70e134d073f8174420",
+        "correct": false,
+        "decision": "CANARY",
+        "mttr": 30.0,
+        "outcome": "failure",
+        "risk_score": 0.65,
+        "system": "Adaptive"
+      },
+      {
+        "commit_sha": "62019026e2b6e35997d470f8fa59a07003b5d506",
+        "correct": true,
+        "decision": "BLOCK",
+        "mttr": 0.0,
+        "outcome": "failure",
+        "risk_score": 1.0,
+        "system": "Adaptive"
+      },
+      {
+        "commit_sha": "cb2f1db1237d8a499f8d2737ef6b226bf2050daf",
+        "correct": false,
+        "decision": "BLOCK",
+        "mttr": 0.0,
+        "outcome": "success",
+        "risk_score": 0.75,
+        "system": "Adaptive"
+      },
+      {
+        "commit_sha": "e53fc31448ec9f977b478dda66b12ed9841ba00f",
+        "correct": true,
+        "decision": "BLOCK",
+        "mttr": 0.0,
+        "outcome": "failure",
+        "risk_score": 0.75,
+        "system": "Adaptive"
+      },
+      {
+        "commit_sha": "ae7a8b2733e9274aa47a4538ecc9e1ae839c86ee",
+        "correct": true,
+        "decision": "BLOCK",
+        "mttr": 0.0,
+        "outcome": "failure",
+        "risk_score": 1.0,
+        "system": "Adaptive"
+      },
+      {
+        "commit_sha": "d807c980842333e124a11c2f46c0d2c006171093",
+        "correct": true,
+        "decision": "BLOCK",
+        "mttr": 0.0,
+        "outcome": "failure",
+        "risk_score": 0.9,
+        "system": "Adaptive"
+      },
+      {
+        "commit_sha": "b972605e7fb0676b97f288f556f8e7527ab62ad0",
+        "correct": false,
+        "decision": "BLOCK",
+        "mttr": 0.0,
+        "outcome": "success",
+        "risk_score": 0.73,
+        "system": "Adaptive"
+      },
+      {
+        "commit_sha": "18902f7f14f73edb194955e495372c3921cb50b3",
+        "correct": true,
+        "decision": "BLOCK",
+        "mttr": 0.0,
+        "outcome": "failure",
+        "risk_score": 0.7675,
+        "system": "Adaptive"
+      },
+      {
+        "commit_sha": "734f72aec147bf8e9aa89a5ce2403761ec2cf6a0",
+        "correct": false,
+        "decision": "BLOCK",
+        "mttr": 0.0,
+        "outcome": "success",
+        "risk_score": 0.78,
+        "system": "Adaptive"
+      },
+      {
+        "commit_sha": "b1c3abf09e706f1ccfb527ac0dbca67f6405d3ba",
+        "correct": false,
+        "decision": "BLOCK",
+        "mttr": 0.0,
+        "outcome": "success",
+        "risk_score": 0.7,
+        "system": "Adaptive"
+      },
+      {
+        "commit_sha": "044670a7dbe580c04136690a8eb81d3bbeb39c1d",
+        "correct": true,
+        "decision": "BLOCK",
+        "mttr": 0.0,
+        "outcome": "failure",
+        "risk_score": 1.0,
+        "system": "Adaptive"
+      }
+    ],
+    "Risk-only": [
+      {
+        "commit_sha": "a2a59b2d9dbb71edc1b8f48b7145b0b58157b64e",
+        "correct": false,
+        "decision": "BLOCK",
+        "mttr": 0.0,
+        "outcome": "success",
+        "risk_score": 0.7,
+        "system": "Risk-only"
+      },
+      {
+        "commit_sha": "812fa8378bc6ffdb4f8ab07034ddc07fa9ff8b06",
+        "correct": true,
+        "decision": "CANARY",
+        "mttr": 0.0,
+        "outcome": "success",
+        "risk_score": 0.65,
+        "system": "Risk-only"
+      },
+      {
+        "commit_sha": "db61d5f7a1d9ec443e39988e78a55f53e01845b8",
+        "correct": false,
+        "decision": "CANARY",
+        "mttr": 30.0,
+        "outcome": "failure",
+        "risk_score": 0.65,
+        "system": "Risk-only"
+      },
+      {
+        "commit_sha": "68c88137c1255a661a2424ecf874a3fc4f8de225",
+        "correct": false,
+        "decision": "BLOCK",
+        "mttr": 0.0,
+        "outcome": "success",
+        "risk_score": 0.8,
+        "system": "Risk-only"
+      },
+      {
+        "commit_sha": "36e77601ee8dea96590a06f654ea1849fdaf345d",
+        "correct": true,
+        "decision": "BLOCK",
+        "mttr": 0.0,
+        "outcome": "failure",
+        "risk_score": 0.82,
+        "system": "Risk-only"
+      },
+      {
+        "commit_sha": "e59160ad66a8143806c433c77ec73928e736c349",
+        "correct": true,
+        "decision": "BLOCK",
+        "mttr": 0.0,
+        "outcome": "failure",
+        "risk_score": 0.7,
+        "system": "Risk-only"
+      },
+      {
+        "commit_sha": "255721d93c733631a5ba6d611279c8325a9b5f37",
+        "correct": false,
+        "decision": "BLOCK",
+        "mttr": 0.0,
+        "outcome": "success",
+        "risk_score": 1.0,
+        "system": "Risk-only"
+      },
+      {
+        "commit_sha": "f12b017ed15b7b2a0186e08e04b4b70317469777",
+        "correct": false,
+        "decision": "BLOCK",
+        "mttr": 0.0,
+        "outcome": "success",
+        "risk_score": 1.0,
+        "system": "Risk-only"
+      },
+      {
+        "commit_sha": "4fc5f941d555c69acc05d78d87afad0d5e7d6e5a",
+        "correct": true,
+        "decision": "BLOCK",
+        "mttr": 0.0,
+        "outcome": "failure",
+        "risk_score": 0.992,
+        "system": "Risk-only"
+      },
+      {
+        "commit_sha": "5b9cc2d476ca81e4c2e63f70e134d073f8174420",
+        "correct": false,
+        "decision": "CANARY",
+        "mttr": 30.0,
+        "outcome": "failure",
+        "risk_score": 0.65,
+        "system": "Risk-only"
+      },
+      {
+        "commit_sha": "62019026e2b6e35997d470f8fa59a07003b5d506",
+        "correct": true,
+        "decision": "BLOCK",
+        "mttr": 0.0,
+        "outcome": "failure",
+        "risk_score": 1.0,
+        "system": "Risk-only"
+      },
+      {
+        "commit_sha": "cb2f1db1237d8a499f8d2737ef6b226bf2050daf",
+        "correct": false,
+        "decision": "BLOCK",
+        "mttr": 0.0,
+        "outcome": "success",
+        "risk_score": 0.75,
+        "system": "Risk-only"
+      },
+      {
+        "commit_sha": "e53fc31448ec9f977b478dda66b12ed9841ba00f",
+        "correct": true,
+        "decision": "BLOCK",
+        "mttr": 0.0,
+        "outcome": "failure",
+        "risk_score": 0.75,
+        "system": "Risk-only"
+      },
+      {
+        "commit_sha": "ae7a8b2733e9274aa47a4538ecc9e1ae839c86ee",
+        "correct": true,
+        "decision": "BLOCK",
+        "mttr": 0.0,
+        "outcome": "failure",
+        "risk_score": 1.0,
+        "system": "Risk-only"
+      },
+      {
+        "commit_sha": "d807c980842333e124a11c2f46c0d2c006171093",
+        "correct": true,
+        "decision": "BLOCK",
+        "mttr": 0.0,
+        "outcome": "failure",
+        "risk_score": 0.9,
+        "system": "Risk-only"
+      },
+      {
+        "commit_sha": "b972605e7fb0676b97f288f556f8e7527ab62ad0",
+        "correct": false,
+        "decision": "BLOCK",
+        "mttr": 0.0,
+        "outcome": "success",
+        "risk_score": 0.73,
+        "system": "Risk-only"
+      },
+      {
+        "commit_sha": "18902f7f14f73edb194955e495372c3921cb50b3",
+        "correct": true,
+        "decision": "BLOCK",
+        "mttr": 0.0,
+        "outcome": "failure",
+        "risk_score": 0.7675,
+        "system": "Risk-only"
+      },
+      {
+        "commit_sha": "734f72aec147bf8e9aa89a5ce2403761ec2cf6a0",
+        "correct": false,
+        "decision": "BLOCK",
+        "mttr": 0.0,
+        "outcome": "success",
+        "risk_score": 0.78,
+        "system": "Risk-only"
+      },
+      {
+        "commit_sha": "b1c3abf09e706f1ccfb527ac0dbca67f6405d3ba",
+        "correct": false,
+        "decision": "BLOCK",
+        "mttr": 0.0,
+        "outcome": "success",
+        "risk_score": 0.7,
+        "system": "Risk-only"
+      },
+      {
+        "commit_sha": "044670a7dbe580c04136690a8eb81d3bbeb39c1d",
+        "correct": true,
+        "decision": "BLOCK",
+        "mttr": 0.0,
+        "outcome": "failure",
+        "risk_score": 1.0,
+        "system": "Risk-only"
+      }
+    ],
+    "Static": [
+      {
+        "commit_sha": "a2a59b2d9dbb71edc1b8f48b7145b0b58157b64e",
+        "correct": false,
+        "decision": "BLOCK",
+        "mttr": 0.0,
+        "outcome": "success",
+        "risk_score": 0.7,
+        "system": "Static"
+      },
+      {
+        "commit_sha": "812fa8378bc6ffdb4f8ab07034ddc07fa9ff8b06",
+        "correct": false,
+        "decision": "BLOCK",
+        "mttr": 0.0,
+        "outcome": "success",
+        "risk_score": 0.65,
+        "system": "Static"
+      },
+      {
+        "commit_sha": "db61d5f7a1d9ec443e39988e78a55f53e01845b8",
+        "correct": false,
+        "decision": "DEPLOY",
+        "mttr": 60.0,
+        "outcome": "failure",
+        "risk_score": 0.65,
+        "system": "Static"
+      },
+      {
+        "commit_sha": "68c88137c1255a661a2424ecf874a3fc4f8de225",
+        "correct": true,
+        "decision": "DEPLOY",
+        "mttr": 0.0,
+        "outcome": "success",
+        "risk_score": 0.8,
+        "system": "Static"
+      },
+      {
+        "commit_sha": "36e77601ee8dea96590a06f654ea1849fdaf345d",
+        "correct": true,
+        "decision": "BLOCK",
+        "mttr": 0.0,
+        "outcome": "failure",
+        "risk_score": 0.82,
+        "system": "Static"
+      },
+      {
+        "commit_sha": "e59160ad66a8143806c433c77ec73928e736c349",
+        "correct": false,
+        "decision": "DEPLOY",
+        "mttr": 60.0,
+        "outcome": "failure",
+        "risk_score": 0.7,
+        "system": "Static"
+      },
+      {
+        "commit_sha": "255721d93c733631a5ba6d611279c8325a9b5f37",
+        "correct": false,
+        "decision": "BLOCK",
+        "mttr": 0.0,
+        "outcome": "success",
+        "risk_score": 1.0,
+        "system": "Static"
+      },
+      {
+        "commit_sha": "f12b017ed15b7b2a0186e08e04b4b70317469777",
+        "correct": false,
+        "decision": "BLOCK",
+        "mttr": 0.0,
+        "outcome": "success",
+        "risk_score": 1.0,
+        "system": "Static"
+      },
+      {
+        "commit_sha": "4fc5f941d555c69acc05d78d87afad0d5e7d6e5a",
+        "correct": true,
+        "decision": "BLOCK",
+        "mttr": 0.0,
+        "outcome": "failure",
+        "risk_score": 0.992,
+        "system": "Static"
+      },
+      {
+        "commit_sha": "5b9cc2d476ca81e4c2e63f70e134d073f8174420",
+        "correct": false,
+        "decision": "DEPLOY",
+        "mttr": 60.0,
+        "outcome": "failure",
+        "risk_score": 0.65,
+        "system": "Static"
+      },
+      {
+        "commit_sha": "62019026e2b6e35997d470f8fa59a07003b5d506",
+        "correct": true,
+        "decision": "BLOCK",
+        "mttr": 0.0,
+        "outcome": "failure",
+        "risk_score": 1.0,
+        "system": "Static"
+      },
+      {
+        "commit_sha": "cb2f1db1237d8a499f8d2737ef6b226bf2050daf",
+        "correct": false,
+        "decision": "BLOCK",
+        "mttr": 0.0,
+        "outcome": "success",
+        "risk_score": 0.75,
+        "system": "Static"
+      },
+      {
+        "commit_sha": "e53fc31448ec9f977b478dda66b12ed9841ba00f",
+        "correct": false,
+        "decision": "DEPLOY",
+        "mttr": 60.0,
+        "outcome": "failure",
+        "risk_score": 0.75,
+        "system": "Static"
+      },
+      {
+        "commit_sha": "ae7a8b2733e9274aa47a4538ecc9e1ae839c86ee",
+        "correct": true,
+        "decision": "BLOCK",
+        "mttr": 0.0,
+        "outcome": "failure",
+        "risk_score": 1.0,
+        "system": "Static"
+      },
+      {
+        "commit_sha": "d807c980842333e124a11c2f46c0d2c006171093",
+        "correct": true,
+        "decision": "BLOCK",
+        "mttr": 0.0,
+        "outcome": "failure",
+        "risk_score": 0.9,
+        "system": "Static"
+      },
+      {
+        "commit_sha": "b972605e7fb0676b97f288f556f8e7527ab62ad0",
+        "correct": true,
+        "decision": "DEPLOY",
+        "mttr": 0.0,
+        "outcome": "success",
+        "risk_score": 0.73,
+        "system": "Static"
+      },
+      {
+        "commit_sha": "18902f7f14f73edb194955e495372c3921cb50b3",
+        "correct": false,
+        "decision": "DEPLOY",
+        "mttr": 60.0,
+        "outcome": "failure",
+        "risk_score": 0.7675,
+        "system": "Static"
+      },
+      {
+        "commit_sha": "734f72aec147bf8e9aa89a5ce2403761ec2cf6a0",
+        "correct": false,
+        "decision": "BLOCK",
+        "mttr": 0.0,
+        "outcome": "success",
+        "risk_score": 0.78,
+        "system": "Static"
+      },
+      {
+        "commit_sha": "b1c3abf09e706f1ccfb527ac0dbca67f6405d3ba",
+        "correct": false,
+        "decision": "BLOCK",
+        "mttr": 0.0,
+        "outcome": "success",
+        "risk_score": 0.7,
+        "system": "Static"
+      },
+      {
+        "commit_sha": "044670a7dbe580c04136690a8eb81d3bbeb39c1d",
+        "correct": true,
+        "decision": "BLOCK",
+        "mttr": 0.0,
+        "outcome": "failure",
+        "risk_score": 1.0,
+        "system": "Static"
+      }
+    ]
+  },
+  "metrics": {
+    "Adaptive": {
+      "blocked": 70,
+      "decision_accuracy": 0.66,
+      "decision_distribution": {
+        "BLOCK": 70,
+        "CANARY": 30,
+        "DEPLOY": 0
+      },
+      "deployed_or_canaried": 30,
+      "deployed_or_canary_failures": 13,
+      "deployed_or_canary_successes": 17,
+      "failure_rate": 0.4333,
+      "false_negative_rate": 0.13,
+      "false_negatives": 13,
+      "false_positive_rate": 0.21,
+      "false_positives": 21,
+      "mttr": 30.0,
+      "success_rate": 0.5667,
+      "system": "Adaptive",
+      "total_records": 100
+    },
+    "Risk-only": {
+      "blocked": 70,
+      "decision_accuracy": 0.66,
+      "decision_distribution": {
+        "BLOCK": 70,
+        "CANARY": 30,
+        "DEPLOY": 0
+      },
+      "deployed_or_canaried": 30,
+      "deployed_or_canary_failures": 13,
+      "deployed_or_canary_successes": 17,
+      "failure_rate": 0.4333,
+      "false_negative_rate": 0.13,
+      "false_negatives": 13,
+      "false_positive_rate": 0.21,
+      "false_positives": 21,
+      "mttr": 30.0,
+      "success_rate": 0.5667,
+      "system": "Risk-only",
+      "total_records": 100
+    },
+    "Static": {
+      "blocked": 68,
+      "decision_accuracy": 0.6,
+      "decision_distribution": {
+        "BLOCK": 68,
+        "CANARY": 0,
+        "DEPLOY": 32
+      },
+      "deployed_or_canaried": 32,
+      "deployed_or_canary_failures": 17,
+      "deployed_or_canary_successes": 15,
+      "failure_rate": 0.5312,
+      "false_negative_rate": 0.17,
+      "false_negatives": 17,
+      "false_positive_rate": 0.23,
+      "false_positives": 23,
+      "mttr": 60.0,
+      "success_rate": 0.4688,
+      "system": "Static",
+      "total_records": 100
+    }
+  },
+  "policy": {
+    "block_threshold": 0.7,
+    "deploy_threshold": 0.4,
+    "source": "learned_policy"
+  }
+}
