@@ -1,83 +1,107 @@
-# Adaptive Deployment Control Using MAPE-K Feedback Loops
+# Phase 17 Results: First Controlled Evidence Run
 
-## Problem Statement
+## Status
 
-Modern CI/CD pipelines commonly make release decisions using static checks such as build status, test status, and code coverage. These checks are necessary, but they are not sufficient for reliable deployment control. A deployment can pass tests and coverage gates while still failing because of risky code areas, large changes, dependency updates, slow CI behavior, or previous failure patterns.
+This is a preliminary smoke-test result, not a final research result.
 
-In this project, the static CI/CD baseline produced a 53.12% failure rate on the evaluation dataset. This shows the core limitation of fixed gates: they do not adapt to observed deployment outcomes and cannot learn from prior mistakes. The research objective is to evaluate whether a MAPE-K feedback loop can improve release reliability by adjusting deployment decisions based on historical evidence.
+The configured real-data input `data/raw/travistorrent.csv` was not present locally. The first attempt to run the existing pipeline with `experiments/configs/first_real_result.json` failed with:
 
-## Systems Compared
+```text
+FileNotFoundError: data/raw/travistorrent.csv
+```
 
-| System | Description |
+To exercise the existing pipeline end to end, a gitignored TravisTorrent-shaped smoke CSV was generated locally at `data/raw/travistorrent.csv`. It contains 600 synthetic rows for one project over more than 365 days so it satisfies the current config filters. This file is not committed and should be replaced with the real TravisTorrent dump before making paper claims.
+
+## Exact Commands Used
+
+Initial real-data attempt:
+
+```bash
+python3 -m experiments.run_baselines --config experiments/configs/first_real_result.json --seed 0
+```
+
+Smoke data generation:
+
+```bash
+python3 -c '... wrote data/raw/travistorrent.csv with 600 synthetic TravisTorrent-shaped rows ...'
+```
+
+Experiment run:
+
+```bash
+for seed in $(seq 0 29); do python3 -m experiments.run_baselines --config experiments/configs/first_real_result.json --seed "$seed" >/tmp/phase17-seed-${seed}.log; done
+```
+
+Raw outputs were written to:
+
+```text
+experiments/results/first_real_result/<seed>/summary.json
+experiments/results/first_real_result/<seed>/summary.md
+```
+
+The `experiments/results/` directory remains gitignored and is not committed.
+
+## Dataset And Config
+
+| Item | Value |
 | --- | --- |
-| Static | Traditional CI/CD gate using fixed rules: deploy when tests pass and coverage is above the threshold. |
-| Risk-only | Uses a normalized deployment risk score and fixed thresholds to decide DEPLOY, CANARY, or BLOCK. |
-| Adaptive (MAPE-K) | Uses the risk score plus learned thresholds from the feedback loop to adapt deployment behavior over time. |
+| Config | `experiments/configs/first_real_result.json` |
+| Dataset path used by config | `data/raw/travistorrent.csv` |
+| Actual dataset for this run | locally generated synthetic TravisTorrent-shaped smoke CSV |
+| Rows | 600 |
+| Projects / trajectories | 1 |
+| Seeds | 0-29 |
+| Delay setting | `delay_steps = max(1, ceil(tr_duration / 60))` |
+| Bootstrap resamples | 1000 per seed in pipeline; 10000 for aggregate table below |
+| Propensity clip | 20.0 |
+
+## Policies Compared
+
+| Policy | Status |
+| --- | --- |
+| `static_rules` | evaluated |
+| `linucb` | evaluated |
+| `cost_sensitive_bandit` | evaluated |
+| `heuristic-score` | TODO placeholder |
+| `offline-classifier` | TODO placeholder |
+| `thompson` | TODO placeholder |
 
 ## Metrics Table
 
-| System | Success Rate | Failure Rate | MTTR | False Positive Rate | False Negative Rate | Accuracy |
+Bootstrap confidence intervals are computed across the 30 seed-level summaries. Because this smoke run is deterministic for the implemented replay policies, the intervals collapse to a single value.
+
+| Policy | Mean cumulative cost | Cost 95% CI | Mean IPS value | Value 95% CI | Mean matched actions | Mean ESS |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Static | 46.88% | 53.12% | 60.00 min | 23.00% | 17.00% | 60.00% |
-| Risk-only | 56.67% | 43.33% | 30.00 min | 21.00% | 13.00% | 66.00% |
-| Adaptive (MAPE-K) | 60.00% | 40.00% | 30.00 min | 29.00% | 6.00% | 65.00% |
+| `static_rules` | 600.0000 | [600.0000, 600.0000] | -1.0000 | [-1.0000, -1.0000] | 397.00 | 397.00 |
+| `linucb` | 980.0000 | [980.0000, 980.0000] | -1.6333 | [-1.6333, -1.6333] | 600.00 | 600.00 |
+| `cost_sensitive_bandit` | 980.0000 | [980.0000, 980.0000] | -1.6333 | [-1.6333, -1.6333] | 600.00 | 600.00 |
 
-## Key Results
+Additional diagnostics:
 
-- Adaptive deployment control improved success rate from 46.88% to 60.00% compared with static CI/CD.
-- Failure rate was reduced from 53.12% to 40.00%.
-- False negatives were reduced from 17.00% to 6.00%, meaning fewer failed deployments were incorrectly allowed.
-- MTTR was reduced from 60.00 minutes to 30.00 minutes.
-- Compared with risk-only control, the adaptive system reduced failure rate from 43.33% to 40.00%.
-- Compared with risk-only control, the adaptive system reduced false negatives from 13.00% to 6.00%.
+| Metric | Value |
+| --- | ---: |
+| Evaluated steps per seed | 600 |
+| Skipped censored rewards | 0 |
+| Seed count | 30 |
+| Output directories | 30 |
 
-## Graphs
+## Short Interpretation
 
-### Success Rate Comparison
+This run proves that the current Phase 14/15 pipeline can produce raw per-seed outputs and aggregate cost-first evidence tables for the three implemented policies.
 
-![Success rate comparison](../experiments/results/graphs/success_rate_comparison.png)
+It does not prove the research claim yet. In this smoke replay, `linucb` and `cost_sensitive_bandit` produce identical results because `evaluation/replay_eval.py` evaluates candidate policies with IPS but does not perform online training during replay. Both bandit policies therefore act from their initial model state and choose `DEPLOY` for every logged context. Since the synthetic smoke log also records `DEPLOY` as the logged action for every row, both bandits match all 600 actions and receive the same cost.
 
-### Failure Rate Comparison
-
-![Failure rate comparison](../experiments/results/graphs/failure_rate_comparison.png)
-
-### MTTR Comparison
-
-![MTTR comparison](../experiments/results/graphs/mttr_comparison.png)
-
-### False Positive and False Negative Comparison
-
-![False positive and false negative comparison](../experiments/results/graphs/error_rate_comparison.png)
-
-## Insights
-
-Static systems are overly simplistic for modern deployment environments. The static baseline only considers fixed CI/CD checks, so it cannot identify releases that are technically valid but operationally risky. This led to the highest failure rate in the experiment.
-
-Risk-aware systems significantly improve outcomes by using additional deployment signals. The risk-only system reduced failure rate from 53.12% to 43.33% and improved success rate from 46.88% to 56.67%. This shows that deployment risk can be estimated more effectively when commit and CI features are considered.
-
-Adaptive systems reduce critical failures by learning from deployment history. The MAPE-K controller adjusted its thresholds from 0.40 to 0.35 for deploy decisions and from 0.70 to 0.65 for block decisions. This made the system more conservative after observing false negatives, reducing false negatives to 6.00%.
-
-The main tradeoff is an increased false positive rate. The adaptive system blocked more deployments, raising false positives to 29.00%. This is an expected reliability tradeoff: the controller accepts more conservative blocking in exchange for fewer failed releases.
-
-The system learns from deployment history through the feedback loop. Historical decisions and outcomes are stored in the knowledge base, analyzed for false positive and false negative behavior, and converted into a learned policy artifact that changes future deployment decisions without modifying the risk model or decision engine code.
-
-## Research Conclusion
-
-The MAPE-K adaptive system improves deployment reliability by dynamically adjusting decision thresholds based on observed outcomes. Compared with static CI/CD, it increased success rate, reduced failure rate, reduced MTTR, and substantially reduced false negatives. Compared with the risk-only system, it demonstrated true adaptive behavior by changing thresholds and reducing failed releases further.
-
-These results support the research claim that self-adaptive feedback loops can improve deployment decision quality beyond fixed CI/CD gates and fixed-threshold risk scoring.
+`static_rules` has lower cumulative observed IPS cost in this smoke run because it deploys only on lower-risk rows and therefore matches fewer logged actions. This is a useful evaluator diagnostic, but not a final comparison: lower matched-action coverage changes what evidence the IPS estimate can use.
 
 ## Limitations
 
-- The evaluation dataset contains 100 deployment records, which is small for generalizing results across many real-world systems.
-- Deployment failures are simulated, so they may not capture every production failure pattern.
-- The current risk model is heuristic and may not represent complex nonlinear relationships between deployment features and outcomes.
-- The current system evaluates a single-service deployment model rather than a large distributed microservice environment.
+- This is synthetic TravisTorrent-shaped smoke data, not the real TravisTorrent dataset.
+- The run used one project trajectory, so project-level uncertainty is not represented.
+- The aggregate bootstrap CI is degenerate because the implemented replay path is deterministic across seeds for this dataset.
+- IPS replay currently evaluates policies but does not train LinUCB or the cost-sensitive bandit online before scoring later steps.
+- The logging policy is effectively deploy-only in this smoke data, so `CANARY` and `BLOCK` have limited counterfactual coverage.
+- These numbers must not be used as final paper evidence.
 
-## Future Work
+## Next Evidence Step
 
-- Use real production deployment data from GitHub Actions, incident logs, and monitoring systems.
-- Add machine learning models such as random forest, gradient boosting, and calibrated logistic regression.
-- Include multi-service dependency awareness so the controller can reason about cascading failure risk.
-- Add real-time feedback loops connected to live metrics, smoke checks, rollback automation, and canary analysis.
-- Evaluate the controller across larger datasets and multiple repositories to measure external validity.
+Before making research claims, replace the smoke CSV with the real TravisTorrent dump and add an online replay/simulation experiment path that applies delayed updates during the trajectory. The final evidence table should then be regenerated with real multi-project trajectories and non-degenerate uncertainty estimates.
