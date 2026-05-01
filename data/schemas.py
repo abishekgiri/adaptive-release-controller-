@@ -20,7 +20,8 @@ class Outcome(str, Enum):
 
     SUCCESS = "success"
     FAILURE = "failure"
-    CENSORED = "censored"  # reward window closed before outcome resolved
+    CENSORED = "censored"   # reward window closed before outcome resolved
+    BLOCKED = "blocked"     # change was blocked; counterfactual unknown (replay use-case)
 
 
 @dataclass(frozen=True)
