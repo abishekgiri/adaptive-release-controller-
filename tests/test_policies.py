@@ -5,7 +5,10 @@ from __future__ import annotations
 import pytest
 
 from data.schemas import Action, Context, Outcome, Reward
-from policies.base import Policy
+import numpy as np
+
+from policies.base import FeatureEncoder, Policy
+from policies.linucb import LinUCBConfig, LinUCBPolicy
 from policies.static_rules import StaticRulesPolicy
 
 
@@ -329,7 +332,10 @@ def test_heuristic_score_interface() -> None:
 
 
 def test_linucb_interface() -> None:
-    pytest.skip("Implement after LinUCBPolicy is filled in")
+    config = LinUCBConfig(alpha=1.0)
+    rng = np.random.default_rng(0)
+    policy = LinUCBPolicy(config=config, feature_dim=FeatureEncoder.DIM, rng=rng)
+    _assert_policy_interface(policy)
 
 
 def test_thompson_interface() -> None:
