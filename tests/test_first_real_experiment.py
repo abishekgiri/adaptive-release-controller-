@@ -24,7 +24,12 @@ def _write_config(path: Path, dataset_path: Path, results_root: Path) -> None:
                 "propensity_clip": 20.0,
                 "bootstrap_resamples": 25,
                 "confidence": 0.95,
-                "policies": ["static-rules", "linucb", "heuristic-score"],
+                "policies": [
+                    "static-rules",
+                    "linucb",
+                    "cost-sensitive-bandit",
+                    "heuristic-score",
+                ],
                 "cost_config": {
                     "deploy_success": 0.0,
                     "deploy_failure": 10.0,
@@ -111,7 +116,12 @@ def test_load_config_parses_required_fields(tmp_path) -> None:
     assert config.config_name == "unit_real_result"
     assert config.dataset_path == dataset_path
     assert config.results_root == results_root
-    assert config.policies == ("static-rules", "linucb", "heuristic-score")
+    assert config.policies == (
+        "static-rules",
+        "linucb",
+        "cost-sensitive-bandit",
+        "heuristic-score",
+    )
     assert result_dir(config, seed=3) == results_root / "unit_real_result" / "3"
 
 
@@ -130,4 +140,5 @@ def test_run_experiment_writes_seeded_result_directory(tmp_path) -> None:
     assert (output_dir / "summary.md").exists()
     assert summary["policies"]["static_rules"]["status"] == "evaluated"
     assert summary["policies"]["linucb"]["status"] == "evaluated"
+    assert summary["policies"]["cost_sensitive_bandit"]["status"] == "evaluated"
     assert summary["policies"]["heuristic-score"]["status"] == "todo_placeholder"

@@ -1,8 +1,8 @@
 """Bandit experiment entrypoint for the first real result.
 
-For Immediate Next Task 14 this delegates to ``run_baselines`` because LinUCB is
-the only runnable bandit baseline. Thompson and the final contribution remain
-TODO placeholders.
+This delegates to ``run_baselines`` so LinUCB and the cost-sensitive delayed
+bandit run over the exact same replay-evaluation path as the static baseline.
+Thompson remains a TODO placeholder.
 """
 
 from __future__ import annotations

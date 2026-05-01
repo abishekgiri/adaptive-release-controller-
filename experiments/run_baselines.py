@@ -2,8 +2,7 @@
 
 This script is deliberately evaluator-only: it loads local data, constructs
 logged trajectories with observed costs, evaluates existing policies with IPS,
-and writes cost-first summaries. It does not download data or train the final
-cost-sensitive bandit contribution.
+and writes cost-first summaries. It does not download data.
 """
 
 from __future__ import annotations
@@ -22,6 +21,10 @@ from data.schemas import Action, Outcome, Reward, Trajectory, TrajectoryStep
 from evaluation.replay_eval import IPSConfig, IPSResult, evaluate_ips
 from evaluation.statistical import BootstrapConfig, bootstrap_ci
 from policies.base import FeatureEncoder, Policy
+from policies.cost_sensitive_bandit import (
+    CostSensitiveBandit,
+    CostSensitiveBanditConfig,
+)
 from policies.linucb import LinUCBConfig, LinUCBPolicy
 from policies.static_rules import StaticRulesPolicy
 from rewards.cost_model import CostConfig, compute_cost
@@ -30,7 +33,7 @@ from rewards.cost_model import CostConfig, compute_cost
 DEFAULT_CONFIG_PATH = Path("experiments/configs/first_real_result.json")
 DEFAULT_RESULTS_ROOT = Path("experiments/results")
 
-RUNNABLE_POLICIES = {"static-rules", "linucb"}
+RUNNABLE_POLICIES = {"static-rules", "linucb", "cost-sensitive-bandit"}
 TODO_POLICIES = {
     "heuristic-score": "TODO: HeuristicScorePolicy exists but select_action is not implemented.",
     "offline-classifier": "TODO: OfflineClassifierPolicy exists but fit/select_action are not implemented.",
@@ -58,11 +61,14 @@ class ExperimentConfig:
         "heuristic-score",
         "offline-classifier",
         "linucb",
+        "cost-sensitive-bandit",
         "thompson",
     )
     cost_config: CostConfig = field(default_factory=CostConfig)
     linucb_alpha: float = 1.0
     linucb_lambda_reg: float = 1.0
+    cost_sensitive_alpha: float = 1.0
+    cost_sensitive_lambda_reg: float = 1.0
 
 
 def load_config(path: str | Path) -> ExperimentConfig:
@@ -87,6 +93,8 @@ def load_config(path: str | Path) -> ExperimentConfig:
         cost_config=CostConfig(**cost_payload),
         linucb_alpha=float(payload.get("linucb_alpha", 1.0)),
         linucb_lambda_reg=float(payload.get("linucb_lambda_reg", 1.0)),
+        cost_sensitive_alpha=float(payload.get("cost_sensitive_alpha", 1.0)),
+        cost_sensitive_lambda_reg=float(payload.get("cost_sensitive_lambda_reg", 1.0)),
     )
 
 
@@ -202,6 +210,17 @@ def build_policy(policy_name: str, config: ExperimentConfig, seed: int) -> Polic
             feature_dim=FeatureEncoder.DIM,
             rng=np.random.default_rng(seed),
             policy_id="linucb",
+        )
+    if policy_name == "cost-sensitive-bandit":
+        return CostSensitiveBandit(
+            config=CostSensitiveBanditConfig(
+                alpha=config.cost_sensitive_alpha,
+                lambda_reg=config.cost_sensitive_lambda_reg,
+                cost_config=config.cost_config,
+            ),
+            feature_dim=FeatureEncoder.DIM,
+            rng=np.random.default_rng(seed),
+            policy_id="cost_sensitive_bandit",
         )
     raise ValueError(f"Unsupported runnable policy: {policy_name}")
 

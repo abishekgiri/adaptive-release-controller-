@@ -15,6 +15,7 @@
     "heuristic-score",
     "offline-classifier",
     "linucb",
+    "cost-sensitive-bandit",
     "thompson"
   ],
   "cost_config": {
@@ -27,5 +28,7 @@
     "block_unknown": 2.0
   },
   "linucb_alpha": 1.0,
-  "linucb_lambda_reg": 1.0
+  "linucb_lambda_reg": 1.0,
+  "cost_sensitive_alpha": 1.0,
+  "cost_sensitive_lambda_reg": 1.0
 }
