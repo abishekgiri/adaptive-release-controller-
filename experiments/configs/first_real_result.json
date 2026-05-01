@@ -1,0 +1,31 @@
+{
+  "config_name": "first_real_result",
+  "dataset_path": "data/raw/travistorrent.csv",
+  "results_root": "experiments/results",
+  "min_builds": 500,
+  "min_history_days": 365,
+  "max_trajectories": null,
+  "logged_propensity": 1.0,
+  "delay_step_seconds": 60,
+  "propensity_clip": 20.0,
+  "bootstrap_resamples": 1000,
+  "confidence": 0.95,
+  "policies": [
+    "static-rules",
+    "heuristic-score",
+    "offline-classifier",
+    "linucb",
+    "thompson"
+  ],
+  "cost_config": {
+    "deploy_success": 0.0,
+    "deploy_failure": 10.0,
+    "canary_success": 1.0,
+    "canary_failure": 4.0,
+    "block_safe": 2.0,
+    "block_bad": 0.5,
+    "block_unknown": 2.0
+  },
+  "linucb_alpha": 1.0,
+  "linucb_lambda_reg": 1.0
+}
