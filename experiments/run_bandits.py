@@ -36,6 +36,7 @@ from policies.cost_sensitive_bandit import CostSensitiveBandit, CostSensitiveBan
 from policies.heuristic_score import HeuristicScorePolicy
 from policies.linucb import LinUCBConfig, LinUCBPolicy
 from policies.static_rules import StaticRulesPolicy
+from policies.thompson import ThompsonConfig, ThompsonSamplingPolicy
 from rewards.cost_model import CostConfig
 
 
@@ -127,6 +128,12 @@ def build_policies(config: OnlineExperimentConfig, seed: int) -> list:
             feature_dim=FeatureEncoder.DIM,
             rng=np.random.default_rng(seed),
             policy_id="cost_sensitive_bandit",
+        ),
+        ThompsonSamplingPolicy(
+            config=ThompsonConfig(prior_variance=1.0, noise_variance=0.1),
+            feature_dim=FeatureEncoder.DIM,
+            rng=np.random.default_rng(seed),
+            policy_id="thompson",
         ),
     ]
 

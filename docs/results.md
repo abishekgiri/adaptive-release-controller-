@@ -1,3 +1,92 @@
+# Phase 23 (Partial): Real-World Sanity Check — GitHub Actions CI Data
+
+> **REAL CI DATA — BIASED EVALUATION.**
+> Costs use `compute_cost(policy_action, CI_outcome)` as counterfactual proxy.
+> Feature space is sparse (no commit-level metadata). Results are highly preliminary.
+
+## What This Tests
+
+Phase 23 real-data sanity check loads real GitHub Actions workflow run history from two
+public repositories (`psf/requests`, `pallets/flask`) via GitHub REST API and runs the
+full online-replay experiment pipeline with relaxed dataset filters.
+
+**This is a pipeline validation, not a policy performance claim.**
+
+## Dataset
+
+| Project | Runs | Failure rate | Span | Feature richness |
+| --- | ---: | ---: | ---: | --- |
+| `psf/requests` | 300 | 5.3% | 20 days | Sparse — no commit-level metadata |
+| `pallets/flask` | 300 | 23.3% | 99 days | Sparse — no commit-level metadata |
+
+- File: `data/raw/github_actions_real.csv` (gitignored — not committed)
+- Config: `experiments/configs/real_github_actions.json`
+- Filters: `min_builds=100`, `min_history_days=0` (relaxed from standard 500/365)
+- Censored rewards: 17–22 per trajectory from cancelled CI runs (real-world censoring)
+
+## Exact Commands
+
+```bash
+for seed in 0 1 2 3 4; do
+    python -m experiments.run_bandits \
+        --config experiments/configs/real_github_actions.json \
+        --seed $seed
+done
+```
+
+## Results (seeds 0–4)
+
+| Policy | Steps | Censored | Cumul. Cost | Mean/Step | Deploy% | Canary% | Block% |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| `static_rules` | 600 | 21 | **644.5** | **1.113** | 64.3% | 20.0% | 15.7% |
+| `heuristic_score` | 600 | 22 | 860.0 | 1.488 | 100.0% | 0.0% | 0.0% |
+| `linucb` | 600 | 17 | 669.5 | 1.148 | 53.0% | 4.8% | 42.2% |
+| `cost_sensitive_bandit` | 600 | 17 | 669.5 | 1.148 | 53.0% | 4.8% | 42.2% |
+| `thompson` (mean ± std, n=5) | 600 | 17–21 | **585 ± 99** | 1.008 ± 0.171 | varies | varies | varies |
+
+Thompson seed breakdown: 445.5 / 520.0 / 649.5 / 631.5 / 680.0 (seeds 0–4)
+
+## Expected Cost Analysis (static per-project optima)
+
+| Project | E[deploy] | E[canary] | E[block] | Optimal |
+| --- | ---: | ---: | ---: | --- |
+| `psf/requests` (5.3% failure) | **0.53** | 1.16 | 1.92 | deploy |
+| `pallets/flask` (23.3% failure) | 2.33 | 1.70 | **1.65** | block |
+
+## Interpretation
+
+**LinUCB over-blocks the low-failure project.** At 5.3% failure, deploying costs 0.53/step
+while blocking costs 1.92/step. LinUCB converges to 42.2% block across both projects,
+paying unnecessary block_safe costs on `psf/requests`. Static rules' 64% deploy rate is
+closer to optimal, giving static rules a 3.8% cost advantage over LinUCB (644.5 vs 669.5).
+
+**Thompson has high variance on short trajectories.** With only 300 steps per project,
+Thompson's posterior has not converged. Seed 0 discovers the deploy-heavy strategy and
+achieves 445.5 (best of all policies). Seed 4 gets stuck block-heavy and achieves 680.0
+(worst bandit). The mean (585) beats static rules on average but not reliably.
+
+**Real censoring observed.** 17–22 cancelled CI runs per trajectory produce genuine
+censored rewards. Censoring rate differs by policy (different actions correlate with
+CI run completion). This is a confounder our evaluation does not model.
+
+**What this does NOT establish:**
+- That static rules are generally better than bandits (this is a feature-sparse, short-trajectory experiment)
+- That Thompson Sampling is generally better (high variance, 5 seeds)
+- Any causal claim about real deployment cost
+
+## Critical Limitations
+
+1. **Feature space is sparse**: No commit-level metadata (files changed, lines added, author info).
+   The bandit learns primarily from recent-failure-rate and bias term. This is not a fair test
+   of the algorithm's full capability.
+2. **Short trajectories**: 300 steps per project. Standard bandit theory requires O(d²) steps
+   to learn d-dimensional linear model. With d=13, ~170 steps minimum — marginal here.
+3. **Single run per project**: No cross-project variance, no bootstrap CI width for deterministic policies.
+4. **Relaxed filters**: `min_builds=100`, `min_history_days=0` — not comparable to standard config.
+5. **Data source**: GitHub Actions API (not TravisTorrent). Schema mapping is approximate.
+
+---
+
 # Phase 22: Ablation Study — Cost-Sensitive Bandit Components
 
 > **SIMULATION — NOT CAUSAL INFERENCE.**
