@@ -10,6 +10,7 @@ import numpy as np
 from policies.base import FeatureEncoder, Policy
 from policies.linucb import LinUCBConfig, LinUCBPolicy
 from policies.static_rules import StaticRulesPolicy
+from policies.thompson import ThompsonConfig, ThompsonSamplingPolicy
 
 
 # ---------------------------------------------------------------------------
@@ -339,7 +340,87 @@ def test_linucb_interface() -> None:
 
 
 def test_thompson_interface() -> None:
-    pytest.skip("Implement after ThompsonSamplingPolicy is filled in")
+    rng = np.random.default_rng(0)
+    policy = ThompsonSamplingPolicy(
+        config=ThompsonConfig(prior_variance=1.0, noise_variance=0.1),
+        feature_dim=FeatureEncoder.DIM,
+        rng=rng,
+    )
+    _assert_policy_interface(policy)
+
+
+def test_thompson_select_action_returns_valid_action() -> None:
+    rng = np.random.default_rng(42)
+    policy = ThompsonSamplingPolicy(
+        config=ThompsonConfig(), feature_dim=FeatureEncoder.DIM, rng=rng
+    )
+    ctx = _ctx()
+    action, propensity = policy.select_action(ctx)
+    assert action in list(Action)
+    assert propensity == 1.0
+
+
+def test_thompson_update_changes_posterior() -> None:
+    rng = np.random.default_rng(7)
+    policy = ThompsonSamplingPolicy(
+        config=ThompsonConfig(), feature_dim=FeatureEncoder.DIM, rng=rng
+    )
+    b_before = policy._b[Action.DEPLOY].copy()
+    Lambda_before = policy._Lambda[Action.DEPLOY].copy()
+    ctx = _ctx(recent_failure_rate=0.2)
+    reward = Reward(action_id="a0", outcome=Outcome.SUCCESS, cost=2.0, delay_steps=1, censored=False, observed_at_step=1)
+    policy.update(ctx, Action.DEPLOY, reward)
+    assert not np.allclose(policy._b[Action.DEPLOY], b_before), "b should update"
+    assert not np.allclose(policy._Lambda[Action.DEPLOY], Lambda_before), "Lambda should update"
+
+
+def test_thompson_censored_reward_skipped() -> None:
+    rng = np.random.default_rng(9)
+    policy = ThompsonSamplingPolicy(
+        config=ThompsonConfig(), feature_dim=FeatureEncoder.DIM, rng=rng
+    )
+    b_before = policy._b[Action.DEPLOY].copy()
+    ctx = _ctx()
+    policy.update(ctx, Action.DEPLOY, Reward(action_id="a1", outcome=Outcome.CENSORED, cost=5.0, delay_steps=1, censored=True, observed_at_step=1))
+    assert np.allclose(policy._b[Action.DEPLOY], b_before), "censored reward must not update posterior"
+
+
+def test_thompson_reset_restores_prior() -> None:
+    rng = np.random.default_rng(3)
+    policy = ThompsonSamplingPolicy(
+        config=ThompsonConfig(prior_variance=2.0), feature_dim=FeatureEncoder.DIM, rng=rng
+    )
+    ctx = _ctx()
+    policy.update(ctx, Action.CANARY, Reward(action_id="a2", outcome=Outcome.SUCCESS, cost=1.0, delay_steps=1, censored=False, observed_at_step=1))
+    policy.reset()
+    expected_lambda_diag = 1.0 / 2.0  # inv_v0 = 1 / prior_variance
+    for action in Action:
+        assert np.allclose(policy._Lambda[action], expected_lambda_diag * np.eye(FeatureEncoder.DIM))
+        assert np.allclose(policy._b[action], np.zeros(FeatureEncoder.DIM))
+
+
+def test_thompson_posterior_mean_reflects_reward() -> None:
+    """After many updates, posterior mean θᵀx should rank arms by negative cost."""
+    rng = np.random.default_rng(123)
+    policy = ThompsonSamplingPolicy(
+        config=ThompsonConfig(prior_variance=1.0, noise_variance=0.01),
+        feature_dim=FeatureEncoder.DIM,
+        rng=rng,
+    )
+    encoder = FeatureEncoder()
+    ctx = _ctx()
+    x = encoder.encode(ctx)
+    for _ in range(300):
+        policy.update(ctx, Action.BLOCK, Reward(action_id="a3", outcome=Outcome.SUCCESS, cost=0.1, delay_steps=1, censored=False, observed_at_step=1))
+        policy.update(ctx, Action.CANARY, Reward(action_id="a5", outcome=Outcome.SUCCESS, cost=5.0, delay_steps=1, censored=False, observed_at_step=1))
+        policy.update(ctx, Action.DEPLOY, Reward(action_id="a4", outcome=Outcome.FAILURE, cost=9.9, delay_steps=1, censored=False, observed_at_step=1))
+    means = {}
+    for action in Action:
+        mu = np.linalg.solve(policy._Lambda[action], policy._b[action])
+        means[action] = float(mu @ x)
+    assert means[Action.BLOCK] > means[Action.CANARY] > means[Action.DEPLOY], (
+        f"Posterior means should rank arms by reward: {means}"
+    )
 
 
 def test_epsilon_greedy_interface() -> None:

@@ -1,12 +1,18 @@
-# Adaptive Deployment Control via Cost-Sensitive Contextual Bandits with Delayed Feedback
+# Cost-Sensitive Deployment Control via Contextual Bandits with Delayed Feedback
 
-**Status: Research draft — not submitted. See §Validity Classification for what claims the current evidence supports.**
+**Status: Research draft — not submitted. See Appendix A for the validity classification of every claim.**
 
 ---
 
 ## Abstract
 
-Continuous deployment pipelines must decide, for every commit, whether to deploy immediately, route through a canary, or block. Current practice encodes this decision as a classification problem (predict whether the build will fail) and applies a static threshold. We argue this framing is wrong: the relevant quantity is not the probability of failure but the *operational cost* of each deployment action given uncertainty about the outcome. We formulate deployment control as a cost-sensitive contextual bandit with delayed rewards and a three-action decision space {deploy, canary, block}. Our contribution is CostSensitiveBandit: a disjoint LinUCB policy that optimizes negative operational cost, gates learning through a pending reward buffer until feedback is observable, and optionally resets learned state upon drift detection. Experiments on a synthetic TravisTorrent-format dataset (1,150 builds, 2 projects) show that cost weighting is the most important component of the model: replacing the asymmetric cost signal with binary feedback increases cumulative cost by 31%. Under high failure cost regimes (deploy_failure=20), the bandit outperforms a hand-tuned static rule by 19%. Under severe delay, the static rule marginally recovers. Drift detection results are excluded from the main claims due to false-alarm behavior on stationary data; this is noted as a known limitation requiring threshold calibration.
+Every commit to a continuous deployment pipeline requires a decision: deploy immediately, route through a canary, or block. Current practice frames this as a classification problem — predict whether the build will fail, then apply a static risk threshold. We argue this framing is wrong on three grounds: it uses the wrong objective (accuracy instead of operational cost), it encodes a fixed cost assumption that is rarely made explicit, and it does not learn from deployment outcomes. **Our thesis: deployment control is a sequential cost-minimization problem, and modeling it as such produces measurably different decisions than classification — decisions that are better when costs are asymmetric and failure rates are high, and revealing when they are not.**
+
+We implement and evaluate two contextual bandit policies — disjoint LinUCB (Li et al., 2010) and Bayesian linear Thompson Sampling (Agrawal & Goyal, 2013) — against static-rule and heuristic-score baselines using a three-action decision space {deploy, canary, block} and an asymmetric cost matrix. Learning is gated through a pending-reward buffer that enforces the delayed-feedback invariant: no policy update occurs before the deployment outcome is observable.
+
+Our experiments yield both positive and negative results. On synthetic data, the bandit outperforms static rules by 19% when deployment failure cost doubles and by 27% when blocking becomes cheaper — conditions where the cost structure rewards adaptation. On real GitHub Actions CI data (600 runs, psf/requests at 5.3% failure, pallets/flask at 23.3%), LinUCB over-blocks the low-failure project and costs 3.8% more than a static rule, because the bandit has insufficient context features and too few steps to converge to the project-specific optimal policy. An ablation study shows cost weighting is the single most important component: replacing the asymmetric cost signal with binary (−1/0) feedback degrades performance by 31%.
+
+All results are preliminary and based on at most two projects per experiment. Generalization requires replication on feature-rich multi-project real data.
 
 ---
 
@@ -16,12 +22,11 @@ Continuous deployment pipelines must decide, for every commit, whether to deploy
 
 Software engineering teams push hundreds to thousands of commits per day. Each commit triggers a CI pipeline, and when CI passes, a deployment decision must be made: send this change to production immediately, stage it through a canary deployment, or hold it for further review? This decision is consequential: a failed production deployment triggers incidents, on-call pages, and rollbacks. An unnecessarily blocked safe change slows developer velocity. A canary deployment offers partial protection at the cost of slower delivery.
 
-Current tooling treats this as a prediction problem. Just-in-time defect prediction models (Kamei et al., 2013) estimate the probability that a commit introduces a bug and apply a static threshold to flag risky changes. Several limitations follow from this framing:
+Current tooling treats this as a prediction problem. Just-in-time defect prediction models (Kamei et al., 2013) estimate the probability that a commit introduces a bug and apply a static threshold to flag risky changes. Three structural limitations follow from this framing:
 
-1. **The threshold is a decision, not a metric.** Setting it requires an implicit cost assumption about false positives (blocked safe changes) vs. false negatives (deployed bad changes). This assumption is typically unexamined and fixed.
-2. **Costs are asymmetric and context-dependent.** A failed deploy to a payment service costs far more than one to an internal tool. A binary classifier with a single threshold cannot represent this.
-3. **The model does not learn from deployment outcomes.** JIT models are trained offline on defect labels. They do not receive feedback when their predictions lead to incidents or unnecessary blocks.
-4. **Distributions shift.** McIntosh and Kamei (2018) show that JIT models degrade as project characteristics evolve. Re-training is deferred to scheduled batch jobs rather than triggered by observed distributional change.
+1. **The threshold is a decision, not a metric.** Setting it requires an implicit cost assumption about false positives (blocked safe changes) vs. false negatives (deployed bad changes). This assumption is typically unexamined and fixed for the lifetime of the system.
+2. **Costs are asymmetric and context-dependent.** A failed deploy to a payment service costs far more than one to an internal tool. A binary classifier with a single threshold cannot represent this, and offline training against defect labels does not optimize for it.
+3. **The model does not learn from deployment outcomes.** JIT models are trained offline and do not receive feedback when their predictions lead to incidents or unnecessary blocks. They cannot adapt to shifting team practices, codebase evolution, or changing test coverage.
 
 ### 1.2 Our Framing: Sequential Cost Minimization
 
@@ -30,16 +35,27 @@ We model deployment control as a **contextual bandit**: at each decision step *t
 This framing differs from classification in three ways:
 
 - **The objective is cumulative cost minimization, not accuracy maximization.** The policy is evaluated on what it costs to act, not on whether it correctly predicts a label.
-- **The three-action space makes the canary option a first-class decision.** A classifier outputs a risk score; the system operator decides what to do with it. We model the action directly.
+- **The three-action space makes the canary option a first-class decision.** We model the action directly rather than applying a threshold to a risk score.
 - **The policy learns online from its own decisions.** Each deployment outcome updates the policy's belief about which actions are cost-effective in which contexts.
 
-### 1.3 Contribution Summary
+### 1.3 When Does the Bandit Framing Pay Off?
 
-- **Problem formulation:** We specify deployment control as a cost-sensitive contextual bandit with delayed rewards (§2), with an explicit asymmetric cost matrix encoding operational priorities.
-- **Algorithm:** CostSensitiveBandit (§3): disjoint LinUCB with a pending-reward buffer that enforces delayed-feedback correctness, and optional drift-triggered model reset.
-- **Experiments:** Online replay on a TravisTorrent-format dataset (§4–5), with robustness sweeps across cost matrices and delay settings, and an ablation study isolating model components.
-- **Findings:** Cost weighting is the most important component (+31% cost when removed). Bandit advantage over static rules scales with failure cost severity. Delay reduces learning speed but not the eventual action preference (§6).
-- **Honest limitations:** No propensities → counterfactual evaluation is unidentified. Drift detection results are excluded from claims (§7).
+The bandit advantage is not unconditional. Two conditions must hold simultaneously for a contextual bandit to outperform a well-tuned static rule:
+
+**Condition 1 — sufficient failure rate asymmetry.** When failure rates are very low (say, 5%), the deploy arm is nearly always optimal regardless of context. A static rule that deploys aggressively matches the oracle. A bandit with exploration budget α wastes decisions sampling suboptimal arms (canary, block) before its posterior converges. The exploration cost dominates the expected gain.
+
+**Condition 2 — sufficient informative context.** LinUCB with a *d*-dimensional feature vector needs roughly *O(d²)* updates per arm before its parameter estimates are statistically meaningful. With *d* = 13 in our setup, that is approximately 169 updates per arm before the confidence interval shrinks to first-order accuracy. On a 300-step real-world trajectory, the bandit has barely enough data to form reliable per-arm estimates, let alone differentiate arms based on context. If the feature vector carries no commit-level signal (no files changed, no test counts), the bandit degenerates to learning from failure rate and a bias term — information a static rule can encode directly.
+
+When both conditions fail — low failure rate, sparse features, short trajectory — static rules are competitive and bandits may be worse. This paper documents both regimes empirically.
+
+### 1.4 Contribution Summary
+
+We make no claim to algorithmic novelty. LinUCB and Thompson Sampling are well-established algorithms. Our contributions are:
+
+- **Reframing:** The deployment decision recast as sequential cost minimization with a three-action space and an explicit asymmetric cost matrix, replacing accuracy as the primary objective.
+- **Evaluation framework:** An online-replay protocol with a pending-reward buffer enforcing the delayed-feedback invariant, explicit bias disclosure throughout, and cost as the sole primary metric.
+- **Ablation evidence:** Cost weighting, delayed feedback, and drift adaptation are isolated as separate components with their contribution to cumulative cost quantified.
+- **Two-sided empirical findings:** Bandits outperform static rules when failure costs are high or when blocking becomes cheaper. On low-failure-rate real projects with sparse context features, UCB-based bandits over-block and underperform static rules — a negative result that is informative about the conditions the framing requires.
 
 ---
 
@@ -55,9 +71,9 @@ At step *t* the agent observes *x_t ∈ X*, selects *a_t ∈ A*, and receives a 
 r_{t+k_t} = −cost(a_t, outcome_{t+k_t})
 ```
 
-after a delay of *k_t* steps. The delay in our experiments is deterministic: *k_t = max(1, ⌈duration_t / 60⌉)* steps, where *duration_t* is the build duration in seconds. The pending-reward buffer holds *r_{t+k_t}* until step *t + k_t*; the policy receives no information about the reward before that step.
+after a delay of *k_t* steps. In our experiments, *k_t = max(1, ⌈duration_t / 60⌉)* steps, where *duration_t* is the build duration in seconds. The pending-reward buffer holds the reward until step *t + k_t*; the policy has no information about it before that step.
 
-When the outcome is not yet resolved by step *t + max_delay*, the reward is **censored**: it is excluded from policy updates. We report the count of censored rewards in every experiment.
+When the outcome is not yet resolved by step *t + max_delay*, the reward is **censored** and excluded from policy updates.
 
 ### 2.2 Context Features
 
@@ -79,11 +95,11 @@ The feature vector *x_t ∈ ℝ^13* encodes 12 pre-action observables (normalise
 | 11 | has_risky_path_change | binary |
 | 12 | bias | 1.0 |
 
-All features are available before the deployment action is taken. No post-deploy signal, outcome, or risk score appears in *x_t*.
+All features are available before the deployment action. No post-deploy signal or outcome appears in *x_t*.
 
 ### 2.3 Cost Matrix
 
-The cost function *cost: A × O → ℝ≥0* encodes operational priorities. The default configuration:
+The cost function *cost: A × O → ℝ≥0* encodes operational priorities:
 
 | Action | Outcome | Cost | Interpretation |
 | --- | --- | ---: | --- |
@@ -95,31 +111,25 @@ The cost function *cost: A × O → ℝ≥0* encodes operational priorities. The
 | block | would fail | 0.5 | Risky change correctly held back |
 | block | unknown | 2.0 | Counterfactual unobserved (replay) |
 
-Cost asymmetry is deliberate: deploy + failure (cost 10) is 20× the cost of block + would_fail (cost 0.5). This encodes the operational reality that production incidents are far more expensive than unnecessary holds.
-
-Reward is *r = −cost* (maximizing reward ≡ minimizing cost).
+Cost asymmetry is deliberate: deploy + failure (10) is 20× block + would_fail (0.5). Reward is *r = −cost*. The cost matrix is configurable; §4.3 sweeps it.
 
 ### 2.4 Objective
 
-The policy *π: X → A* minimizes cumulative operational cost over a trajectory of *T* decisions:
+The policy *π: X → A* minimizes cumulative operational cost over *T* decisions:
 
 ```
 J(π) = Σ_{t=1}^{T} cost(a_t, outcome_{t+k_t})
 ```
 
-We evaluate policies by comparing *J(π)* across conditions. Cumulative regret against an oracle (which observes the outcome before acting) is defined but not yet computed due to the BLOCK + unknown counterfactual; this is a stated open problem.
-
-### 2.5 Non-Stationarity
-
-The conditional distribution *P(outcome | x)* is assumed piecewise-stationary. Distribution shift arises in practice from: codebase architecture changes, team composition, test suite evolution, and seasonal deployment patterns. We model this with a Page-Hinkley detector on the reward stream; detected shifts trigger optional model reset. Drift experiments on non-stationary data are a stated future direction (§7).
+Cumulative operational cost is the sole primary metric throughout this paper. Action distributions (deploy%, canary%, block%) are reported as diagnostics to explain *why* a cost difference arose.
 
 ---
 
 ## 3. Method
 
-### 3.1 CostSensitiveBandit
+### 3.1 CostSensitiveBandit (Disjoint LinUCB with Cost-Sensitive Reward)
 
-CostSensitiveBandit is a disjoint LinUCB policy (Li et al., 2010) with three extensions: (1) it optimizes negative operational cost rather than click-through reward; (2) all updates route through a pending-reward buffer that enforces the delayed-feedback invariant; (3) it accepts an optional drift detector that triggers model reset.
+`CostSensitiveBandit` applies disjoint LinUCB (Li et al., 2010) to the deployment decision, replacing click-through reward with negative operational cost and routing all updates through the delayed-feedback buffer.
 
 **Per-arm model.** For each arm *a ∈ A*:
 
@@ -129,172 +139,163 @@ b_a ∈ ℝ^d,       initialized to 0
 θ_a = A_a^{-1} b_a
 ```
 
-**Action selection** (greedy UCB):
+**Action selection:**
 
 ```
 UCB(a) = θ_a^T x_t + α √(x_t^T A_a^{-1} x_t)
 a_t    = argmax_{a ∈ A} UCB(a)
 ```
 
-The exploration parameter *α* scales the confidence interval. *λ* is the ridge regularisation coefficient.
-
-**Update rule.** When a matured reward *(x_i, a_i, r_i)* is released from the buffer:
+**Update rule** (on matured reward *(x_i, a_i, r_i)*):
 
 ```
 A_{a_i} ← A_{a_i} + x_i x_i^T
 b_{a_i} ← b_{a_i} + r_i x_i,  where  r_i = −cost_i
 ```
 
-The negative cost reward means the policy learns to prefer arms with lower expected operational cost.
+The negative cost signal means the policy learns to prefer arms with lower expected operational cost.
 
-### 3.2 Delayed Reward Buffer
+### 3.2 Thompson Sampling Baseline
 
-The `PendingRewardBuffer` (`delayed/buffer.py`) implements the temporal gating of rewards. At decision step *t*, the policy schedules a reward with a specific release step *t + k_t*. The buffer holds the *(context, action, cost, outcome, censored)* tuple until `pop_available(t + k_t)` is called. No model update occurs before maturity.
-
-This enforces the key invariant: **policy learning cannot use future information.** Policies that update at decision time are implicitly assuming *k_t = 0*, which is invalid in deployment settings where outcomes are observed hours to days later.
-
-In the online replay experiments, *k_t = max(1, ⌈build_duration_s / 60⌉)* steps, ranging from 1 to 60 steps depending on build duration. All rewards mature and are applied at end-of-trajectory (`flush_at_end=True`).
-
-### 3.3 Drift Adaptation [Exploratory — Excluded from Main Claims]
-
-CostSensitiveBandit optionally accepts a `DriftDetector`. On each matured reward, the detector updates on the cost observation:
+Bayesian linear Thompson Sampling (Agrawal & Goyal, 2013) maintains a per-arm Gaussian posterior over weight vectors:
 
 ```
-if detector.update(cost_t):
-    reset all A_a ← λI, b_a ← 0
-    detector.reset()
+Prior:     θ_a ~ N(0, v₀ · I)
+Posterior: Λ_a = (1/v₀)I + (1/σ²)Σ xᵢxᵢᵀ
+           b_a = (1/σ²) Σ rᵢ xᵢ
+           μ_a = Λ_a^{-1} b_a
 ```
 
-We implement the Page-Hinkley test (Mouss et al., 2004). The detector tracks a cumulative sum *S_t* of deviations from a running mean, and signals drift when *S_t − min_{s≤t} S_s > λ_PH*.
+Action selection samples *θ_a ~ N(μ_a, Λ_a^{-1})* via Cholesky decomposition and picks *argmax_a θ_aᵀ x_t*. Exploration is implicit; no α parameter is needed. Default hyperparameters: *v₀ = 1.0*, *σ² = 0.1*. Updates use the same negative-cost reward as `CostSensitiveBandit`.
 
-**Important limitation:** On stationary data (our smoke dataset), the Page-Hinkley detector with *λ_PH = 50* fires 44 false alarms over 1,150 steps. Each false alarm discards all learned weights, causing the full model to perform worse than the no-drift variant (§5.3). This indicates the threshold requires calibration. Drift adaptation results on non-stationary data are not yet available and are therefore excluded from the paper's claims. We report the false-alarm behavior honestly as a mechanism characterization.
+Thompson's stochastic action selection produces nonzero seed variance: identical data yields different trajectories across seeds. This makes it the only policy for which bootstrap CIs are informative in our current experiment setup (all other policies are deterministic given the same delayed-feedback schedule).
 
-### 3.4 Baselines
+### 3.3 Delayed Reward Buffer
 
-| Policy | Description |
-| --- | --- |
-| `static_rules` | Deterministic threshold rule over context features (files changed, failure rate, risky paths) |
-| `heuristic_score` | Weighted risk score → thresholded action; fixed weights, no learning |
-| `linucb` | Standard LinUCB (Li et al., 2010); same model as CostSensitiveBandit at identical α, λ |
+The `PendingRewardBuffer` (`delayed/buffer.py`) holds *(context, action, cost, outcome, censored)* until `pop_available(t + k_t)` is called. No model update occurs before maturity.
 
-At identical hyperparameters (α=1.0, λ=1.0) and with the same reward signal (*r = −cost*), `linucb` and `cost_sensitive_bandit` are mathematically equivalent (‖b_linucb − b_bandit‖₂ = 0 to machine precision after the same update sequence). The two implementations diverge when hyperparameters differ or when `cost_sensitive_bandit` includes a drift detector. In the main experiment we report them together to confirm this equivalence and separately when ablating α.
+**The buffer's value is correctness, not performance.** Removing it improves cost by 1.1% (§5.3) because immediate feedback accelerates convergence. The buffer exists to prevent a policy from using future information at decision time — a requirement for valid evaluation in any real deployment setting.
+
+### 3.4 Drift Adaptation (Exploratory — Excluded from Main Claims)
+
+`CostSensitiveBandit` optionally accepts a Page-Hinkley detector (Mouss et al., 2004) that triggers model reset on detected distribution shift. On stationary data, the detector at *λ_PH = 50* fires 44 false alarms over 1,150 steps, making the full model 27% more expensive than the no-drift variant. Drift results are excluded from main claims; the threshold requires calibration against non-stationary data not yet available.
+
+### 3.5 Baselines
+
+| Policy | Description | Learning |
+| --- | --- | --- |
+| `static_rules` | Deterministic threshold rule (files changed, failure rate, risky paths) | None |
+| `heuristic_score` | Weighted risk score → thresholded action; fixed weights | None |
+| `linucb` | Disjoint LinUCB (Li et al., 2010), *r = −cost* | UCB exploration |
+| `thompson` | Bayesian linear TS (Agrawal & Goyal, 2013), *r = −cost* | Posterior sampling |
+
+At identical α, λ, and reward signal, `linucb` and `cost_sensitive_bandit` are mathematically identical (‖b-vector difference‖₂ = 0 confirmed experimentally). They are reported together in the main table.
 
 ---
 
 ## 4. Experiments
 
-### 4.1 Dataset
+### 4.1 Synthetic Dataset
 
-**Real TravisTorrent data is not yet available.** All results use a synthetic dataset (`data/raw/travistorrent_smoke.csv`) generated to match the TravisTorrent schema (Beller et al., MSR 2017). The dataset contains 1,150 builds across 2 synthetic projects:
+The primary experiment uses a synthetic dataset (`data/raw/travistorrent_smoke.csv`) generated to match the TravisTorrent schema (Beller et al., MSR 2017):
 
 | Project | Builds | Failure rate | History span |
 | --- | ---: | ---: | ---: |
 | `smoke/alpha` | 600 | 15% | >365 days |
 | `smoke/beta` | 550 | 35% | >365 days |
 
-Both projects pass the dataset filters (min_builds=500, min_history_days=365).
+**Limitations:** Two projects, fixed failure rates, deterministic delay model. Bootstrap CIs collapse to zero for all deterministic policies. Thompson Sampling is the only policy with nonzero seed variance. No cross-project generalization is possible from this dataset.
 
-**Consequence for generalizability:** All findings are preliminary. The two-project dataset has no cross-project variance; bootstrap CIs collapse to point estimates. Results on real TravisTorrent (3.7M builds, ~1,000 projects) may differ substantially due to project heterogeneity, censoring, and the true CI outcome distribution.
+### 4.2 Online Replay Setup and Bias
 
-### 4.2 Online Replay Setup
+We use online replay (`evaluation/online_replay.py`): policies learn during trajectory traversal. Costs are *cost(policy_action, logged_CI_outcome)*, using CI outcome as a counterfactual proxy for the deployment outcome.
 
-We use **online replay** (`evaluation/online_replay.py`): policies learn during trajectory traversal. At step *t*, the buffer releases matured rewards from prior steps, the policy updates its model, selects an action for the current commit, and queues a new pending reward.
+**Online replay is a biased evaluation.** Every logged action is DEPLOY (the loader hardcodes this). Costs for CANARY and BLOCK are counterfactual: we assume CI outcome would be the same regardless of deployment action. This is approximately valid for TravisTorrent (CI runs before any deployment) but unverifiable in general. We use online replay exclusively for learning-dynamics verification, not causal cost estimation.
 
-Online replay is **not** unbiased counterfactual evaluation. Costs are computed as *cost(policy_action, logged_CI_outcome)* using the CI outcome as a proxy counterfactual. This is valid under the assumption that CI outcome is independent of the deployment action — an assumption that holds approximately in TravisTorrent because CI runs before any deployment decision is made. We state this explicitly as a threat to validity.
-
-All logged actions in TravisTorrent are DEPLOY (the loader hardcodes `action=Action.DEPLOY` at line 165 of `data/loaders.py`). This means the cost for CANARY and BLOCK is computed counterfactually from the CI outcome, not from an observed partial rollout or hold. This is the primary source of evaluation bias.
-
-**Configuration:**
+**Configuration (synthetic experiment):**
 
 | Parameter | Value |
 | --- | --- |
 | α | 1.0 |
 | λ | 1.0 |
 | Delay model | *k_t = max(1, ⌈build_duration_s / 60⌉)* |
-| Cost matrix | Default (Table 1) |
-| Seeds | 0–4 (identical results — deterministic delay) |
-| flush_at_end | True (all pending rewards applied) |
+| Cost matrix | Default (§2.3) |
+| Seeds | 0–4 |
+| flush_at_end | True |
 
 ### 4.3 Robustness Conditions
 
-To test whether conclusions depend on the cost matrix or delay setting, we run five conditions:
+Five conditions test whether conclusions depend on cost matrix or delay setting:
 
-| Condition | Key parameter change | Config file |
-| --- | --- | --- |
-| Default | — | `online_smoke.json` |
-| High failure | deploy_failure: 10→20, canary_failure: 4→8 | `robustness_high_failure.json` |
-| Low block | block_safe: 2→1, block_unknown: 2→1 | `robustness_low_block.json` |
-| Short delay | delay_step_seconds: 60→120 (halves step-count delay) | `robustness_short_delay.json` |
-| Long delay | delay_step_seconds: 60→30 (doubles step-count delay) | `robustness_long_delay.json` |
+| Condition | Key change |
+| --- | --- |
+| Default | — |
+| High failure | deploy_failure: 10→20, canary_failure: 4→8 |
+| Low block | block_safe: 2→1, block_unknown: 2→1 |
+| Short delay | delay_step_seconds: 60→120 |
+| Long delay | delay_step_seconds: 60→30 |
 
-Runner: `experiments/run_robustness.py` with percentile bootstrap CI (10,000 resamples, seed 42) over seeds 0–4.
+Percentile bootstrap CI: 10,000 resamples, seed 42, over seeds 0–4.
 
 ### 4.4 Ablation Conditions
 
-To isolate model components we evaluate four variants of the cost-sensitive bandit:
+| Variant | What changes |
+| --- | --- |
+| `no_drift` (reference) | No drift reset |
+| `no_delay` | Immediate updates (no buffer) |
+| `no_cost` | Binary reward (−1/0 instead of −cost) |
+| `full` | + PageHinkley drift reset |
 
-| Variant | What changes | Implementation |
-| --- | --- | --- |
-| `no_drift` | No drift detector / model reset | `CostSensitiveBandit(reset_on_drift=False)` |
-| `no_delay` | Immediate reward application (no buffer) | `ImmediateLinUCB` |
-| `no_cost` | Binary reward (−1 failure, 0 otherwise) | `BinaryRewardBandit` |
-| `full` | Delayed + cost reward + PageHinkley reset | `CostSensitiveBandit` + `PageHinkleyDetector` |
+### 4.5 Real-World Sanity Check Dataset
 
-`no_drift` is the cleanest analog to standard LinUCB with cost-weighted reward and delayed updates. We use it as the reference variant when computing component deltas.
+To test whether the synthetic findings are contradicted by real CI data, we collected GitHub Actions workflow run history from two public repositories via the GitHub REST API:
+
+| Project | Runs | Failure rate | Span |
+| --- | ---: | ---: | ---: |
+| `psf/requests` | 300 | 5.3% | 20 days |
+| `pallets/flask` | 300 | 23.3% | 99 days |
+
+**Schema mapping:** `head_sha` → `git_trigger_commit`, `conclusion` → `tr_status`, timestamps → duration. No commit-level features are available without additional per-commit API calls; fields default to 0. The feature vector is dominated by the bias term and recent-failure-rate — 11 of 13 dimensions carry no project-specific signal.
+
+**Filter relaxation:** Standard filters (`min_builds=500`, `min_history_days=365`) cannot be satisfied by a 20–99 day API sample. Relaxed to `min_builds=100`, `min_history_days=0`. Results are not directly comparable to the synthetic conditions.
+
+**Censored rewards:** Cancelled CI runs (≈3%) produce genuine censored rewards — the first experiment confirming real-world censoring rather than theoretical.
 
 ---
 
 ## 5. Results
 
-### 5.1 Main Online Replay Results
+### 5.1 Main Results (Synthetic Data)
 
-**[Preliminary — synthetic 2-project dataset, CI collapsed to point estimates]**
+**[Preliminary — synthetic 2-project dataset. Deterministic policies have zero CI width.]**
 
-Table 1: Cumulative cost comparison, default cost matrix, seeds 0–4.
+Table 1: Cumulative cost, default cost matrix. All 1,150 rewards matured (0 censored). Thompson: mean ± std across seeds 0–4.
 
-| Policy | Steps | Updates | Censored | Cumul. Cost | Mean Cost/Step | Deploy% | Canary% | Block% |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| `static_rules` | 1150 | 1150 | 0 | **1878.0** | 1.633 | 2.6% | 60.9% | 36.5% |
-| `heuristic_score` | 1150 | 1150 | 0 | 2319.0 | 2.017 | 37.3% | 62.7% | 0.0% |
-| `linucb` (α=1.0) | 1150 | 1150 | 0 | 1879.0 | 1.634 | 8.0% | 5.7% | 86.3% |
-| `cost_sensitive_bandit` (α=1.0) | 1150 | 1150 | 0 | 1879.0 | 1.634 | 8.0% | 5.7% | 86.3% |
+| Policy | Steps | Cumul. Cost | Mean/Step | Deploy% | Canary% | Block% |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `static_rules` | 1150 | 1878.0 | 1.633 | 2.6% | 60.9% | 36.5% |
+| `heuristic_score` | 1150 | 2319.0 | 2.017 | 37.3% | 62.7% | 0.0% |
+| `linucb` / `cost_sensitive_bandit` | 1150 | 1879.0 | 1.634 | 8.0% | 5.7% | 86.3% |
+| `thompson` (n=5 seeds) | 1150 | **1877 ± 58** | 1.633 ± 0.050 | 6.4% | 30.5% | 63.1% |
 
-All 1,150 rewards matured and were applied (0 censored). `linucb` and `cost_sensitive_bandit` are identical at the same α and λ — this is mathematically expected (see §3.4) and confirmed by ‖b-vector difference‖₂ = 0.
+`linucb` and `cost_sensitive_bandit` are identical at the same α and λ — mathematically expected (‖b-vector difference‖₂ = 0).
 
-**Per-project breakdown:**
+The aggregate tie (1878 vs. 1879) is a dataset artifact. **Per-project, the bandit and static rule take opposite positions:**
 
-| Project | Failure rate | Policy | Cumul. Cost | Deploy | Canary | Block |
-| --- | ---: | --- | ---: | ---: | ---: | ---: |
-| `smoke/alpha` | 15% | `static_rules` | 911.5 | 21 | 473 | 106 |
-| `smoke/alpha` | 15% | `linucb` | 982.0 | 66 | 50 | 484 |
-| `smoke/beta` | 35% | `static_rules` | 966.5 | 9 | 227 | 314 |
-| `smoke/beta` | 35% | `linucb` | 897.0 | 26 | 15 | 509 |
+| Project | Failure rate | `static_rules` | `linucb` | Optimal arm (expected cost) |
+| --- | ---: | ---: | ---: | --- |
+| `smoke/alpha` | 15% | **911.5** | 982.0 | canary (1.45/step) |
+| `smoke/beta` | 35% | 966.5 | **897.0** | block (1.475/step) |
 
-On the low-failure project (smoke/alpha, 15%), the static rule's canary-heavy strategy (79% canary) is near-optimal: expected canary cost = 0.85×1.0 + 0.15×4.0 = 1.45/step, vs. block = 0.85×2.0 + 0.15×0.5 = 1.775/step. LinUCB over-blocks on low-failure data and pays the block_safe cost unnecessarily.
+At 15% failure, canary is cheaper than block (1.45 vs. 1.775/step); the static rule's canary-heavy strategy is near-optimal and LinUCB over-blocks. At 35% failure, block is cheapest (1.475/step); LinUCB correctly converges to 86.3% block.
 
-On the high-failure project (smoke/beta, 35%), LinUCB's block-heavy strategy (92.5% block) is cheaper: block_expected = 0.65×2.0 + 0.35×0.5 = 1.475/step vs. canary_expected = 0.65×1.0 + 0.35×4.0 = 2.05/step.
+**Thompson Sampling** produces the same mean cost as LinUCB but with std = 58 across seeds (range 1814–1970). Its action distribution differs: 30.5% canary vs. 5.7% for LinUCB, reflecting posterior uncertainty rather than point-estimate UCB. This is the expected behavioral difference between posterior sampling and optimism-based exploration.
 
-The aggregate tie (1878 vs 1879) is a smoke-data artifact where the two projects cancel out.
+### 5.2 Robustness Results (Synthetic Data)
 
-**Evidence that learning occurs.** The following step trace (smoke/alpha, LinUCB, seed 0) confirms actions change as rewards arrive:
+**[Preliminary — synthetic data. Bootstrap CIs are zero-width for deterministic policies.]**
 
-```
-step  0: DEPLOY   outcome=success  cost=0.0   updates=0  (uninformed prior)
-step  1: DEPLOY   outcome=failure  cost=10.0  updates=0  (reward queued)
-step  2: CANARY   outcome=success  cost=1.0   updates=1  (step 0 matures)
-step 10: BLOCK    outcome=failure  cost=0.5   updates=1  (learning BLOCK arm)
-step 14: BLOCK    outcome=success  cost=2.0   updates=1  (BLOCK converging)
-```
-
-The policy transitions from DEPLOY → CANARY → BLOCK within 10 steps, consistent with the cost-matrix optimum for a 15–35% failure environment.
-
-### 5.2 Robustness Results
-
-**[Preliminary — synthetic data, zero-width bootstrap CIs reflect deterministic delay model]**
-
-Table 2: Mean cumulative cost across conditions (seeds 0–4, all identical due to deterministic delays).
-
-**Cost matrix sweep (default delay, deploy_failure varies):**
+**Cost matrix sweep:**
 
 | Policy | Default (df=10) | High failure (df=20) | Low block (bs=1) |
 | --- | ---: | ---: | ---: |
@@ -303,7 +304,9 @@ Table 2: Mean cumulative cost across conditions (seeds 0–4, all identical due 
 | `linucb` | 1879 | **2079** | **1164** |
 | `cost_sensitive_bandit` | 1879 | **2079** | **1164** |
 
-**Delay sweep (default cost matrix):**
+Under high failure cost (deploy_failure=20): the bandit outperforms static rules by **485 units (19%)** by shifting to 92.7% block. Static rules cannot adapt their fixed thresholds. Under low block penalty (block_safe=1): the bandit saves **420 units (27%)** by exploiting cheaper blocking.
+
+**Delay sweep:**
 
 | Policy | Default (60s) | Short delay (120s) | Long delay (30s) |
 | --- | ---: | ---: | ---: |
@@ -311,141 +314,183 @@ Table 2: Mean cumulative cost across conditions (seeds 0–4, all identical due 
 | `linucb` | 1879 | **1849** | 1897 |
 | `cost_sensitive_bandit` | 1879 | **1849** | 1897 |
 
-**Key observations:**
+Under long delay (doubled step-count delay), the bandit's uninformed-prior phase extends and costs 19 units more than static rules (1.0%), consistent with O(√(d_max · T)) delay-induced regret inflation (Pike-Burke et al., 2018). Under short delay, the bandit gains 29 units by converging faster.
 
-*Cost matrix.* Under high failure cost (deploy_failure=20), the bandit outperforms the static rule by **485 cost units (19%)** by shifting to 92.7% block and avoiding the 20-cost failure events. The static rule continues its fixed canary-heavy strategy (60.9% canary) and absorbs the doubled failure penalty. Under low block penalty (block_safe=1), the bandit further exploits cheaper blocking (89.3% block) and reduces cost by **420 units (27%)** relative to static. The static rule cannot adapt its thresholds.
+### 5.3 Ablation Study (Synthetic Data)
 
-*Delay.* Under short delay (delay_step_seconds=120, i.e., halved step-count delay), the bandit receives feedback twice as fast and converges to a block-heavy strategy (69.1% block), beating the static rule by 29 units. Under long delay (delay_step_seconds=30, doubled step-count), the bandit's uninformed-prior phase extends, it settles on a less decisive strategy (62.3% block), and costs 1,897 — 19 units more than the static rule (1.0% difference). This is consistent with theoretical results that delay inflates regret by O(√(d_max · T)) (Pike-Burke et al., 2018).
+**[Preliminary — synthetic data. All 5 seeds identical for deterministic variants.]**
 
-*Ranking stability.* Heuristic score is worst in all 5 conditions (never BLOCKs, absorbs full failure costs). The bandit/LinUCB ordering relative to static rules changes only at extreme delay (long delay), where static marginally wins by 1%.
+Table 2: Component ablation, default cost matrix, seed 0. Reference is `no_drift` (cost-weighted delayed bandit without drift reset).
 
-### 5.3 Ablation Study
+| Variant | Cumul. Cost | Mean/Step | Deploy% | Block% | Drift Resets |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `no_cost` (binary reward) | 2469.0 | 2.147 | 41.4% | 36.5% | — |
+| `full` (+ PageHinkley drift) | 2383.0 | 2.072 | 40.4% | 29.5% | 44 |
+| `no_drift` (reference) | 1879.0 | 1.634 | 8.0% | 86.3% | 0 |
+| `no_delay` (immediate updates) | **1857.5** | **1.615** | 1.7% | 78.4% | — |
 
-**[Preliminary — synthetic data]**
+| Component | Δ vs. `no_drift` | Δ% | Interpretation |
+| --- | ---: | ---: | --- |
+| Cost weighting → binary (`no_cost`) | +590 | +31.4% | Destroys action–outcome asymmetry |
+| Drift reset on stationary data (`full`) | +504 | +26.8% | 44 false alarms, each erasing learned weights |
+| Delayed buffer → immediate (`no_delay`) | −21.5 | −1.1% | Faster convergence; buffer costs temporal validity |
 
-Table 3: Component ablation, default cost matrix and delay, seed 0 (all seeds identical).
+**Cost weighting (+31%)** is the dominant component. Binary reward (−1/0) gives the block arm the same signal as deploy for failures it correctly avoided — wrong gradient. The 31% degradation quantifies the cost of ignoring the asymmetric cost matrix.
 
-| Variant | Cumul. Cost | Mean/Step | Deploy% | Canary% | Block% | Drift Resets |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| `full` (delayed + cost + drift) | 2383.0 | 2.072 | 40.4% | 30.1% | 29.5% | 44 |
-| `no_delay` (immediate updates) | **1857.5** | **1.615** | 1.7% | 19.8% | 78.4% | — |
-| `no_cost` (binary reward) | 2469.0 | 2.147 | 41.4% | 22.1% | 36.5% | — |
-| `no_drift` (cost + delayed, no reset) | 1879.0 | 1.634 | 8.0% | 5.7% | 86.3% | 0 |
+**Delay removal (−1.1%).** Removing the buffer improves performance slightly because immediate feedback accelerates convergence. The buffer's purpose is temporal validity, not performance. The 1.1% is the honest price of a correct evaluation.
 
-We take `no_drift` as the reference variant (standard cost-weighted delayed bandit without drift reset) and compute deltas:
+**Drift on stationary data (+27%).** PageHinkley at λ_PH = 50 fires 44 false alarms, resetting learned weights each time and reverting to deploy-heavy uninformed priors (40.4% deploy rate post-reset vs. 8.0% converged). This is detector behavior on stationary data; it does not characterize the component's value on non-stationary data. Drift results are **excluded from main claims**.
 
-| Component removed | Δ Cumul. Cost vs. no_drift | Δ% |
-| --- | ---: | ---: |
-| Cost weighting → binary (no_cost) | +590.0 | +31.4% |
-| Delayed buffer → immediate (no_delay) | −21.5 | −1.1% |
-| No drift reset → drift reset (full) | +504.0 | +26.8% |
+### 5.4 Real-World Sanity Check
 
-**Cost weighting (+31%).** Binary reward (−1/0) loses the asymmetry between action–outcome pairs. The DEPLOY arm receives −1 updates for failures whether or not the policy caused the failure, and 0 for successes regardless of the opportunity cost of blocking. The block arm receives −1 updates for failures it *correctly* avoided, producing misleading gradient information. The 31% cost increase is the strongest evidence that cost-sensitive reward design matters.
+**[Highly preliminary — real GitHub Actions data, 2 projects, sparse features, relaxed filters, biased evaluation. Do not compare magnitudes against synthetic results.]**
 
-**Delay removal (−1.1%).** Immediate updates allow the policy to converge to the block-heavy strategy faster, reducing cost by 21.5 units. The negative sign means *removing* the delay *reduces* cost — delay is a structural cost the policy must pay in deployment settings. The effect is small (1.1%) because the delay model in this dataset averages ~10 steps per build, and 1,150 total updates are enough for the policy to converge despite the lag.
+Table 3: Online replay on real GitHub Actions data, default cost matrix, seeds 0–4.
 
-**Drift reset on stationary data (+27%).** With PageHinkley threshold *λ_PH = 50*, the detector fires 44 false alarms across 1,150 stationary steps: 17 resets on smoke/alpha and 27 on smoke/beta. Each reset discards all learned weights; the post-reset policy reverts to DEPLOY-heavy behavior (maximum UCB on uninformed priors) until it re-learns the block-heavy strategy. This explains the 40.4% deploy rate in `full` vs. 8.0% in `no_drift`. The detector is too sensitive for this dataset's smooth cost distribution. **We exclude the `full` model from the main claims. The drift component requires calibration against non-stationary data (RQ4), which is not yet available.**
+| Policy | Steps | Censored | Cumul. Cost | Mean/Step | Deploy% | Canary% | Block% |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| `static_rules` | 600 | 21 | **644.5** | **1.113** | 64.3% | 20.0% | 15.7% |
+| `heuristic_score` | 600 | 22 | 860.0 | 1.488 | 100.0% | 0.0% | 0.0% |
+| `linucb` / `cost_sensitive_bandit` | 600 | 17 | 669.5 | 1.148 | 53.0% | 4.8% | 42.2% |
+| `thompson` (n=5 seeds) | 600 | 17–21 | 585 ± 99 | 1.008 ± 0.171 | varies | varies | varies |
+
+Thompson per-seed: 445.5 / 520.0 / 649.5 / 631.5 / 680.0 (seeds 0–4).
+
+**Per-project expected cost analysis:**
+
+| Project | Failure rate | E[deploy] | E[canary] | E[block] | Optimal |
+| --- | ---: | ---: | ---: | ---: | --- |
+| `psf/requests` | 5.3% | **0.53** | 1.16 | 1.92 | deploy |
+| `pallets/flask` | 23.3% | 2.33 | 1.70 | **1.65** | block |
+
+**Finding R1 (negative result): LinUCB over-blocks the low-failure project and costs more than static rules (669.5 vs. 644.5).** At 5.3% failure, deploy is optimal (0.53/step); blocking costs 1.92/step. LinUCB converges to 42.2% block across both projects because the feature vector lacks commit-level signal to differentiate them — both look similar with zero files_changed, zero tests_run, etc. The bandit learns primarily from the recent-failure-rate feature, which does not converge quickly enough to assign different strategies to the two projects within 300 steps. The static rule's explicit threshold on `files_changed` and `recent_failure_rate` happens to produce a 64.3% deploy rate that is close to optimal for this failure-rate distribution.
+
+This finding directly illustrates §1.3 Conditions 1 and 2: the psf/requests project has too low a failure rate and the feature space carries too little signal for the bandit to outperform a rule that has those conditions hardcoded.
+
+**Finding R2: Thompson is beneficial on average but high-variance.** Mean cost 585 (±99) beats both LinUCB (669.5) and static rules (644.5). But variance is large: seed 0 achieves 445.5 (33% better than static), seed 4 achieves 680.0 (5.5% worse). On 300-step trajectories, Thompson's posterior has not converged and action distributions swing widely across seeds.
+
+**Finding R3: Real-world censoring is present.** Cancelled CI runs produce 17–22 censored rewards per trajectory (≈3%), varying by policy. This confirms reward censoring is not merely theoretical.
 
 ---
 
 ## 6. Key Findings
 
-We separate findings by evidential quality.
-
-### 6.1 Reliable Findings (mechanism verification, not generalization claims)
+### 6.1 Reliable Findings (mechanism verification — hold regardless of dataset)
 
 **F1: Cost weighting is the most important model component (+31% cost when removed).**
-Replacing the asymmetric cost signal with binary (−1/0) feedback substantially degrades performance on both projects. This is a mechanism finding that holds because the cost matrix is deliberately asymmetric (factor 20× between deploy+failure and block+would_fail). Any setting where failure is significantly more expensive than unnecessary blocking will exhibit this effect.
+Binary reward destroys the signal asymmetry the cost matrix encodes. This is a mechanism result: it holds whenever the cost matrix is asymmetric (20× ratio between deploy+failure and block+would_fail). It does not require real-world validation to hold.
 
-**F2: The delayed-feedback buffer enforces correctness, not performance.**
-The buffer prevents the policy from using future reward information at decision time (the fundamental invariant of delayed-feedback bandits, formalized in Joulani et al., 2013). The ablation confirms that removing the buffer improves performance slightly (1.1%), as expected — immediate feedback is faster. The buffer's value is validity, not accuracy.
+**F2: The delayed-feedback buffer enforces correctness at a 1.1% performance cost.**
+Removing the buffer improves performance because immediate feedback accelerates convergence. The buffer's value is validity — preventing use of future information at decision time (Joulani et al., 2013). The 1.1% is the honest cost of temporal correctness.
 
-**F3: Page-Hinkley fires false alarms on stationary data at λ_PH = 50.**
-44 false alarms over 1,150 steps on data with no true distribution shift. This is expected behavior for drift detectors: they trade false-alarm rate for detection speed. The current threshold is too sensitive and requires calibration.
+**F3: Page-Hinkley at λ_PH = 50 fires 44 false alarms on 1,150 stationary steps.**
+Expected behavior for a sensitive detector on data with no drift. The threshold requires calibration; we make no claim about its performance on non-stationary data.
 
-### 6.2 Preliminary Findings (synthetic 2-project data, cannot generalize)
+**F4: Thompson Sampling produces nonzero seed variance (std = 58 synthetic, std = 99 real); LinUCB does not.**
+Stochastic posterior sampling yields different per-trajectory behavior. On real short-trajectory data, this variance is large enough that any individual seed can be best or worst of all policies.
 
-**F4: Bandit advantage scales with failure cost severity.**
-At deploy_failure=20 (double the default), the bandit outperforms the static rule by 19% by learning a block-heavy strategy. At deploy_failure=10, they tie. This qualitative pattern — learner adapts, static rule cannot — is expected from first principles and confirmed empirically on smoke data.
+### 6.2 Preliminary Findings (synthetic data — cannot generalize)
 
-**F5: Under severe delay, static rules marginally outperform a learning bandit.**
-At delay_step_seconds=30 (doubled step-count delay), the bandit costs 1% more than static rules. The effect is small but directionally consistent with O(√(d_max · T)) delay-induced regret inflation. Whether this survives on real data with stochastic delays and more projects is unknown.
+**F5: Bandit advantage scales with failure cost severity (+19% at df=20, +27% at low block cost).**
+When the cost matrix moves away from the default implicit assumptions of a fixed static rule, the adaptive policy exploits the new cost structure and the static rule cannot. The qualitative pattern is expected from first principles; the magnitudes are dataset-specific.
 
-**F6: On the high-failure project (35% failure rate), the learning bandit outperforms the static rule.**
-On smoke/beta, LinUCB achieves 897.0 vs. 966.5 for static rules by shifting to a block-heavy strategy. On smoke/alpha (15% failure), static rules win because the canary-heavy strategy is near-optimal at low failure rates. This suggests the bandit's advantage is most pronounced in high-failure-rate environments — a reasonable hypothesis that requires real data to confirm.
+**F6: Under severe delay, the learning bandit costs 1% more than static rules.**
+Consistent with delay-induced regret inflation. The effect is small and may not survive on real stochastic-delay data.
+
+**F7: The aggregate bandit/static tie is a cancellation artifact.**
+At the project level, the bandit wins at 35% failure and loses at 15% failure. The tie is specific to this two-project synthetic dataset design.
+
+### 6.3 Real-Data Findings (highly preliminary — 2 real projects, sparse features)
+
+**F8 (negative result): LinUCB over-blocks on the low-failure project and costs 3.8% more than static rules.**
+On psf/requests (5.3% failure, sparse features, 300 steps), the bandit cannot distinguish the project from pallets/flask using the available feature signal. It converges to a block-heavy strategy that is near-optimal for flask but expensive for requests. Static rules' explicit threshold happens to match the optimal strategy for this failure-rate mix. This is precisely the failure mode predicted by §1.3.
+
+**F9: Thompson Sampling is 9% cheaper than LinUCB on average across seeds (real data).**
+Posterior sampling's stochastic exploration sometimes discovers the project-specific optimal strategy (seed 0: 445.5) but with high variance (seed 4: 680.0). The mean improvement over static rules is 9%, but no individual seed reliably beats static rules with high probability.
+
+**F10: Reward censoring is empirically confirmed in real CI data.**
+Cancelled runs produce 3% censored rewards, with policy-dependent variation. This validates the buffer's censoring path as exercised on real data.
 
 ---
 
-## 7. Limitations
+## 7. Threats to Validity and Limitations
 
-### 7.1 No Logging Propensities — No Unbiased Counterfactual Evaluation
+### 7.1 Online Replay is Biased — All Results Are Simulations
 
-TravisTorrent records CI build outcomes, not deployment decisions. Every record is assigned `action = DEPLOY` by the data loader. There is no logging policy and no associated propensity scores.
+Online replay computes costs as *cost(policy_action, logged_CI_outcome)*. Every logged action is DEPLOY. Costs for CANARY and BLOCK are counterfactual, resting on the assumption that CI outcome is independent of the deployment action taken. This assumption is unverifiable. The evaluation measures relative policy rankings within the simulation; it does not measure real-world operational cost.
 
-**Consequence:** Inverse propensity scoring (IPS) cannot be applied. With `logged_propensity = 1.0` for all steps, the IPS weight is identically 1.0, reducing the estimator to the direct method. This estimator is unbiased only if the true logging policy selected DEPLOY with probability 1.0 on every commit — an assumption that is unverifiable and almost certainly false for human-driven CI pipelines.
+No logging propensities exist. Inverse propensity scoring cannot be applied — the IPS weight is identically 1.0, reducing the estimator to the direct method. This is unbiased only if the true logging policy always deployed, which is false for human-operated pipelines.
 
-**What the experiments do and do not measure:** The online replay measures *how costly the policy's decisions are given the observed CI outcomes as counterfactuals.* It does not measure *whether those decisions would produce the same outcomes in a real deployment.* The two quantities are equal only if CI outcome is a perfect proxy for deployment outcome — another unverifiable assumption.
+The evaluation is internally consistent (the same counterfactual assumption applies to every policy equally), so relative rankings are meaningful. Absolute cost numbers are simulation artifacts.
 
-**Required fix:** Either (a) collect data under a known stochastic logging policy (e.g. randomized deployment decisions), or (b) evaluate on a synthetic environment where the true propensities and outcomes are generated from the controlled data-generating process.
+### 7.2 Synthetic Dataset: Two Projects, Fixed Failure Rates, Zero CI Width
 
-### 7.2 Online Replay is Biased
+The primary experiment uses 1,150 rows across two synthetic projects at fixed failure rates (15% and 35%). The aggregate tie between LinUCB and static rules (1878 vs. 1879) is a design artifact — the two projects cancel. Deterministic delay model produces zero bootstrap CI width for all policies except Thompson. No claim generalizes beyond this dataset without real multi-project replication.
 
-Online replay uses `cost(policy_action, logged_CI_outcome)` to evaluate CANARY and BLOCK decisions against an outcome that was generated under a DEPLOY decision. This is a counterfactual evaluation with an untested proxy:
+### 7.3 Real Sanity Check: Sparse Features, Short Trajectories, Relaxed Filters
 
-- **CANARY:** The cost is computed as if the CI outcome predicts the partial-rollout outcome. In reality, a canary might fail on a different traffic slice than CI tests.
-- **BLOCK:** The cost is computed as if CI outcome tells us what *would have* happened had the commit been deployed. This is the fundamental counterfactual — it is unobservable.
+The GitHub Actions experiment uses a feature vector in which 11 of 13 dimensions carry no commit-level signal. The bandit degenerates to learning from failure rate and bias term. With 300 steps per project and d=13 dimensions, the bandit is near its minimum convergence threshold (O(d²) = 169 updates per arm). Both conditions in §1.3 are violated: psf/requests has a low failure rate AND the context is sparse. The negative result (LinUCB loses to static rules) is expected under these conditions and should not be interpreted as evidence that bandits generally underperform static rules.
 
-The evaluation is internally consistent (the same assumption applies to all policies equally) but is not an unbiased estimate of real-world deployment cost. We report it as a learning-dynamics verification, not a causal cost estimate.
+### 7.4 LinUCB and CostSensitiveBandit Are Identical at Same Hyperparameters
 
-### 7.3 Drift Detection Results Excluded from Claims
+‖b-vector difference‖₂ = 0 at α=1.0, λ=1.0. The implementations diverge only when α differs, the drift detector is active, or future extensions are applied. The current experiments cannot distinguish them.
 
-As documented in §5.3, the `full` model (with PageHinkley drift reset) performs **worse** than `no_drift` on stationary data due to 44 false-alarm resets. The drift adaptation mechanism is implemented and mechanistically correct — it correctly resets the model when triggered — but the trigger threshold (*λ_PH = 50*) is miscalibrated for this dataset.
+### 7.5 Drift Detection Is Miscalibrated for Stationary Data
 
-**We do not claim that drift adaptation reduces operational cost.** The claim that cost-sensitive bandits with drift adaptation outperform non-adaptive policies on non-stationary trajectories is a hypothesis that requires the RQ4 synthetic drift experiment (abrupt-shift schedule on the synthetic environment). That experiment has not been run.
+Page-Hinkley at λ_PH = 50 fires 44 false alarms on 1,150 stationary steps, erasing learned weights each time. The component is implemented and mechanistically correct; it requires non-stationary data to evaluate its intended behavior. The `full` model is excluded from all performance claims.
 
-### 7.4 Synthetic 2-Project Dataset
+### 7.6 Thompson Sampling Propensities Are Intractable
 
-All results are from a hand-crafted 1,150-row synthetic dataset with two projects at fixed failure rates (15% and 35%). Real TravisTorrent contains ~3.7M builds across ~1,000 projects with heterogeneous failure rates, project lifecycles, and team sizes. The smoke dataset produces zero bootstrap CI width (deterministic delay model) and therefore provides no statistical uncertainty estimates.
-
-Claims cannot be generalized beyond the smoke dataset until replicated on real TravisTorrent data.
-
-### 7.5 LinUCB and CostSensitiveBandit are Identical at Same Hyperparameters
-
-At identical α, λ, and reward signal, the two policies are mathematically the same algorithm. The distinction between them is only observable when α differs, when the drift detector is active, or when future enhancements (Thompson sampling, windowed replay) are applied. The current experiments do not distinguish the two implementations.
-
-### 7.6 Missing Baselines
-
-The evaluation protocol (`docs/evaluation-protocol.md`) specifies five policies: static rules, heuristic score, LinUCB, cost-sensitive bandit, and Thompson sampling. Thompson sampling is not yet implemented. Results therefore cannot claim to show optimality within the specified comparison set.
+The true selection probability for Thompson Sampling requires integrating over the posterior — intractable in closed form. We report propensity = 1.0 throughout. IPS correction cannot be applied to Thompson results even in principle. Thompson's cost estimates carry the standard replay bias plus this additional limitation.
 
 ---
 
 ## 8. Conclusion
 
-We formulated software deployment control as a cost-sensitive contextual bandit with delayed rewards, replacing the classification framing of just-in-time defect prediction with a sequential cost-minimization objective. The key insight is that the relevant question is not "will this commit fail?" but "what is the cost of each deployment action given our uncertainty?"
+### What Works
 
-Our CostSensitiveBandit implements disjoint LinUCB with a pending-reward buffer that enforces the delayed-feedback invariant and an asymmetric cost signal that rewards the policy for correctly weighting the consequences of different action–outcome pairs.
+**Cost-sensitive reward design is the most impactful engineering decision.** Replacing the asymmetric cost matrix with binary (−1/0) feedback degrades performance by 31%. This gap exists because binary reward cannot distinguish a deploy failure (cost 10) from a block that correctly prevented a failure (cost 0.5) — both receive the same −1 signal for failures. The cost matrix makes the asymmetry explicit and trainable.
 
-The ablation study shows that cost weighting is the most important model component: replacing it with binary feedback increases cumulative cost by 31%. Robustness experiments show that the bandit's advantage over a fixed static rule grows as failure costs increase or as blocking becomes cheaper — both conditions where an adaptive policy can exploit the cost structure that a static threshold cannot.
+**The bandit framing delivers when both conditions in §1.3 hold.** At deploy_failure=20 (doubled), the bandit outperforms static rules by 19% by learning a block-heavy strategy the static rule cannot reach. At low block cost, it outperforms by 27%. The framing's advantage is conditional, not universal — it requires sufficient failure rate and sufficient context signal to justify the exploration cost.
 
-**The decision-making framing matters.** Static rules achieve competitive performance in the default cost setting because their fixed thresholds happen to match the average failure rate of the synthetic dataset. As the cost matrix shifts away from that implicit assumption, the bandit's adaptivity produces measurable gains. This supports the core claim: deployment control is better modeled as sequential decision-making than as classification, even when the underlying model class (linear regression) is the same.
+**Thompson Sampling's stochastic exploration is the right tool for short or uncertain trajectories.** Its mean performance on real data (585 vs. 644.5 for static rules) is better, and its variance across seeds (±99) makes it the only policy for which uncertainty quantification is meaningful in the current setup.
 
-**What remains.** The two most important open items before any submission claims can be made are: (1) results on real multi-project TravisTorrent data with stochastic delays and bootstrap CIs of nonzero width, and (2) RQ4 drift experiments showing that the drift adaptation mechanism reduces post-shift regret. Both require infrastructure that is implemented but not yet exercised on sufficient data.
+### What Doesn't Work (and Why)
+
+**LinUCB over-blocks on low-failure projects with sparse context.** On psf/requests (5.3% failure, zero commit-level features), the bandit cannot distinguish the project from pallets/flask and applies a one-size-fits-all block-heavy strategy. At 5.3% failure, deploy is optimal (0.53/step vs. block 1.92/step); LinUCB's 42.2% block rate costs 3.8% more than a static rule. This is not a flaw in LinUCB — it is a flaw in the application: the convergence condition (informative context, sufficient trajectory length) is violated.
+
+**Drift detection is destructive on stationary data at default threshold.** PageHinkley at λ_PH = 50 fires 44 false alarms, each resetting learned weights, resulting in a model 27% more expensive than no-drift. The component needs calibration against non-stationary data before any performance claim can be made.
+
+**The aggregate synthetic tie is misleading.** LinUCB and static rules tie at 1878 vs. 1879 only because the two synthetic projects are balanced to cancel. Project-level, the results diverge substantially (897 vs. 966 on the 35% project; 911 vs. 982 on the 15% project). Aggregates hide the structure.
+
+### What This Changes About Deployment Decision Research
+
+The classification framing of JIT defect prediction (Kamei et al., 2013) encodes a fixed, implicit cost assumption at the threshold. When that assumption is wrong — when failure costs are high, when blocking is cheap, when the failure rate is project-specific — the threshold cannot adapt. A contextual bandit with an explicit cost matrix can. The cost matrix itself is the interface through which operational priorities are expressed; it should be reported as an explicit hyperparameter in any deployment control system, not buried in a threshold.
+
+The negative result is equally informative: bandits do not uniformly outperform static rules. They require sufficient context signal and sufficient trajectory length. In low-failure, feature-sparse settings, the exploration cost dominates and a well-tuned static rule is competitive. This defines the operating envelope for the framing.
+
+### Future Work
+
+Three directions are tractable extensions of the current infrastructure:
+
+1. **Feature-rich real data.** Fetch commit-level metadata (files changed, tests run, author history) alongside GitHub Actions run status. This populates all 12 non-bias dimensions of the feature vector and enables a fair comparison on real data.
+2. **Non-stationary evaluation.** Design a synthetic environment with abrupt failure-rate shifts and evaluate whether PageHinkley (with calibrated λ_PH) reduces post-shift regret relative to the no-drift variant.
+3. **Per-project exploration calibration.** Low-failure-rate projects benefit from lower α (less UCB exploration); high-failure projects benefit from higher α. A meta-policy that adapts α based on observed failure rate would avoid the over-blocking failure mode documented in §5.4.
 
 ---
 
 ## References
 
+- Agrawal, S., Goyal, N. "Thompson Sampling for Contextual Bandits with Linear Payoffs." ICML 2013.
 - Beller, M., et al. "TravisTorrent: Synthesizing Travis CI and GitHub for Full-Stack Research." MSR 2017.
 - Chu, W., et al. "Contextual Bandits with Linear Payoff Functions." AISTATS 2011.
 - Gama, J., et al. "A Survey on Concept Drift Adaptation." ACM CSUR 2014.
-- Joachims, T., et al. "Deep Learning with Logged Bandit Feedback." ICLR 2018.
 - Joulani, P., et al. "Online Learning under Delayed Feedback." ICML 2013.
 - Kamei, Y., et al. "A Large-Scale Empirical Study of Just-in-Time Quality Assurance." TSE 2013.
 - Li, L., et al. "A Contextual-Bandit Approach to Personalized News Article Recommendation." WWW 2010.
 - McIntosh, S., Kamei, Y. "Are Fix-Inducing Changes a Moving Target?" EMSE 2018.
 - Mouss, H., et al. "Test of Page-Hinckley, an Approach for Fault Detection in an Agro-Alimentary Production System." MED 2004.
 - Pike-Burke, C., et al. "Bandits with Delayed, Aggregated Anonymous Feedback." ICML 2018.
-- Weyns, D., et al. SEAMS literature on MAPE-K and learning-based adaptation (multiple years).
 
 ---
 
@@ -453,30 +498,37 @@ The ablation study shows that cost weighting is the most important model compone
 
 | Claim | Status | Evidence | Condition for promotion |
 | --- | --- | --- | --- |
-| Cost weighting is important (+31% without it) | **Preliminary** | Smoke dataset, 2 projects | Replicate on ≥10 real projects |
-| Bandit advantage grows with failure cost | **Preliminary** | Smoke dataset | Replicate on real data |
-| Delay reduces learning speed | **Preliminary** | Smoke dataset, small effect | Stochastic delay experiment, real data |
-| Buffer enforces delayed-feedback correctness | **Reliable** | Code + 174 passing tests | — |
-| PageHinkley fires false alarms at λ=50 on stationary data | **Reliable** | Expected detector behavior | — |
-| Drift adaptation reduces cost on non-stationary data | **Not yet evaluated** | RQ4 not run | Implement synthetic drift experiment |
-| Bandit outperforms static rules in general | **Not established** | Tied on default cost, smoke data | Real data, multiple cost configs |
-| Heuristic score is consistently worst | **Preliminary** | All 5 conditions, smoke data | Real data |
+| Cost weighting important (+31% without it) | **Preliminary** | Smoke dataset, 2 projects | Replicate on ≥10 real projects with full features |
+| Bandit advantage grows with failure cost | **Preliminary** | Smoke dataset | Real data, multiple projects |
+| Delay reduces learning speed by 1.1% | **Preliminary** | Smoke dataset | Stochastic delay experiment |
+| Thompson variance > LinUCB variance | **Reliable** | Smoke + GitHub Actions, 5 seeds each | — |
+| Buffer enforces delayed-feedback correctness | **Reliable** | Code + 180 passing tests | — |
+| PageHinkley fires false alarms at λ_PH=50, stationary data | **Reliable** | Expected detector behavior | — |
+| Infrastructure runs correctly on real GitHub Actions data | **Reliable** | 600 real runs, 2 projects executed | — |
+| LinUCB over-blocks on low-failure sparse-feature project | **Preliminary** | GitHub Actions sanity check, 1 project | Feature-rich real data |
+| Drift adaptation reduces cost on non-stationary data | **Not evaluated** | Experiment not run | Synthetic drift schedule |
+| Bandit generally outperforms static rules | **Not established** | Static rules win on real low-failure data | Feature-rich multi-project real data |
 
 ---
 
 ## Appendix B: Experiment Reproducibility
 
-All experiment code is in the repository. To reproduce:
-
 ```bash
-# Phase 20: main online replay
+# Main online replay (includes Thompson Sampling)
 for seed in 0 1 2 3 4; do
     python -m experiments.run_bandits \
         --config experiments/configs/online_smoke.json \
         --seed $seed
 done
 
-# Phase 21: robustness
+# Real-data sanity check (requires data/raw/github_actions_real.csv)
+for seed in 0 1 2 3 4; do
+    python -m experiments.run_bandits \
+        --config experiments/configs/real_github_actions.json \
+        --seed $seed
+done
+
+# Robustness sweep
 python -m experiments.run_robustness \
     --configs experiments/configs/online_smoke.json \
               experiments/configs/robustness_high_failure.json \
@@ -485,7 +537,7 @@ python -m experiments.run_robustness \
               experiments/configs/robustness_long_delay.json \
     --seeds 0 1 2 3 4
 
-# Phase 22: ablation
+# Ablation study
 for seed in 0 1 2 3 4; do
     python -m experiments.run_ablations --seed $seed
 done
