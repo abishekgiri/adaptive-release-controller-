@@ -73,6 +73,73 @@ def cumulative_regret(record: EpisodeRecord) -> np.ndarray:
     return np.cumsum(np.array(costs[:length]) - np.array(oracle[:length]))
 
 
+def best_in_hindsight_regret(
+    record: EpisodeRecord,
+    policy_costs: dict[str, list[float]],
+) -> np.ndarray:
+    """Return cumulative regret vs. the best constant policy in hindsight.
+
+    The best constant policy is whichever policy in ``policy_costs`` achieves
+    the lowest total finite cost over the trajectory. Regret at step t is the
+    gap between this policy and ``record``'s cumulative cost.
+
+    Args:
+        record:       Episode record for the policy under evaluation.
+        policy_costs: Dict mapping policy_id → list of per-step costs for each
+                      policy that ran on the same trajectory.
+
+    Returns:
+        Array of cumulative regret values (same length as record's finite costs).
+    """
+    if not policy_costs:
+        return np.array([], dtype=np.float64)
+
+    best_total = math.inf
+    best_costs: list[float] = []
+    for costs in policy_costs.values():
+        finite = valid_costs(costs)
+        total = float(np.sum(finite)) if finite else math.inf
+        if total < best_total:
+            best_total = total
+            best_costs = finite
+
+    eval_costs = valid_costs(record.costs)
+    length = min(len(eval_costs), len(best_costs))
+    if length == 0:
+        return np.array([], dtype=np.float64)
+    return np.cumsum(
+        np.array(eval_costs[:length]) - np.array(best_costs[:length])
+    )
+
+
+def cost_cdf(
+    costs: Iterable[float],
+    thresholds: np.ndarray | None = None,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Return the empirical CDF of per-step operational costs.
+
+    Args:
+        costs:      Per-step cost sequence (NaN / censored values are dropped).
+        thresholds: Evaluation points. Defaults to 100 linearly spaced values
+                    from 0 to max(costs).
+
+    Returns:
+        (thresholds, cdf_values) — fraction of steps with cost ≤ threshold.
+    """
+    finite = np.array(valid_costs(costs), dtype=np.float64)
+    if finite.size == 0:
+        empty = np.array([], dtype=np.float64)
+        return empty, empty
+
+    if thresholds is None:
+        thresholds = np.linspace(0.0, float(finite.max()), 100)
+
+    cdf_values = np.array(
+        [float(np.mean(finite <= t)) for t in thresholds], dtype=np.float64
+    )
+    return thresholds, cdf_values
+
+
 def action_distribution(actions: list[Action]) -> dict[Action, float]:
     """Return the fraction of each action taken over a trajectory."""
 
