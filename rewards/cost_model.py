@@ -122,7 +122,11 @@ def oracle_cost(outcome: Outcome, config: CostConfig) -> float:
         return min(config.deploy_failure, config.canary_failure, config.block_bad)
 
     if outcome == Outcome.BLOCKED:
-        # Counterfactual unknown; oracle cost is undefined.
+        # BLOCKED means the logged policy blocked and the counterfactual outcome
+        # (would-have-succeeded vs would-have-failed) was never observed. The oracle
+        # cost is therefore undefined — we cannot know which action would have been
+        # cheapest. We return NaN (CENSORED_COST) so callers can drop this step,
+        # consistent with how valid_costs() handles censored observations.
         return CENSORED_COST
 
     raise ValueError(f"Unhandled outcome: {outcome!r}")  # exhaustiveness guard
