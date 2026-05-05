@@ -1,4 +1,4 @@
-# Cost-Sensitive Deployment Control via Contextual Bandits with Delayed Feedback
+# Continuous Deployment as Cost-Sensitive Decision-Making: When Contextual Bandits Outperform Static Rules and When They Don't
 
 **Status: Research draft — not submitted. See Appendix A for the validity classification of every claim.**
 
@@ -6,13 +6,13 @@
 
 ## Abstract
 
-Every commit to a continuous deployment pipeline requires a decision: deploy immediately, route through a canary, or block. Current practice frames this as a classification problem — predict whether the build will fail, then apply a static risk threshold. We argue this framing is wrong on three grounds: it uses the wrong objective (accuracy instead of operational cost), it encodes a fixed cost assumption that is rarely made explicit, and it does not learn from deployment outcomes. **Our thesis: deployment control is a sequential cost-minimization problem, and modeling it as such produces measurably different decisions than classification — decisions that are better when costs are asymmetric and failure rates are high, and revealing when they are not.**
+Continuous deployment pipelines require a decision at every commit: deploy immediately, route through a canary, or block. Current practice frames this as a classification problem — predict failure probability, apply a static threshold. We argue the correct framing is *sequential cost minimization*: the relevant quantity is the operational cost of each action under outcome uncertainty, not a failure label.
 
-We implement and evaluate two contextual bandit policies — disjoint LinUCB (Li et al., 2010) and Bayesian linear Thompson Sampling (Agrawal & Goyal, 2013) — against static-rule and heuristic-score baselines using a three-action decision space {deploy, canary, block} and an asymmetric cost matrix. Learning is gated through a pending-reward buffer that enforces the delayed-feedback invariant: no policy update occurs before the deployment outcome is observable.
+We apply disjoint LinUCB (Li et al., 2010) and Bayesian linear Thompson Sampling (Agrawal & Goyal, 2013) to this three-action problem using an asymmetric cost matrix (a production incident costs 20× a correctly blocked bad change) and a pending-reward buffer that enforces the delayed-feedback invariant.
 
-Our experiments yield both positive and negative results. On synthetic data, the bandit outperforms static rules by 19% when deployment failure cost doubles and by 27% when blocking becomes cheaper — conditions where the cost structure rewards adaptation. On real GitHub Actions CI data (600 runs, psf/requests at 5.3% failure, pallets/flask at 23.3%), LinUCB over-blocks the low-failure project and costs 3.8% more than a static rule, because the bandit has insufficient context features and too few steps to converge to the project-specific optimal policy. An ablation study shows cost weighting is the single most important component: replacing the asymmetric cost signal with binary (−1/0) feedback degrades performance by 31%.
+Results are two-sided. **Positive:** on synthetic data, the bandit outperforms a static rule by 19% when failure cost doubles and by 27% when blocking becomes cheaper — regimes where the cost structure rewards adaptation. An ablation confirms cost weighting is the dominant component: binary reward degrades cumulative cost by 31%. **Negative:** on real GitHub Actions CI data (600 runs, two public repositories), LinUCB over-blocks a 5.3%-failure-rate project — where deploy is optimal — and costs 3.8% *more* than a static rule. Feature sparsity and short trajectories prevent convergence to the project-specific optimal policy.
 
-All results are preliminary and based on at most two projects per experiment. Generalization requires replication on feature-rich multi-project real data.
+The takeaway: the bandit framing helps when failure costs are high and context is informative. When features are sparse or failure rates are low, well-calibrated static rules remain competitive.
 
 ---
 
@@ -20,13 +20,13 @@ All results are preliminary and based on at most two projects per experiment. Ge
 
 ### 1.1 The Deployment Decision Problem
 
-Software engineering teams push hundreds to thousands of commits per day. Each commit triggers a CI pipeline, and when CI passes, a deployment decision must be made: send this change to production immediately, stage it through a canary deployment, or hold it for further review? This decision is consequential: a failed production deployment triggers incidents, on-call pages, and rollbacks. An unnecessarily blocked safe change slows developer velocity. A canary deployment offers partial protection at the cost of slower delivery.
+Every passing CI build triggers a deployment decision: ship to production, route through a canary, or block? A failed production deployment means incidents, on-call pages, and rollbacks. A blocked safe change costs developer time. A canary offers partial protection at throughput cost. Getting this right matters, and at scale it happens thousands of times per day.
 
-Current tooling treats this as a prediction problem. Just-in-time defect prediction models (Kamei et al., 2013) estimate the probability that a commit introduces a bug and apply a static threshold to flag risky changes. Three structural limitations follow from this framing:
+Current tooling treats this as a prediction problem. Just-in-time defect prediction models (Kamei et al., 2013) estimate failure probability and apply a static threshold. Three structural limitations follow:
 
-1. **The threshold is a decision, not a metric.** Setting it requires an implicit cost assumption about false positives (blocked safe changes) vs. false negatives (deployed bad changes). This assumption is typically unexamined and fixed for the lifetime of the system.
-2. **Costs are asymmetric and context-dependent.** A failed deploy to a payment service costs far more than one to an internal tool. A binary classifier with a single threshold cannot represent this, and offline training against defect labels does not optimize for it.
-3. **The model does not learn from deployment outcomes.** JIT models are trained offline and do not receive feedback when their predictions lead to incidents or unnecessary blocks. They cannot adapt to shifting team practices, codebase evolution, or changing test coverage.
+1. **The threshold encodes an implicit cost assumption.** Setting it requires a judgment about the cost of blocking safe changes vs. deploying bad ones. This assumption is rarely explicit and never adapts.
+2. **Costs are asymmetric and context-dependent.** A production incident at a payment service costs an order of magnitude more than one at an internal tool. A single fixed threshold cannot represent this.
+3. **The model does not learn from outcomes.** JIT models are trained offline on defect labels. They receive no feedback when predictions lead to incidents or unnecessary blocks.
 
 ### 1.2 Our Framing: Sequential Cost Minimization
 
@@ -46,16 +46,16 @@ The bandit advantage is not unconditional. Two conditions must hold simultaneous
 
 **Condition 2 — sufficient informative context.** LinUCB with a *d*-dimensional feature vector needs roughly *O(d²)* updates per arm before its parameter estimates are statistically meaningful. With *d* = 13 in our setup, that is approximately 169 updates per arm before the confidence interval shrinks to first-order accuracy. On a 300-step real-world trajectory, the bandit has barely enough data to form reliable per-arm estimates, let alone differentiate arms based on context. If the feature vector carries no commit-level signal (no files changed, no test counts), the bandit degenerates to learning from failure rate and a bias term — information a static rule can encode directly.
 
-When both conditions fail — low failure rate, sparse features, short trajectory — static rules are competitive and bandits may be worse. This paper documents both regimes empirically.
+When both conditions fail — low failure rate, feature sparsity, short trajectory — static rules are competitive and bandits may be worse. This paper documents both regimes empirically.
 
 ### 1.4 Contribution Summary
 
-We make no claim to algorithmic novelty. LinUCB and Thompson Sampling are well-established algorithms. Our contributions are:
+LinUCB and Thompson Sampling are well-established algorithms. Our contributions are in problem framing and empirical characterization:
 
-- **Reframing:** The deployment decision recast as sequential cost minimization with a three-action space and an explicit asymmetric cost matrix, replacing accuracy as the primary objective.
-- **Evaluation framework:** An online-replay protocol with a pending-reward buffer enforcing the delayed-feedback invariant, explicit bias disclosure throughout, and cost as the sole primary metric.
-- **Ablation evidence:** Cost weighting, delayed feedback, and drift adaptation are isolated as separate components with their contribution to cumulative cost quantified.
-- **Two-sided empirical findings:** Bandits outperform static rules when failure costs are high or when blocking becomes cheaper. On low-failure-rate real projects with sparse context features, UCB-based bandits over-block and underperform static rules — a negative result that is informative about the conditions the framing requires.
+- **Reframing:** Deployment control recast as sequential cost minimization with a three-action space {deploy, canary, block} and an explicit asymmetric cost matrix. Cumulative cost replaces accuracy as the primary metric.
+- **Evaluation framework:** Online-replay protocol with a pending-reward buffer enforcing the delayed-feedback invariant; explicit bias disclosure; cost as the sole headline metric.
+- **Component ablation:** Cost weighting, delayed feedback, and drift adaptation isolated and quantified. Cost weighting is the dominant factor (+31% cumulative cost when removed).
+- **Two-sided empirical characterization:** Bandits outperform static rules when failure costs are high and context is informative. In the low-failure regime with feature sparsity (5.3% failure rate, no commit-level features), UCB-based policies over-block and cost 3.8% more than a static rule — a negative result that defines the operating envelope of the framing.
 
 ---
 
@@ -269,11 +269,11 @@ To test whether the synthetic findings are contradicted by real CI data, we coll
 
 **[Preliminary — synthetic 2-project dataset. Deterministic policies have zero CI width.]**
 
-Table 1: Cumulative cost, default cost matrix. All 1,150 rewards matured (0 censored). Thompson: mean ± std across seeds 0–4.
+**Table 1:** Cumulative cost, default cost matrix, synthetic dataset. All 1,150 rewards matured (0 censored). Thompson: mean ± std across seeds 0–4. *Takeaway: all three non-heuristic policies are effectively tied in aggregate; the per-project breakdown below reveals the structure the aggregate hides.*
 
 | Policy | Steps | Cumul. Cost | Mean/Step | Deploy% | Canary% | Block% |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| `static_rules` | 1150 | 1878.0 | 1.633 | 2.6% | 60.9% | 36.5% |
+| `static_rules` | 1150 | **1878.0** | **1.633** | 2.6% | 60.9% | 36.5% |
 | `heuristic_score` | 1150 | 2319.0 | 2.017 | 37.3% | 62.7% | 0.0% |
 | `linucb` / `cost_sensitive_bandit` | 1150 | 1879.0 | 1.634 | 8.0% | 5.7% | 86.3% |
 | `thompson` (n=5 seeds) | 1150 | **1877 ± 58** | 1.633 ± 0.050 | 6.4% | 30.5% | 63.1% |
@@ -320,7 +320,7 @@ Under long delay (doubled step-count delay), the bandit's uninformed-prior phase
 
 **[Preliminary — synthetic data. All 5 seeds identical for deterministic variants.]**
 
-Table 2: Component ablation, default cost matrix, seed 0. Reference is `no_drift` (cost-weighted delayed bandit without drift reset).
+**Table 2:** Component ablation, default cost matrix, seed 0. Reference = `no_drift`. *Takeaway: cost weighting is the dominant component (+31%); drift detection is destructive on stationary data (+27%); the buffer costs 1.1% for temporal validity.*
 
 | Variant | Cumul. Cost | Mean/Step | Deploy% | Block% | Drift Resets |
 | --- | ---: | ---: | ---: | ---: | ---: |
@@ -343,16 +343,16 @@ Table 2: Component ablation, default cost matrix, seed 0. Reference is `no_drift
 
 ### 5.4 Real-World Sanity Check
 
-**[Highly preliminary — real GitHub Actions data, 2 projects, sparse features, relaxed filters, biased evaluation. Do not compare magnitudes against synthetic results.]**
+**[Highly preliminary — real GitHub Actions data, 2 projects, feature sparsity, relaxed filters, biased evaluation. Do not compare magnitudes against synthetic results.]**
 
-Table 3: Online replay on real GitHub Actions data, default cost matrix, seeds 0–4.
+**Table 3:** Online replay on real GitHub Actions data, default cost matrix, seeds 0–4. *Takeaway: in the low-failure regime with feature sparsity, LinUCB over-blocks and costs 3.8% more than a static rule; Thompson's mean is better but variance is high.*
 
 | Policy | Steps | Censored | Cumul. Cost | Mean/Step | Deploy% | Canary% | Block% |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | `static_rules` | 600 | 21 | **644.5** | **1.113** | 64.3% | 20.0% | 15.7% |
 | `heuristic_score` | 600 | 22 | 860.0 | 1.488 | 100.0% | 0.0% | 0.0% |
 | `linucb` / `cost_sensitive_bandit` | 600 | 17 | 669.5 | 1.148 | 53.0% | 4.8% | 42.2% |
-| `thompson` (n=5 seeds) | 600 | 17–21 | 585 ± 99 | 1.008 ± 0.171 | varies | varies | varies |
+| `thompson` (n=5 seeds) | 600 | 17–21 | **585** ± 99 | **1.008** ± 0.171 | varies | varies | varies |
 
 Thompson per-seed: 445.5 / 520.0 / 649.5 / 631.5 / 680.0 (seeds 0–4).
 
@@ -363,9 +363,9 @@ Thompson per-seed: 445.5 / 520.0 / 649.5 / 631.5 / 680.0 (seeds 0–4).
 | `psf/requests` | 5.3% | **0.53** | 1.16 | 1.92 | deploy |
 | `pallets/flask` | 23.3% | 2.33 | 1.70 | **1.65** | block |
 
-**Finding R1 (negative result): LinUCB over-blocks the low-failure project and costs more than static rules (669.5 vs. 644.5).** At 5.3% failure, deploy is optimal (0.53/step); blocking costs 1.92/step. LinUCB converges to 42.2% block across both projects because the feature vector lacks commit-level signal to differentiate them — both look similar with zero files_changed, zero tests_run, etc. The bandit learns primarily from the recent-failure-rate feature, which does not converge quickly enough to assign different strategies to the two projects within 300 steps. The static rule's explicit threshold on `files_changed` and `recent_failure_rate` happens to produce a 64.3% deploy rate that is close to optimal for this failure-rate distribution.
+**Finding R1 (negative result): LinUCB over-blocks in the low-failure regime and costs more than static rules (669.5 vs. 644.5).** At 5.3% failure, deploy is optimal (0.53/step); blocking costs 1.92/step. LinUCB converges to 42.2% block across both projects because feature sparsity prevents differentiation — both projects look similar with zero files_changed, zero tests_run, etc. The bandit learns primarily from the recent-failure-rate feature, which does not converge quickly enough to assign different strategies to the two projects within 300 steps. The static rule's explicit threshold on `files_changed` and `recent_failure_rate` happens to produce a 64.3% deploy rate that is close to optimal for this failure-rate distribution.
 
-This finding directly illustrates §1.3 Conditions 1 and 2: the psf/requests project has too low a failure rate and the feature space carries too little signal for the bandit to outperform a rule that has those conditions hardcoded.
+This finding directly illustrates §1.3 Conditions 1 and 2: the low-failure regime and feature sparsity together prevent the bandit from outperforming a rule that has those conditions hardcoded.
 
 **Finding R2: Thompson is beneficial on average but high-variance.** Mean cost 585 (±99) beats both LinUCB (669.5) and static rules (644.5). But variance is large: seed 0 achieves 445.5 (33% better than static), seed 4 achieves 680.0 (5.5% worse). On 300-step trajectories, Thompson's posterior has not converged and action distributions swing widely across seeds.
 
@@ -400,10 +400,10 @@ Consistent with delay-induced regret inflation. The effect is small and may not 
 **F7: The aggregate bandit/static tie is a cancellation artifact.**
 At the project level, the bandit wins at 35% failure and loses at 15% failure. The tie is specific to this two-project synthetic dataset design.
 
-### 6.3 Real-Data Findings (highly preliminary — 2 real projects, sparse features)
+### 6.3 Real-Data Findings (highly preliminary — 2 real projects, feature sparsity)
 
-**F8 (negative result): LinUCB over-blocks on the low-failure project and costs 3.8% more than static rules.**
-On psf/requests (5.3% failure, sparse features, 300 steps), the bandit cannot distinguish the project from pallets/flask using the available feature signal. It converges to a block-heavy strategy that is near-optimal for flask but expensive for requests. Static rules' explicit threshold happens to match the optimal strategy for this failure-rate mix. This is precisely the failure mode predicted by §1.3.
+**F8 (negative result): LinUCB over-blocks in the low-failure regime and costs 3.8% more than static rules.**
+On psf/requests (5.3% failure, feature sparsity, 300 steps), the bandit cannot distinguish the project from pallets/flask using the available feature signal. It converges to a block-heavy strategy that is near-optimal for flask but expensive for requests. Static rules' explicit threshold happens to match the optimal strategy for this failure-rate mix. This is precisely the failure mode predicted by §1.3.
 
 **F9: Thompson Sampling is 9% cheaper than LinUCB on average across seeds (real data).**
 Posterior sampling's stochastic exploration sometimes discovers the project-specific optimal strategy (seed 0: 445.5) but with high variance (seed 4: 680.0). The mean improvement over static rules is 9%, but no individual seed reliably beats static rules with high probability.
@@ -427,9 +427,9 @@ The evaluation is internally consistent (the same counterfactual assumption appl
 
 The primary experiment uses 1,150 rows across two synthetic projects at fixed failure rates (15% and 35%). The aggregate tie between LinUCB and static rules (1878 vs. 1879) is a design artifact — the two projects cancel. Deterministic delay model produces zero bootstrap CI width for all policies except Thompson. No claim generalizes beyond this dataset without real multi-project replication.
 
-### 7.3 Real Sanity Check: Sparse Features, Short Trajectories, Relaxed Filters
+### 7.3 Real Sanity Check: Feature Sparsity, Short Trajectories, Relaxed Filters
 
-The GitHub Actions experiment uses a feature vector in which 11 of 13 dimensions carry no commit-level signal. The bandit degenerates to learning from failure rate and bias term. With 300 steps per project and d=13 dimensions, the bandit is near its minimum convergence threshold (O(d²) = 169 updates per arm). Both conditions in §1.3 are violated: psf/requests has a low failure rate AND the context is sparse. The negative result (LinUCB loses to static rules) is expected under these conditions and should not be interpreted as evidence that bandits generally underperform static rules.
+The GitHub Actions experiment uses a feature vector in which 11 of 13 dimensions carry no commit-level signal. The bandit degenerates to learning from failure rate and bias term. With 300 steps per project and d=13 dimensions, the bandit is near its minimum convergence threshold (O(d²) = 169 updates per arm). Both conditions in §1.3 are violated: psf/requests is in the low-failure regime AND feature sparsity prevents informative context. The negative result (LinUCB loses to static rules) is expected under these conditions and should not be interpreted as evidence that bandits generally underperform static rules.
 
 ### 7.4 LinUCB and CostSensitiveBandit Are Identical at Same Hyperparameters
 
@@ -457,7 +457,7 @@ The true selection probability for Thompson Sampling requires integrating over t
 
 ### What Doesn't Work (and Why)
 
-**LinUCB over-blocks on low-failure projects with sparse context.** On psf/requests (5.3% failure, zero commit-level features), the bandit cannot distinguish the project from pallets/flask and applies a one-size-fits-all block-heavy strategy. At 5.3% failure, deploy is optimal (0.53/step vs. block 1.92/step); LinUCB's 42.2% block rate costs 3.8% more than a static rule. This is not a flaw in LinUCB — it is a flaw in the application: the convergence condition (informative context, sufficient trajectory length) is violated.
+**LinUCB over-blocks in the low-failure regime with feature sparsity.** On psf/requests (5.3% failure, zero commit-level features), the bandit cannot distinguish the project from pallets/flask and applies a one-size-fits-all block-heavy strategy. At 5.3% failure, deploy is optimal (0.53/step vs. block 1.92/step); LinUCB's 42.2% block rate costs 3.8% more than a static rule. This is not a flaw in LinUCB — it is a flaw in the application: the convergence condition (informative context, sufficient trajectory length) is violated.
 
 **Drift detection is destructive on stationary data at default threshold.** PageHinkley at λ_PH = 50 fires 44 false alarms, each resetting learned weights, resulting in a model 27% more expensive than no-drift. The component needs calibration against non-stationary data before any performance claim can be made.
 
@@ -467,7 +467,7 @@ The true selection probability for Thompson Sampling requires integrating over t
 
 The classification framing of JIT defect prediction (Kamei et al., 2013) encodes a fixed, implicit cost assumption at the threshold. When that assumption is wrong — when failure costs are high, when blocking is cheap, when the failure rate is project-specific — the threshold cannot adapt. A contextual bandit with an explicit cost matrix can. The cost matrix itself is the interface through which operational priorities are expressed; it should be reported as an explicit hyperparameter in any deployment control system, not buried in a threshold.
 
-The negative result is equally informative: bandits do not uniformly outperform static rules. They require sufficient context signal and sufficient trajectory length. In low-failure, feature-sparse settings, the exploration cost dominates and a well-tuned static rule is competitive. This defines the operating envelope for the framing.
+The negative result is equally informative: bandits do not uniformly outperform static rules. They require sufficient context signal and sufficient trajectory length. In the low-failure regime with feature sparsity, the exploration cost dominates and a well-tuned static rule is competitive. This defines the operating envelope for the framing.
 
 ### Future Work
 
@@ -505,7 +505,7 @@ Three directions are tractable extensions of the current infrastructure:
 | Buffer enforces delayed-feedback correctness | **Reliable** | Code + 180 passing tests | — |
 | PageHinkley fires false alarms at λ_PH=50, stationary data | **Reliable** | Expected detector behavior | — |
 | Infrastructure runs correctly on real GitHub Actions data | **Reliable** | 600 real runs, 2 projects executed | — |
-| LinUCB over-blocks on low-failure sparse-feature project | **Preliminary** | GitHub Actions sanity check, 1 project | Feature-rich real data |
+| LinUCB over-blocks in low-failure regime with feature sparsity | **Preliminary** | GitHub Actions sanity check, 1 project | Feature-rich real data |
 | Drift adaptation reduces cost on non-stationary data | **Not evaluated** | Experiment not run | Synthetic drift schedule |
 | Bandit generally outperforms static rules | **Not established** | Static rules win on real low-failure data | Feature-rich multi-project real data |
 
