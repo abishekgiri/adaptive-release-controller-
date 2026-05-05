@@ -1,0 +1,21 @@
+{
+  "config_name": "robustness_short_delay",
+  "dataset_path": "data/raw/travistorrent_smoke.csv",
+  "results_root": "experiments/results",
+  "min_builds": 500,
+  "min_history_days": 365,
+  "delay_step_seconds": 120,
+  "linucb_alpha": 1.0,
+  "linucb_lambda_reg": 1.0,
+  "cost_sensitive_alpha": 1.0,
+  "cost_sensitive_lambda_reg": 1.0,
+  "cost_config": {
+    "deploy_success": 0.0,
+    "deploy_failure": 10.0,
+    "canary_success": 1.0,
+    "canary_failure": 4.0,
+    "block_safe": 2.0,
+    "block_bad": 0.5,
+    "block_unknown": 2.0
+  }
+}

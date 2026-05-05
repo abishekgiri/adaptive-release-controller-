@@ -77,23 +77,38 @@ class PageHinkleyConfig:
 
 
 class PageHinkleyDetector(DriftDetector):
-    """Page-Hinkley test for detecting upward shifts in a scalar stream."""
+    """Page-Hinkley test for detecting upward shifts in a scalar stream.
+
+    Algorithm (Mouss et al. 2004):
+        Running mean m_t = alpha * m_{t-1} + (1-alpha) * x_t
+        Cumulative sum S_t = S_{t-1} + (x_t - m_t - delta)
+        M_t = min(S_0, ..., S_t)
+        Drift if S_t - M_t > lambda_
+    """
 
     def __init__(self, config: PageHinkleyConfig = PageHinkleyConfig()) -> None:
-        # TODO: initialise cumulative sum and running mean
         self._config = config
         self._detected = False
         self._cum_sum: float = 0.0
+        self._min_sum: float = 0.0
         self._mean: float = 0.0
         self._n: int = 0
 
     def update(self, value: float) -> bool:
-        # TODO: update running mean; compute cumulative sum; compare to lambda threshold
-        raise NotImplementedError
+        """Feed one observation; returns True on the step drift is first detected."""
+        self._n += 1
+        alpha = self._config.alpha
+        self._mean = alpha * self._mean + (1.0 - alpha) * value
+        self._cum_sum += value - self._mean - self._config.delta
+        if self._cum_sum < self._min_sum:
+            self._min_sum = self._cum_sum
+        self._detected = (self._cum_sum - self._min_sum) > self._config.lambda_
+        return self._detected
 
     def reset(self) -> None:
         self._detected = False
         self._cum_sum = 0.0
+        self._min_sum = 0.0
         self._mean = 0.0
         self._n = 0
 

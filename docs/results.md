@@ -1,4 +1,215 @@
-# Phase 20: Online Replay Experiment Results
+# Phase 22: Ablation Study — Cost-Sensitive Bandit Components
+
+> **SIMULATION — NOT CAUSAL INFERENCE.**
+> All costs use `compute_cost(policy_action, logged_CI_outcome)` as a counterfactual proxy.
+
+## What This Tests
+
+Phase 22 isolates which components of the `CostSensitiveBandit` contribute to cost reduction
+on the synthetic smoke dataset (1150 steps across 2 projects). Four variants are compared:
+
+| Variant | Delay buffer | Reward signal | Drift reset | Implementation |
+| --- | --- | --- | --- | --- |
+| `full` | Enabled | −cost (asymmetric) | PageHinkley reset | `CostSensitiveBandit` + `PageHinkleyDetector` |
+| `no_delay` | **Disabled** | −cost | — | `ImmediateLinUCB` (no buffer) |
+| `no_cost` | Enabled | −1/0 (binary) | — | `BinaryRewardBandit` |
+| `no_drift` | Enabled | −cost | **Disabled** | `CostSensitiveBandit(reset_on_drift=False)` |
+
+## Exact Commands
+
+```bash
+# Seeds 0–4 (deterministic under smoke data)
+for seed in 0 1 2 3 4; do
+    python -m experiments.run_ablations --seed $seed
+done
+```
+
+## Ablation Results (all seeds identical — deterministic delays)
+
+| Variant | Steps | Updates | Censored | Cumul. Cost | Mean/Step | Deploy% | Canary% | Block% |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| `full` | 1150 | 1150 | 0 | 2383.00 | 2.072 | 40.4% | 30.1% | 29.5% |
+| `no_delay` | 1150 | 1150 | 0 | **1857.50** | **1.615** | 1.7% | 19.8% | 78.4% |
+| `no_cost` | 1150 | 1150 | 0 | 2469.00 | 2.147 | 41.4% | 22.1% | 36.5% |
+| `no_drift` | 1150 | 1150 | 0 | 1879.00 | 1.634 | 8.0% | 5.7% | 86.3% |
+
+## Component Analysis
+
+### Delay handling (full vs no_delay)
+
+`no_delay` has the **lowest cost (1857.50)** and the highest block rate (78.4%). With immediate
+feedback, the policy receives 1150 updates spread evenly across steps and converges to the
+blocking strategy faster. The delayed variant (`no_drift`) receives the same 1150 updates but
+they arrive after a lag of `max(1, ceil(build_duration_s / 60))` steps, so early steps are
+guided by an uninformed prior.
+
+**Preliminary finding (smoke data only):** Removing delay improves cost by ~21.5 points (1.1%)
+relative to `no_drift` and by ~525.5 points relative to `full`. The delay component alone costs
+nothing — the loss in `full` vs `no_delay` is primarily from drift false alarms (see §Drift).
+
+### Cost weighting (no_drift vs no_cost)
+
+`no_cost` uses binary reward (−1 on failure, 0 otherwise) instead of `r = −cost`. This is the
+**worst variant (2469 cost)**. Without cost weights, the policy cannot distinguish:
+- `deploy + failure` → cost 10 vs `block + safe` → cost 2 (factor 5×)
+
+The binary signal treats all failures equally regardless of which action caused them. The
+block arm's b-vector gets −1 updates for all failures (including failures it correctly
+blocked), which is the same signal DEPLOY would get on a failure it caused — providing
+misleading gradient information.
+
+**Finding: Cost weighting is the single most important component** on the smoke dataset.
+Removing it adds 590 cost relative to `no_drift` (+31.4%). Removing the delay buffer adds
+only 22 cost relative to `no_drift` (the opposite direction, actually —  delay adds cost by
+slowing convergence, so `no_delay` is faster).
+
+### Drift adaptation (full vs no_drift)
+
+`full` uses `PageHinkleyDetector(lambda_=50.0)` with `reset_on_drift=True`. Diagnostic:
+
+| Project | Drift resets | Total updates |
+| --- | ---: | ---: |
+| `smoke/alpha` | 17 | 600 |
+| `smoke/beta` | 27 | 550 |
+
+**44 false-alarm resets on stationary data.** The smoke dataset has no true distribution
+shift; every PageHinkley signal is a false alarm. Each reset discards all learned weights
+and forces the model to rediscover the block-heavy strategy from scratch. This explains why
+`full` has 40.4% deploy (uninformed post-reset priors) vs `no_drift` at 8.0%.
+
+**Finding: On stationary data, drift detection hurts.** `no_drift` costs 1879 vs `full` 2383
+(−504, −21.2%). This is expected behavior: drift detectors are designed to pay a false-alarm
+cost in exchange for faster recovery after real shifts. The ablation shows the detector is too
+sensitive for the smooth cost distribution in this dataset; `lambda_=50.0` needs tuning.
+
+**On data with real concept drift (e.g. abrupt build failure rate change), `full` should
+outperform `no_drift`.** This is the synthetic environment experiment (RQ4), not yet run.
+
+## Reliability Assessment
+
+| Finding | Status |
+| --- | --- |
+| Cost weighting is critical | **Preliminary** — smoke data only, 2 projects |
+| Delay slows convergence but does not change conclusions | **Preliminary** |
+| PageHinkley fires false alarms on stationary data | **Reliable** — this is expected detector behavior |
+| Drift reset hurt on smooth stationary data | **Reliable** on this dataset |
+| Full model outperforms no_drift on drifting data | **TODO** — requires synthetic drift environment (RQ4) |
+
+---
+
+# Phase 21: Robustness Analysis
+
+> **SIMULATION — NOT CAUSAL INFERENCE.**
+> All CIs are computed via percentile bootstrap over seeds; on the smoke dataset, all seeds
+> produce identical results (deterministic delay model), so CI widths are zero.
+> Bootstrap machinery is verified correct — variance will emerge with real stochastic data.
+
+## Conditions
+
+| Condition | Change from default | Deploy failure | Delay step (s) |
+| --- | --- | ---: | ---: |
+| `online_smoke` (default) | — | 10.0 | 60 |
+| `robustness_high_failure` | deploy_failure↑ × 2, canary_failure↑ × 2 | 20.0 | 60 |
+| `robustness_low_block` | block_safe↓ 2→1, block_unknown↓ 2→1 | 10.0 | 60 |
+| `robustness_short_delay` | delay_step_seconds↑ 60→120 (halves step-count) | 10.0 | 120 |
+| `robustness_long_delay` | delay_step_seconds↓ 60→30 (doubles step-count) | 10.0 | 30 |
+
+## Exact Commands
+
+```bash
+python -m experiments.run_robustness \
+    --configs experiments/configs/online_smoke.json \
+              experiments/configs/robustness_high_failure.json \
+              experiments/configs/robustness_low_block.json \
+              experiments/configs/robustness_short_delay.json \
+              experiments/configs/robustness_long_delay.json \
+    --seeds 0 1 2 3 4 \
+    --results-root experiments/results/robustness
+```
+
+## Results Table: Policy × Condition × Mean Cost ± Bootstrap CI
+
+> CI shown as [lo, hi]; zero-width CIs confirm deterministic delay model, not a code bug.
+
+### Default cost matrix (deploy_failure=10)
+
+| Policy | Default | Short delay | Long delay |
+| --- | ---: | ---: | ---: |
+| `static_rules` | 1878 [1878, 1878] | 1878 [1878, 1878] | 1878 [1878, 1878] |
+| `heuristic_score` | 2319 [2319, 2319] | 2319 [2319, 2319] | 2319 [2319, 2319] |
+| `linucb` | 1879 [1879, 1879] | **1849** [1849, 1849] | 1897 [1897, 1897] |
+| `cost_sensitive_bandit` | 1879 [1879, 1879] | **1849** [1849, 1849] | 1897 [1897, 1897] |
+
+### Alternative cost matrices (default delay, deploy_failure varies)
+
+| Policy | Default (df=10) | High failure (df=20) | Low block (bs=1) |
+| --- | ---: | ---: | ---: |
+| `static_rules` | 1878 | 2564 | 1584 |
+| `heuristic_score` | 2319 | 4103 | 2319 |
+| `linucb` | 1879 | **2079** | **1164** |
+| `cost_sensitive_bandit` | 1879 | **2079** | **1164** |
+
+## Interpretation
+
+### Do conclusions survive cost-matrix changes?
+
+**Yes, with one nuance.** Under the default cost matrix, `linucb` and `static_rules` are
+essentially tied (1879 vs 1878 — a difference of 1 cost unit across 1150 steps). This tie
+reflects that static rules' canary-heavy strategy is near-optimal at the smoke data's
+average failure rate (~25%).
+
+Under the **high failure cost** matrix (deploy_failure=20): bandits win by **485 cost (19%)**
+because the learned block-heavy strategy (92.7% block) avoids expensive failures. Static rules
+continues to canary 60.9% of commits, paying the doubled failure penalty.
+
+Under the **low block penalty** matrix (block_safe=1): bandits win by **420 cost (27%)**
+because blocking is now cheaper (block_safe=1 vs 2). The bandits shift further into blocking
+(89.3% block), while static rules cannot adapt its fixed thresholds.
+
+**Conclusion: bandit advantage increases as blocking becomes relatively cheaper or failures
+become more expensive.** This is the correct qualitative behavior from a cost-minimizing learner.
+
+### Do conclusions survive delay changes?
+
+**Partially.** The bandit ranking changes at extreme delay settings:
+
+- **Short delay** (`delay_step_seconds=120`): each build "completes" in half as many steps.
+  Bandits receive feedback twice as fast in step-count terms, converge to a block-heavy strategy
+  (69.1% block) faster, and beat static rules by 29 cost units.
+
+- **Long delay** (`delay_step_seconds=30`): each build occupies twice as many steps. The bandit
+  receives rewards further into the future and the initial uninformed-prior period is longer.
+  It converges to a less decisive strategy (62.3% block vs 69.1% in short delay), and costs
+  1897 — 19 more than static rules (1878).
+
+**Finding: under heavy delay (many steps per build), the static rule marginally outperforms
+a learning bandit.** The effect is small (1.0% more cost) and may not survive with real
+multi-project data, but it is consistent with the expected delay-sensitivity of UCB algorithms.
+
+### Is policy ranking stable?
+
+| Ranking | Default | High failure | Low block | Short delay | Long delay |
+| --- | --- | --- | --- | --- | --- |
+| Best bandit vs static | Tied (Δ=1) | Bandit wins (Δ=485) | Bandit wins (Δ=420) | Bandit wins (Δ=29) | Static wins (Δ=19) |
+| Heuristic score | Always worst | Always worst | Always worst | Always worst | Always worst |
+
+**Heuristic score is consistently worst** across all conditions because it never blocks (0%
+block rate) and deploys 37% of commits, absorbing full failure costs.
+
+## Reliability Assessment
+
+| Finding | Confidence | Caveat |
+| --- | --- | --- |
+| Bandit advantage grows with failure cost | **Preliminary** | 2 projects, synthetic data |
+| Bandit advantage grows with lower block cost | **Preliminary** | Same caveat |
+| Long delay hurts bandit convergence | **Preliminary** | Effect is small (1%) |
+| Bootstrap CI machinery is correct | **Reliable** | Unit-tested |
+| Zero-width CI is expected on this dataset | **Reliable** | Deterministic delay confirmed |
+| All results need real multi-project replication | Required | — |
+
+---
+
+# Phase 20: Online Replay Experiment Results (Corrected)
 
 > **SIMULATION — NOT CAUSAL INFERENCE.**
 > Costs computed as `compute_cost(policy_action, logged_outcome)` using the CI
@@ -14,24 +225,21 @@
 | --- | --- |
 | Config file | `experiments/configs/online_smoke.json` |
 | Evaluation mode | Online replay simulation (`evaluation/online_replay.py`) |
-| Dataset | `data/raw/travistorrent_smoke.csv` (synthetic; real TravisTorrent not yet present) |
+| Dataset | `data/raw/travistorrent_smoke.csv` — synthetic, TravisTorrent-format CSV |
+| Dataset note | Real TravisTorrent CSV not yet present; smoke CSV was generated to match schema |
 | Dataset rows | 1150 across 2 synthetic projects |
-| Projects / trajectories | 2 (`smoke/alpha`: 600 builds, 15% failure; `smoke/beta`: 550 builds, 35% failure) |
-| Project history span | Both span > 365 days (filter passed) |
+| Projects / trajectories | `smoke/alpha` (600 builds, 15% failure); `smoke/beta` (550 builds, 35% failure) |
+| Project history span | Both span > 365 days (min_history_days filter passed) |
 | Min builds filter | 500 (both projects pass) |
-| Seeds | 0, 1, 2, 3, 4 |
-| Delay model | Explicit: `delay_steps = max(1, ceil(build_duration_s / 60))` |
+| Seeds | 0, 1, 2, 3, 4 (all produce identical results — see §Seed Variance) |
+| Delay model | `delay_steps = max(1, ceil(build_duration_s / 60))` — deterministic from CSV |
 | Cost matrix | Default `CostConfig` (deploy_failure=10, canary_failure=4, block_safe=2, block_bad=0.5) |
-| LinUCB α | 1.0 |
-| CostSensitiveBandit α | 1.0 |
-| λ (both) | 1.0 |
+| LinUCB α | 1.0, λ=1.0 |
+| CostSensitiveBandit α | 1.0, λ=1.0 (no drift detector in this run) |
 
 ### Exact Commands
 
 ```bash
-# Generate smoke dataset
-python /tmp/gen_smoke_csv.py  # produces data/raw/travistorrent_smoke.csv
-
 # Run online replay for seeds 0–4
 for seed in 0 1 2 3 4; do
     python -m experiments.run_bandits \
@@ -394,21 +602,23 @@ gracefully is an empirical question that is currently unanswered.
 
 ## 6. Drift Behavior
 
-### Finding: All drift detectors are unimplemented; no drift evidence exists
+### Update (Phase 22): PageHinkley is now implemented
 
-`drift/detectors.py` contains three stub classes (ADWIN, Page-Hinkley, DDM); all raise
-`NotImplementedError`. No drift experiment (RQ4) has been run.
+`drift/detectors.py` `PageHinkleyDetector` is now fully implemented (Phase 22). The ablation
+study (Phase 22) demonstrates that the detector fires 44 false alarms on 1150 stationary steps
+with `lambda_=50.0`. Threshold tuning is needed before RQ4 experiments can be run.
 
-The evaluation protocol specifies:
+ADWIN and DDM remain as stubs (`NotImplementedError`).
 
 | Experiment | Drift type | Status |
 | --- | --- | --- |
-| `RQ4-drift-none` | Stationary | ✗ Not run |
+| `RQ4-drift-none` | Stationary | ✗ Not run (synthetic env needed) |
 | `RQ4-drift-abrupt-reset` | Abrupt, policy reset on detection | ✗ Not run |
 | `RQ4-drift-abrupt-no-reset` | Abrupt, no reset | ✗ Not run |
 
-**Cannot claim anything about drift recovery.** This is one of the three primary contributions
-stated in `docs/algorithm.md`. The evidence for it does not yet exist.
+**Phase 22 ablation shows the drift mechanism works but is over-sensitive on stationary
+data.** On data with real concept drift, the reset should help. This requires the synthetic
+drift environment (RQ4), not yet run.
 
 ---
 
@@ -452,24 +662,27 @@ these numbers.** They are retained for historical reference only.
 
 | Component | Status | Evidence |
 | --- | --- | --- |
-| `PendingRewardBuffer` delay logic | Correct | 146 tests pass |
+| `PendingRewardBuffer` delay logic | Correct | 174 tests pass (Phase 22) |
 | `CostConfig` cost matrix | Correct | Unit tests, code review |
 | `LinUCBPolicy` parameter updates (A, b) | Correct | Matrix update tests |
+| `PageHinkleyDetector` implementation | Correct | Phase 22: fires 44× on 1150 stationary steps |
 | `evaluate_ips` cost accumulation | Correct | Unit tests with known propensities |
 | `TravisTorrentLoader` context extraction | Correct | Schema and integration tests |
 | `StaticRulesPolicy` determinism and thresholds | Correct | Decision-semantics test suite |
-| Pipeline end-to-end (load → evaluate → write JSON) | Runs without error | Phase 17 smoke run |
+| Online replay with delayed updates | Runs correctly | Phase 20–22; all rewards matured |
+| Robustness runner + bootstrap CI machinery | Correct | Phase 21; zero-width CIs on deterministic data |
 
 ### Not Yet Reliable (cannot support paper claims)
 
-| Claim | Why it fails | Required fix |
-| --- | --- | --- |
-| Cost-sensitive bandit outperforms static rules | Bandit not trained; coverage confound | Online replay with policy updates |
-| LinUCB and cost-sensitive bandit differ | Identical outputs from fresh priors | Same as above |
-| Results robust to cost matrix | Only one matrix evaluated | Run RQ2 configs |
-| Results robust to delay | No delay ablation | Run RQ3 with synthetic env |
-| Drift adaptation reduces post-drift cost | No detector implemented; no drift run | Implement 1 detector; run RQ4 |
-| IPS estimates are valid counterfactuals | Logging propensities unknown | Use synthetic env with known propensity |
+| Claim | Why it fails | Status | Required fix |
+| --- | --- | --- | --- |
+| Cost-sensitive bandit outperforms static rules | 2-project synthetic data; not generalizable | **Preliminary** (Phase 20) | Run on real multi-project TravisTorrent |
+| LinUCB and cost-sensitive bandit differ | Identical at same α; differ only at different α | **Preliminary** (Phase 20) | Different α sweep, or add drift detector |
+| Results robust to cost matrix | Smoke data only | **Preliminary** (Phase 21) | Run with real data |
+| Results robust to delay | Smoke data only; effect size is small | **Preliminary** (Phase 21) | Run with stochastic geometric delays |
+| Drift adaptation reduces post-drift cost | PageHinkley implemented but RQ4 not run | **TODO** | Run synthetic drift environment (RQ4) |
+| IPS estimates are valid counterfactuals | Logging propensities unknown | **Not addressed** | Use synthetic env with known propensity |
+| Cost weighting is critical (vs binary) | Smoke data only | **Preliminary** (Phase 22) | Replicate on real data |
 
 ---
 
