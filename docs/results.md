@@ -1,3 +1,213 @@
+# Phase 20: Online Replay Experiment Results
+
+> **SIMULATION — NOT CAUSAL INFERENCE.**
+> Costs computed as `compute_cost(policy_action, logged_outcome)` using the CI
+> outcome as a counterfactual proxy. Valid only under the assumption that CI outcome
+> is independent of the deployment action chosen. Do not report as causal estimates
+> of real-world operational cost.
+
+---
+
+## Experiment Setup
+
+| Item | Value |
+| --- | --- |
+| Config file | `experiments/configs/online_smoke.json` |
+| Evaluation mode | Online replay simulation (`evaluation/online_replay.py`) |
+| Dataset | `data/raw/travistorrent_smoke.csv` (synthetic; real TravisTorrent not yet present) |
+| Dataset rows | 1150 across 2 synthetic projects |
+| Projects / trajectories | 2 (`smoke/alpha`: 600 builds, 15% failure; `smoke/beta`: 550 builds, 35% failure) |
+| Project history span | Both span > 365 days (filter passed) |
+| Min builds filter | 500 (both projects pass) |
+| Seeds | 0, 1, 2, 3, 4 |
+| Delay model | Explicit: `delay_steps = max(1, ceil(build_duration_s / 60))` |
+| Cost matrix | Default `CostConfig` (deploy_failure=10, canary_failure=4, block_safe=2, block_bad=0.5) |
+| LinUCB α | 1.0 |
+| CostSensitiveBandit α | 1.0 |
+| λ (both) | 1.0 |
+
+### Exact Commands
+
+```bash
+# Generate smoke dataset
+python /tmp/gen_smoke_csv.py  # produces data/raw/travistorrent_smoke.csv
+
+# Run online replay for seeds 0–4
+for seed in 0 1 2 3 4; do
+    python -m experiments.run_bandits \
+        --config experiments/configs/online_smoke.json \
+        --seed $seed
+done
+```
+
+Output written to `experiments/results/online_smoke/<seed>/` (gitignored).
+
+---
+
+## Aggregate Results (seeds 0–4, all identical — see §Seed Variance)
+
+| Policy | Steps | Updates applied | Censored skipped | Cumul. cost | Mean cost/step | Deploy% | Canary% | Block% |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| `static_rules` | 1150 | 1150 | 0 | **1878.0** | 1.633 | 2.6% | 60.9% | 36.5% |
+| `heuristic_score` | 1150 | 1150 | 0 | 2319.0 | 2.017 | 37.3% | 62.7% | 0.0% |
+| `linucb` (α=1.0) | 1150 | 1150 | 0 | 1879.0 | 1.634 | 8.0% | 5.7% | 86.3% |
+| `cost_sensitive_bandit` (α=1.0) | 1150 | 1150 | 0 | 1879.0 | 1.634 | 8.0% | 5.7% | 86.3% |
+
+All 1150 rewards matured and were applied (`flush_at_end=True`). Zero censored outcomes
+in the smoke dataset (all rows have a definite pass/fail status).
+
+---
+
+## Per-Project Breakdown
+
+| Project | Failure rate | Policy | Cumul. cost | Updates | Deploy | Canary | Block |
+| --- | ---: | --- | ---: | ---: | ---: | ---: | ---: |
+| `smoke/alpha` | 15% | `static_rules` | 911.5 | 600 | 21 | 473 | 106 |
+| `smoke/alpha` | 15% | `linucb` | 982.0 | 600 | 66 | 50 | 484 |
+| `smoke/alpha` | 15% | `cost_sensitive_bandit` | 982.0 | 600 | 66 | 50 | 484 |
+| `smoke/beta` | 35% | `static_rules` | 966.5 | 550 | 9 | 227 | 314 |
+| `smoke/beta` | 35% | `linucb` | 897.0 | 550 | 26 | 15 | 509 |
+| `smoke/beta` | 35% | `cost_sensitive_bandit` | 897.0 | 550 | 26 | 15 | 509 |
+
+---
+
+## Evidence That Learning Is Occurring
+
+The step trace below (first 20 steps of `smoke/alpha`, LinUCB, seed 0) confirms the policy
+changes its action as delayed rewards arrive. It does not simply deploy everywhere.
+
+```
+step=  0  DEPLOY   outcome=success  cost=0.0   updates_applied=0  pending_before=0
+step=  1  DEPLOY   outcome=failure  cost=10.0  updates_applied=0  pending_before=1
+step=  2  CANARY   outcome=success  cost=1.0   updates_applied=1  pending_before=2
+step=  3  CANARY   outcome=success  cost=1.0   updates_applied=0  pending_before=2
+...
+step= 10  BLOCK    outcome=failure  cost=0.5   updates_applied=1  pending_before=9
+step= 11  BLOCK    outcome=success  cost=2.0   updates_applied=0  pending_before=9
+step= 14  BLOCK    outcome=success  cost=2.0   updates_applied=1  pending_before=11
+```
+
+Key observations:
+- Step 0: uninformed prior → DEPLOY (maximum UCB on fresh λI matrix)
+- Step 1: DEPLOY again (step 0's reward still in buffer, not yet matured)
+- Step 2: first reward matures (`updates_applied=1`) → policy shifts toward CANARY
+  (the step 0 SUCCESS with cost=0 made deploy look good, but step 1 FAILURE with
+  cost=10 created a strong negative b-vector update when it arrived at step ≥2)
+- Steps 10+: policy converges to BLOCK-heavy strategy after observing failure costs
+
+The `pending_count_before` column confirms the buffer is accumulating correctly:
+delays vary per record (based on `build_duration_s`), and rewards arrive
+asynchronously.
+
+---
+
+## Did LinUCB and Cost-Sensitive-Bandit Diverge?
+
+**With identical hyperparameters (α=1.0, λ=1.0): NO — they are mathematically equivalent.**
+
+Both implement the disjoint LinUCB update rule:
+```
+A_a  +=  x xᵀ
+b_a  +=  r x    where r = −cost
+UCB  =  θᵀx  +  α √(xᵀ A⁻¹ x)
+```
+
+With the same α, λ, and reward signal, the b-vectors are identical to machine
+precision after the same update sequence. `‖b_linucb − b_bandit‖₂ = 0.000000`
+for all three arms.
+
+**With different α: they diverge significantly.**
+
+| Policy | α | Cumul. cost (smoke/alpha) | Deploy | Canary | Block |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `linucb` | 0.0 (exploit) | 963.5 | 43 | 421 | 136 |
+| `cost_sensitive_bandit` | 5.0 (explore) | 999.5 | 120 | 275 | 205 |
+
+Actions differ on **309 of 600 steps (51.5%)** — a clear divergence driven by
+exploration vs exploitation. This confirms the divergence mechanism works; the
+default smoke config intentionally uses identical hyperparameters.
+
+---
+
+## Seed Variance
+
+Results are **identical across all 5 seeds** (0–4). This is expected: the online replay
+loop uses explicit delays derived from `build_duration_s` (deterministic from the CSV),
+bypassing the buffer's RNG sampler entirely. The master `rng` seed is consumed only to
+draw per-project seeds, which then feed the buffer's `PendingRewardBuffer(rng=...)`.
+Since no stochastic delay sampling occurs, the seed has no effect on outcomes.
+
+**Implication:** Variance across seeds will only appear when using stochastic delays
+(`delay_p` parameter on `PendingRewardBuffer`) or when the policy itself uses RNG
+(e.g. Thompson sampling). The current deterministic delay model produces zero
+Monte Carlo variance — this is a feature for reproducibility but means bootstrap
+CIs across seeds are uninformative (all collapsed to a single value).
+
+---
+
+## Interpretation
+
+### What learned differently from what
+
+`linucb` and `cost_sensitive_bandit` both converged to a **block-heavy strategy (86%
+BLOCK)** after learning. This is the correct response to the cost matrix: with even
+modest failure rates, blocking (`cost=0.5 on failure, 2.0 on success`) is cheaper than
+deploying (`cost=10.0 on failure`) or canarying (`cost=4.0 on failure`).
+
+On `smoke/alpha` (15% failure): `static_rules` is cheaper (911.5 vs 982.0) because its
+canary-heavy strategy (79% canary) exploits the low failure rate — at 15% failure,
+`canary_expected = 0.85×1.0 + 0.15×4.0 = 1.45/step` beats `block_expected =
+0.85×2.0 + 0.15×0.5 = 1.775/step`. LinUCB over-blocks on the low-failure project.
+
+On `smoke/beta` (35% failure): `linucb` is cheaper (897.0 vs 966.5) because its
+block-heavy strategy pays off — at 35% failure, `block_expected = 0.65×2.0 +
+0.35×0.5 = 1.475/step` beats `canary_expected = 0.65×1.0 + 0.35×4.0 = 2.05/step`.
+
+**Aggregate totals are essentially tied** (1878 vs 1879) because the two projects
+cancel out. This is a smoke-data artifact.
+
+`heuristic_score` is the most expensive policy (2319.0, mean 2.017/step) because it
+never BLOCKs (BLOCK% = 0%) — its score thresholds never trigger BLOCK on the
+smoke contexts. It deploys 37% of commits, absorbing high failure costs.
+
+### What this does NOT show
+
+- Whether the bandit converges faster or slower than static rules
+- Whether the bandit would outperform static rules on the real multi-project TravisTorrent dataset
+- Any causal claim about real-world deployment outcomes
+
+---
+
+## Delayed Buffer Diagnostics
+
+| Metric | Value |
+| --- | --- |
+| Total rewards queued | 1150 (one per step) |
+| Total rewards applied (`flush_at_end=True`) | 1150 |
+| Censored rewards skipped | 0 |
+| Peak pending count (observed) | ~14 (smoke/alpha, early steps) |
+| Delay range (smoke data) | 1–60 steps (30–3600s builds ÷ 60s/step) |
+| Stochastic delay used | No (explicit delay from `build_duration_s`) |
+
+All 1150 rewards were applied before result collection. The buffer correctly held
+rewards until their scheduled step and released them in chronological order.
+
+---
+
+## Limitations
+
+| Limitation | Impact | Mitigation needed |
+| --- | --- | --- |
+| Synthetic smoke dataset | Results not representative of real CI/CD projects | Replace with real TravisTorrent CSV |
+| Two projects only | No cross-project uncertainty estimate | Need 10+ projects for meaningful CIs |
+| Identical seeds produce identical results | Bootstrap CIs degenerate | Use stochastic delays (`delay_p`) for variance |
+| LinUCB == CostSensitiveBandit at same α | Cannot distinguish policies without different hyperparams or drift detection | Enable drift detector or sweep α |
+| Counterfactual proxy validity | BLOCK action cost is estimated from CI outcome the policy never ran | Acknowledge as assumption; use synthetic env for ground truth |
+| No online training on real dataset | Policies reset per project; no warm-start cross-project | Expected; document as design choice |
+| `heuristic_score` never BLOCKs | Score formula needs tuning for smoke context range | Check threshold calibration |
+
+---
+
 # Phase 18: Results Validation and Credibility Audit
 
 > **Status:** Audit complete. No paper claims are currently valid for submission.
