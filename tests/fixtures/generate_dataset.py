@@ -12,7 +12,6 @@ import argparse
 import hashlib
 from pathlib import Path
 
-from features.extractor import calculate_risk_score, decide_deployment
 from knowledge_base.db import (
     DEFAULT_DB_PATH,
     DeploymentRecord,
@@ -20,6 +19,47 @@ from knowledge_base.db import (
     initialize_database,
     insert_many,
 )
+
+# ---------------------------------------------------------------------------
+# Local copies of retired features/extractor helpers.
+# calculate_risk_score and decide_deployment were removed from the research
+# pipeline during the bandit pivot (A6). They live here solely so this
+# deterministic smoke fixture keeps working without polluting production code.
+# ---------------------------------------------------------------------------
+
+def _calculate_risk_score(
+    files_changed: int,
+    lines_added: int,
+    lines_deleted: int,
+    test_passed: bool,
+    ci_duration: float,
+    dependency_change: bool = False,
+    risky_area_change: bool = False,
+    previous_failure_count: int = 0,
+) -> float:
+    """Local risk score (retired from features/extractor.py)."""
+    changed_lines = lines_added + lines_deleted
+    score = 0.0
+    score += min(files_changed / 50, 0.25)
+    score += min(changed_lines / 1000, 0.25)
+    score += min(ci_duration / 3600, 0.15)
+    score += min(previous_failure_count * 0.05, 0.15)
+    if not test_passed:
+        score += 0.30
+    if dependency_change:
+        score += 0.10
+    if risky_area_change:
+        score += 0.10
+    return round(min(score, 1.0), 4)
+
+
+def _decide_deployment(risk_score: float, test_passed: bool, threshold: float = 0.7) -> str:
+    """Local decision (retired from features/extractor.py)."""
+    if not test_passed:
+        return "block"
+    if risk_score >= threshold:
+        return "block"
+    return "deploy"
 
 
 DEFAULT_RECORD_COUNT = 100
@@ -50,7 +90,7 @@ def generate_record(index: int) -> DeploymentRecord:
         dependency_change=dependency_change,
         risky_area_change=risky_area_change,
     )
-    risk_score = calculate_risk_score(
+    risk_score = _calculate_risk_score(
         files_changed=files_changed,
         lines_added=lines_added,
         lines_deleted=lines_deleted,
@@ -60,7 +100,7 @@ def generate_record(index: int) -> DeploymentRecord:
         risky_area_change=risky_area_change,
         previous_failure_count=previous_failure_count,
     )
-    decision = decide_deployment(risk_score=risk_score, test_passed=test_passed)
+    decision = _decide_deployment(risk_score=risk_score, test_passed=test_passed)
     outcome = simulated_outcome(
         commit_sha=commit_sha,
         test_passed=test_passed,
