@@ -1,4 +1,10 @@
-"""Generate a deterministic simulated deployment dataset."""
+"""Generate a deterministic simulated deployment dataset.
+
+NOT FOR EVALUATION — features and outcomes are coupled by construction (the outcome is
+derived from the same risk function the policy uses to decide). This file exists solely
+as a deterministic smoke-test fixture for unit tests. Do not feed its output into any
+reported experiment or evaluation pipeline.
+"""
 
 from __future__ import annotations
 
