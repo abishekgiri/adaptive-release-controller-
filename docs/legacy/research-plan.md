@@ -1,3 +1,5 @@
+> **Superseded by the bandit reframing — see docs/research-direction.md and docs/problem-formulation.md.**
+
 # Self-Adaptive Deployment Controller Using MAPE-K Feedback Loop
 
 ## Research Question
