@@ -80,10 +80,10 @@ All three modes run with ≥ 30 seeds. If the method handles `abrupt` but not `g
 
 ## 7. Regret
 
-**Oracle policy** `π*`: at each step `t`, selects the action minimising expected cost given full knowledge of the hidden state:
+**Oracle policy** `π*`: at each step `t`, selects the action minimising expected cost given full knowledge of the hidden-state random variable `H_t`. Let `O_t` denote the outcome random variable induced by `H_t` and the deployment process:
 
 ```
-a*_t = argmin_{a ∈ A}  E[ cost(a, outcome_t) | hidden_state_t ]
+a*_t = argmin_{a ∈ A} E[cost(a, O_t) | H_t]
 ```
 
 Under the default cost matrix, the oracle never selects `canary` — `canary` is dominated when the hidden state is known (`deploy_success=0 < canary_success=1`; `block_bad=0.5 < canary_failure=4`). The value of `canary` for a bandit comes from uncertainty reduction, which the oracle does not need (Lattimore & Szepesvári, 2020, §1).
@@ -91,12 +91,12 @@ Under the default cost matrix, the oracle never selects `canary` — `canary` is
 **Cumulative regret** (primary metric):
 
 ```
-Regret(T) = Σ_{t=1}^{T} [ cost(a_t, o_{t+k_t}) − oracle_cost(o_{t+k_t}) ]
+Regret(T) = Σ_{t=1}^{T} [ cost(a_t, O_t) − cost(a*_t, O_t) ]
 ```
 
-where `oracle_cost(o)` = `min_{a} cost(a, o)`, implemented in `rewards.cost_model.oracle_cost`. Reported with bootstrap 95% CIs over ≥ 30 seeds; pairwise comparisons use paired bootstrap with Holm–Bonferroni correction (Evaluation Metrics, CLAUDE.md).
+The realized empirical regret uses the observed sample of `O_t` once the delayed reward is available. Reported with bootstrap 95% CIs over ≥ 30 seeds; pairwise comparisons use paired bootstrap with Holm–Bonferroni correction (Evaluation Metrics, CLAUDE.md).
 
-**Best-in-hindsight regret** (diagnostic): `Regret_bih(T) = Σ_t cost(a_t, o_{t+k_t}) − min_{a} Σ_t cost(a, o_{t+k_t})`.
+**Best-in-hindsight regret** (diagnostic): `Regret_bih(T) = Σ_t cost(a_t, O_t) − min_{a} Σ_t cost(a, O_t)`.
 
 ---
 

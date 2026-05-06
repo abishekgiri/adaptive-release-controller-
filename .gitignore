@@ -3,6 +3,6 @@ __pycache__/
 .venv/
 *.db
 CLAUDE.md
+.claude/
 experiments/results/
 data/raw/
-
