@@ -10,15 +10,27 @@ from __future__ import annotations
 
 import argparse
 import hashlib
-from pathlib import Path
 
-from knowledge_base.db import (
-    DEFAULT_DB_PATH,
-    DeploymentRecord,
-    connect,
-    initialize_database,
-    insert_many,
-)
+from dataclasses import dataclass
+
+
+# ---------------------------------------------------------------------------
+# Local stub of the old DeploymentRecord — the DB schema no longer has this
+# table. This fixture is NOT FOR EVALUATION and is self-contained so it
+# doesn't pull in the new five-table audit schema.
+# ---------------------------------------------------------------------------
+
+@dataclass(frozen=True)
+class DeploymentRecord:
+    commit_sha: str
+    files_changed: int
+    lines_added: int
+    lines_deleted: int
+    test_passed: bool
+    ci_duration: float
+    risk_score: float
+    decision: str
+    outcome: str
 
 # ---------------------------------------------------------------------------
 # Local copies of retired features/extractor helpers.
@@ -208,12 +220,7 @@ def parse_args() -> argparse.Namespace:
     """Parse command line arguments."""
 
     parser = argparse.ArgumentParser(
-        description="Generate simulated deployment records for Phase 1."
-    )
-    parser.add_argument(
-        "--db",
-        default=str(DEFAULT_DB_PATH),
-        help="Path to the SQLite deployment database.",
+        description="Generate simulated deployment records (smoke fixture only)."
     )
     parser.add_argument(
         "--count",
@@ -221,31 +228,17 @@ def parse_args() -> argparse.Namespace:
         default=DEFAULT_RECORD_COUNT,
         help="Number of deployment records to generate.",
     )
-    parser.add_argument(
-        "--reset",
-        action="store_true",
-        help="Delete existing deployment records before inserting generated data.",
-    )
     return parser.parse_args()
 
 
 def main() -> None:
-    """Generate and store simulated deployment records."""
+    """Generate simulated deployment records and print a summary."""
 
     args = parse_args()
     if args.count < 1:
         raise ValueError("--count must be at least 1")
-
-    db_path = Path(args.db)
-    initialize_database(db_path)
     records = generate_records(args.count)
-    with connect(db_path) as connection:
-        if args.reset:
-            connection.execute("DELETE FROM deployments")
-            connection.commit()
-        row_ids = insert_many(connection, records)
-
-    print(f"Inserted {len(row_ids)} deployment records into {db_path}")
+    print(f"Generated {len(records)} deployment records (smoke fixture — not persisted)")
 
 
 if __name__ == "__main__":
