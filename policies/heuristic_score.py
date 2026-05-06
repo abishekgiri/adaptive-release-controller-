@@ -1,4 +1,9 @@
-"""Heuristic risk-score policy with a fixed threshold; experimental baseline 2."""
+"""Heuristic risk-score policy with fixed thresholds; experimental baseline 2.
+
+Computes a deterministic risk score from Context fields and maps it to
+{DEPLOY, CANARY, BLOCK} via two thresholds. Does not learn. Serves as the
+"slightly better than static rules" baseline that bandit policies should beat.
+"""
 
 from __future__ import annotations
 
@@ -7,30 +12,51 @@ from policies.base import Policy
 
 
 class HeuristicScorePolicy(Policy):
-    """Applies a hand-crafted risk score with a fixed decision threshold; does not learn.
+    """Applies a hand-crafted risk score with fixed decision thresholds.
 
-    The score uses only pre-action ``Context`` fields and maps the old binary
-    score into the three-action space with a conservative block threshold and a
-    lower canary threshold for ambiguous changes.
+    Score formula, normalised to [0, 1]:
+        0.25 * min(files_changed / 50, 1.0)
+        + 0.25 * min((lines_added + lines_deleted) / 1000, 1.0)
+        + 0.20 * recent_failure_rate
+        + 0.15 * has_risky_path_change
+        + 0.10 * has_dependency_change
+        + 0.05 * (1 - min(author_experience / 10, 1.0))
+
+    Decision:
+        score >= canary_threshold -> BLOCK
+        score >= deploy_threshold -> CANARY
+        otherwise                 -> DEPLOY
     """
 
-    def __init__(self, threshold: float = 0.5, policy_id: str = "heuristic_score") -> None:
-        if not 0.0 < threshold <= 1.0:
-            raise ValueError("threshold must be in (0, 1]")
-        self._threshold = threshold
+    def __init__(
+        self,
+        deploy_threshold: float = 0.25,
+        canary_threshold: float = 0.55,
+        policy_id: str = "heuristic_score",
+    ) -> None:
+        if not 0.0 <= deploy_threshold <= 1.0:
+            raise ValueError("deploy_threshold must be in [0, 1]")
+        if not 0.0 <= canary_threshold <= 1.0:
+            raise ValueError("canary_threshold must be in [0, 1]")
+        if deploy_threshold >= canary_threshold:
+            raise ValueError("deploy_threshold must be lower than canary_threshold")
+
+        self._deploy_threshold = deploy_threshold
+        self._canary_threshold = canary_threshold
         self._policy_id = policy_id
 
     def select_action(self, context: Context) -> tuple[Action, float]:
+        """Return a deterministic action and propensity for the context."""
+
         score = self.risk_score(context)
-        if score >= self._threshold:
+        if score >= self._canary_threshold:
             return Action.BLOCK, 1.0
-        if score >= self._threshold * 0.6:
+        if score >= self._deploy_threshold:
             return Action.CANARY, 1.0
         return Action.DEPLOY, 1.0
 
     def update(self, context: Context, action: Action, reward: Reward) -> None:
-        # Fixed heuristic; no learning.
-        pass
+        pass  # Fixed heuristic; no learning.
 
     def reset(self) -> None:
         pass
@@ -40,24 +66,21 @@ class HeuristicScorePolicy(Policy):
         return self._policy_id
 
     def risk_score(self, context: Context) -> float:
-        """Return an explainable risk score in ``[0, 1]`` from pre-action signals."""
+        """Return an explainable risk score in [0, 1] from pre-action signals."""
 
-        file_count_score = _clamp(context.files_changed / 50.0)
-        churn_score = _clamp(context.src_churn / 1500.0)
-        past_failure_score = _clamp(context.recent_failure_rate)
-        ci_time_score = _clamp(context.build_duration_s / 600.0)
-        risky_path_score = 1.0 if context.has_risky_path_change else 0.0
-        dependency_score = 1.0 if context.has_dependency_change else 0.0
+        return round(_clamp(self._score(context)), 4)
 
-        score = (
-            0.25 * file_count_score
-            + 0.25 * churn_score
-            + 0.20 * past_failure_score
-            + 0.15 * ci_time_score
-            + 0.10 * risky_path_score
-            + 0.05 * dependency_score
+    def _score(self, context: Context) -> float:
+        churn = context.lines_added + context.lines_deleted
+        experience_penalty = 1.0 - min(context.author_experience / 10.0, 1.0)
+        return (
+            0.25 * min(context.files_changed / 50.0, 1.0)
+            + 0.25 * min(churn / 1000.0, 1.0)
+            + 0.20 * _clamp(context.recent_failure_rate)
+            + 0.15 * float(context.has_risky_path_change)
+            + 0.10 * float(context.has_dependency_change)
+            + 0.05 * experience_penalty
         )
-        return round(_clamp(score), 4)
 
 
 def _clamp(value: float) -> float:

@@ -46,6 +46,12 @@ class PendingRewardBuffer:
 
     The experiment loop should call :meth:`pop_available` or :meth:`flush` at the
     start of each step and only update policies with returned rewards.
+
+    Delay model (choose one):
+      - ``delay_p``: geometric delay k ~ Geom(p) as in the formal model. This is
+        the canonical choice matching problem-formulation.md (default p=0.3).
+      - ``min_delay`` / ``max_delay``: uniform integer delay for ablation studies.
+      - ``delay_sampler``: arbitrary callable for custom distributions.
     """
 
     def __init__(
@@ -55,6 +61,7 @@ class PendingRewardBuffer:
         min_delay: int = 1,
         max_delay: int = 1,
         delay_sampler: DelaySampler | None = None,
+        delay_p: float | None = None,
     ) -> None:
         if not isinstance(rng, np.random.Generator):
             raise TypeError("rng must be a numpy.random.Generator")
@@ -62,11 +69,14 @@ class PendingRewardBuffer:
             raise ValueError("min_delay must be non-negative")
         if max_delay < min_delay:
             raise ValueError("max_delay must be greater than or equal to min_delay")
+        if delay_p is not None and not (0.0 < delay_p <= 1.0):
+            raise ValueError("delay_p must be in (0, 1]")
 
         self._rng = rng
         self._min_delay = min_delay
         self._max_delay = max_delay
         self._delay_sampler = delay_sampler
+        self._delay_p = delay_p
         self._pending: dict[str, PendingReward] = {}
         self._insertion_order: dict[str, int] = {}
         self._next_sequence = 0
@@ -199,6 +209,10 @@ class PendingRewardBuffer:
     def _sample_delay(self) -> int:
         if self._delay_sampler is not None:
             delay = int(self._delay_sampler(self._rng))
+        elif self._delay_p is not None:
+            # Geometric delay k ~ Geom(p): canonical model from problem-formulation.md.
+            # numpy geometric is 1-indexed; subtract 1 for 0-indexed steps.
+            delay = int(self._rng.geometric(p=self._delay_p)) - 1
         elif self._min_delay == self._max_delay:
             delay = self._min_delay
         else:
@@ -229,5 +243,10 @@ class RewardBuffer(PendingRewardBuffer):
     where k is the sampled delay. Violations make evaluation invalid.
     """
 
-    def __init__(self) -> None:
-        super().__init__(rng=np.random.default_rng(0))
+    def __init__(self, rng: np.random.Generator | None = None) -> None:
+        if rng is None:
+            raise TypeError(
+                "RewardBuffer requires an explicit rng=np.random.default_rng(seed). "
+                "Passing a fixed seed silently would violate the injected-randomness invariant."
+            )
+        super().__init__(rng=rng)

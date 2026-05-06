@@ -163,7 +163,7 @@ def test_deterministic_behavior_with_fixed_seed() -> None:
 
 
 def test_reward_buffer_flush_and_cancel_compatibility() -> None:
-    buffer = RewardBuffer()
+    buffer = RewardBuffer(rng=np.random.default_rng(0))
     buffer.push(_make_pending("x", reveal_at=3))
     buffer.push(_make_pending("y", reveal_at=5))
 

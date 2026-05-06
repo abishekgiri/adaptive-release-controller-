@@ -1,43 +1,22 @@
-"""Generate a deterministic simulated deployment dataset.
+"""Generate a deterministic simulated deployment dataset (legacy fixture).
 
-NOT FOR EVALUATION — features and outcomes are coupled by construction (the outcome is
-derived from the same risk function the policy uses to decide). This file exists solely
-as a deterministic smoke-test fixture for unit tests. Do not feed its output into any
-reported experiment or evaluation pipeline.
+NOT for evaluation — features and outcomes are coupled by construction.
+This script generates Phase 1-era synthetic records where the same risk score
+that drives the simulated outcome is also used to make the deployment decision.
+This circular coupling makes the data invalid for evaluating learned policies.
+
+Kept here as a reproducibility fixture for the pre-pivot baseline system.
 """
 
 from __future__ import annotations
 
 import argparse
 import hashlib
+from pathlib import Path
 
-from dataclasses import dataclass
 
+DEFAULT_RECORD_COUNT = 100
 
-# ---------------------------------------------------------------------------
-# Local stub of the old DeploymentRecord — the DB schema no longer has this
-# table. This fixture is NOT FOR EVALUATION and is self-contained so it
-# doesn't pull in the new five-table audit schema.
-# ---------------------------------------------------------------------------
-
-@dataclass(frozen=True)
-class DeploymentRecord:
-    commit_sha: str
-    files_changed: int
-    lines_added: int
-    lines_deleted: int
-    test_passed: bool
-    ci_duration: float
-    risk_score: float
-    decision: str
-    outcome: str
-
-# ---------------------------------------------------------------------------
-# Local copies of retired features/extractor helpers.
-# calculate_risk_score and decide_deployment were removed from the research
-# pipeline during the bandit pivot (A6). They live here solely so this
-# deterministic smoke fixture keeps working without polluting production code.
-# ---------------------------------------------------------------------------
 
 def _calculate_risk_score(
     files_changed: int,
@@ -74,18 +53,13 @@ def _decide_deployment(risk_score: float, test_passed: bool, threshold: float = 
     return "deploy"
 
 
-DEFAULT_RECORD_COUNT = 100
-
-
-def generate_records(count: int = DEFAULT_RECORD_COUNT) -> list[DeploymentRecord]:
+def generate_records(count: int = DEFAULT_RECORD_COUNT) -> list[dict]:
     """Create simulated Phase 1 deployment records."""
-
     return [generate_record(index) for index in range(1, count + 1)]
 
 
-def generate_record(index: int) -> DeploymentRecord:
+def generate_record(index: int) -> dict:
     """Create one deterministic deployment record."""
-
     commit_sha = simulated_commit_sha(index)
     files_changed = simulated_int(commit_sha, "files", 1, 35)
     lines_added = simulated_int(commit_sha, "added", 5, 1200)
@@ -121,17 +95,17 @@ def generate_record(index: int) -> DeploymentRecord:
         risky_area_change=risky_area_change,
     )
 
-    return DeploymentRecord(
-        commit_sha=commit_sha,
-        files_changed=files_changed,
-        lines_added=lines_added,
-        lines_deleted=lines_deleted,
-        test_passed=test_passed,
-        ci_duration=round(ci_duration, 2),
-        risk_score=risk_score,
-        decision=decision,
-        outcome=outcome,
-    )
+    return {
+        "commit_sha": commit_sha,
+        "files_changed": files_changed,
+        "lines_added": lines_added,
+        "lines_deleted": lines_deleted,
+        "test_passed": test_passed,
+        "ci_duration": round(ci_duration, 2),
+        "risk_score": risk_score,
+        "decision": decision,
+        "outcome": outcome,
+    }
 
 
 def simulated_tests_passed(
@@ -141,8 +115,6 @@ def simulated_tests_passed(
     dependency_change: bool,
     risky_area_change: bool,
 ) -> bool:
-    """Simulate CI test status from deployment risk factors."""
-
     failure_probability = 0.08
     failure_probability += min(files_changed / 200, 0.12)
     failure_probability += min(changed_lines / 6000, 0.18)
@@ -150,10 +122,7 @@ def simulated_tests_passed(
         failure_probability += 0.08
     if risky_area_change:
         failure_probability += 0.06
-    return stable_unit_interval(f"{commit_sha}:tests") >= min(
-        failure_probability,
-        0.65,
-    )
+    return stable_unit_interval(f"{commit_sha}:tests") >= min(failure_probability, 0.65)
 
 
 def simulated_outcome(
@@ -163,8 +132,6 @@ def simulated_outcome(
     dependency_change: bool,
     risky_area_change: bool,
 ) -> str:
-    """Simulate post-deployment success or failure."""
-
     failure_probability = 0.04 + (risk_score * 0.55)
     if not test_passed:
         failure_probability += 0.20
@@ -172,73 +139,53 @@ def simulated_outcome(
         failure_probability += 0.08
     if risky_area_change:
         failure_probability += 0.12
-
     if stable_unit_interval(f"{commit_sha}:outcome") < min(failure_probability, 0.9):
         return "failure"
     return "success"
 
 
 def simulated_commit_sha(index: int) -> str:
-    """Return a stable SHA-like identifier for a generated record."""
-
     return hashlib.sha1(f"deployment-{index}".encode("utf-8")).hexdigest()
 
 
 def simulated_bool(commit_sha: str, field: str, probability: float) -> bool:
-    """Return a deterministic boolean with the requested probability."""
-
     return stable_unit_interval(f"{commit_sha}:{field}") < probability
 
 
 def simulated_int(commit_sha: str, field: str, minimum: int, maximum: int) -> int:
-    """Return a deterministic integer in an inclusive range."""
-
     value = stable_unit_interval(f"{commit_sha}:{field}")
     return minimum + int(value * ((maximum - minimum) + 1))
 
 
-def simulated_float(
-    commit_sha: str,
-    field: str,
-    minimum: float,
-    maximum: float,
-) -> float:
-    """Return a deterministic float in a range."""
-
+def simulated_float(commit_sha: str, field: str, minimum: float, maximum: float) -> float:
     value = stable_unit_interval(f"{commit_sha}:{field}")
     return minimum + (value * (maximum - minimum))
 
 
 def stable_unit_interval(seed: str) -> float:
-    """Return a deterministic pseudo-random float in the range [0, 1)."""
-
     digest = hashlib.sha256(seed.encode("utf-8")).hexdigest()
     return int(digest[:16], 16) / 16**16
 
 
 def parse_args() -> argparse.Namespace:
-    """Parse command line arguments."""
-
     parser = argparse.ArgumentParser(
-        description="Generate simulated deployment records (smoke fixture only)."
+        description="Generate simulated deployment records (legacy Phase 1 fixture)."
     )
-    parser.add_argument(
-        "--count",
-        type=int,
-        default=DEFAULT_RECORD_COUNT,
-        help="Number of deployment records to generate.",
-    )
+    parser.add_argument("--count", type=int, default=DEFAULT_RECORD_COUNT)
+    parser.add_argument("--output", type=str, default="-", help="Output path (- for stdout)")
     return parser.parse_args()
 
 
 def main() -> None:
-    """Generate simulated deployment records and print a summary."""
-
+    import json
     args = parse_args()
-    if args.count < 1:
-        raise ValueError("--count must be at least 1")
     records = generate_records(args.count)
-    print(f"Generated {len(records)} deployment records (smoke fixture — not persisted)")
+    payload = json.dumps(records, indent=2)
+    if args.output == "-":
+        print(payload)
+    else:
+        Path(args.output).write_text(payload, encoding="utf-8")
+        print(f"Wrote {len(records)} records to {args.output}")
 
 
 if __name__ == "__main__":

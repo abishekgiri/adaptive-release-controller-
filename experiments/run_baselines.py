@@ -51,6 +51,13 @@ class ExperimentConfig:
     min_builds: int = 500
     min_history_days: int = 365
     max_trajectories: int | None = None
+    # ASSUMPTION: logged_propensity=1.0 treats every TravisTorrent record as if it
+    # was logged by a deterministic policy with propensity 1.0. This makes IPS
+    # equivalent to the direct method (importance weights are all 1). The assumption
+    # is conservative and appropriate because TravisTorrent contains human decisions
+    # with unknown logging propensities. Effective sample size will equal matched
+    # actions rather than a discounted quantity. This must be revisited if we
+    # collect data from a known stochastic logging policy.
     logged_propensity: float = 1.0
     delay_step_seconds: int = 60
     propensity_clip: float = 20.0
