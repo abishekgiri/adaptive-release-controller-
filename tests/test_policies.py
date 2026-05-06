@@ -8,6 +8,7 @@ from data.schemas import Action, Context, Outcome, Reward
 import numpy as np
 
 from policies.base import FeatureEncoder, Policy
+from policies.heuristic_score import HeuristicScorePolicy
 from policies.linucb import LinUCBConfig, LinUCBPolicy
 from policies.static_rules import StaticRulesPolicy
 
@@ -328,7 +329,46 @@ class TestStaticRulesDecisionSemantics:
 # ---------------------------------------------------------------------------
 
 def test_heuristic_score_interface() -> None:
-    pytest.skip("Implement after HeuristicScorePolicy.select_action() is filled in")
+    _assert_policy_interface(HeuristicScorePolicy())
+
+
+class TestHeuristicScorePolicy:
+    """HeuristicScorePolicy maps fixed risk bands to deploy/canary/block."""
+
+    def test_low_risk_deploys(self) -> None:
+        action, propensity = HeuristicScorePolicy().select_action(
+            _ctx(files_changed=2, src_churn=30, recent_failure_rate=0.0)
+        )
+
+        assert action == Action.DEPLOY
+        assert propensity == 1.0
+
+    def test_medium_risk_canaries(self) -> None:
+        action, _ = HeuristicScorePolicy().select_action(
+            _ctx(files_changed=30, src_churn=700, recent_failure_rate=0.25)
+        )
+
+        assert action == Action.CANARY
+
+    def test_high_risk_blocks(self) -> None:
+        action, _ = HeuristicScorePolicy().select_action(
+            _ctx(
+                files_changed=60,
+                src_churn=1800,
+                recent_failure_rate=0.9,
+                has_risky_path_change=True,
+                has_dependency_change=True,
+            )
+        )
+
+        assert action == Action.BLOCK
+
+    def test_score_is_bounded(self) -> None:
+        score = HeuristicScorePolicy().risk_score(
+            _ctx(files_changed=999, src_churn=99999, recent_failure_rate=9.0)
+        )
+
+        assert 0.0 <= score <= 1.0
 
 
 def test_linucb_interface() -> None:
