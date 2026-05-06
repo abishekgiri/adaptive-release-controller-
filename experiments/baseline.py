@@ -16,7 +16,6 @@ from knowledge_base.db import (
     DEFAULT_DB_PATH,
     connect,
     initialize_database,
-    list_deployments,
 )
 
 
@@ -86,13 +85,16 @@ def baseline_decision(tests_passed: bool, coverage: float) -> str:
 
 
 def evaluate_baseline(records: Iterable[BaselineInput]) -> list[BaselineEvaluation]:
-    """Evaluate baseline decisions and simulated outcomes."""
+    """Evaluate baseline decisions against known outcomes.
 
+    Outcomes come from the record's known_outcome field (populated by real data or
+    the environment). Simulating outcomes inside this module violates the
+    feature-outcome separation rule; that logic was removed in task A8.
+    """
     evaluations = []
     for record in records:
         decision = baseline_decision(record.tests_passed, record.coverage)
-        simulated_outcome = deployment_outcome(record)
-        mttr = simulated_mttr(record) if decision == "deploy" else 0.0
+        outcome = record.known_outcome  # populated by caller / environment, not simulated here
 
         evaluations.append(
             BaselineEvaluation(
@@ -100,10 +102,10 @@ def evaluate_baseline(records: Iterable[BaselineInput]) -> list[BaselineEvaluati
                 tests_passed=record.tests_passed,
                 coverage=record.coverage,
                 decision=decision,
-                simulated_outcome=simulated_outcome,
-                mttr=mttr if simulated_outcome == "failure" else 0.0,
-                false_positive=decision == "block" and simulated_outcome == "success",
-                false_negative=decision == "deploy" and simulated_outcome == "failure",
+                simulated_outcome=outcome,
+                mttr=0.0,
+                false_positive=decision == "block" and outcome == "success",
+                false_negative=decision == "deploy" and outcome == "failure",
             )
         )
     return evaluations
@@ -138,59 +140,6 @@ def calculate_metrics(evaluations: list[BaselineEvaluation]) -> BaselineMetrics:
         false_negative_rate=safe_divide(len(false_negatives), total_records),
     )
 
-
-def deployment_outcome(record: BaselineInput) -> str:
-    """Return known outcome or deterministic simulated outcome."""
-
-    if record.known_outcome in {"success", "failure"}:
-        return record.known_outcome
-
-    probability = failure_probability(record)
-    random_value = stable_unit_interval(f"{record.commit_sha}:outcome")
-    if random_value < probability:
-        return "failure"
-    return "success"
-
-
-def failure_probability(record: BaselineInput) -> float:
-    """Estimate deployment failure chance for the simulation."""
-
-    changed_lines = record.lines_added + record.lines_deleted
-    probability = 0.05
-
-    if record.files_changed >= 20:
-        probability += 0.20
-    elif record.files_changed >= 10:
-        probability += 0.10
-
-    if changed_lines >= 1000:
-        probability += 0.20
-    elif changed_lines >= 300:
-        probability += 0.10
-
-    if record.risky_folder_touched:
-        probability += 0.25
-    if not record.tests_passed:
-        probability += 0.35
-    if record.coverage <= COVERAGE_THRESHOLD:
-        probability += 0.15
-    elif record.coverage < 85:
-        probability += 0.05
-
-    return min(probability, 0.95)
-
-
-def simulated_mttr(record: BaselineInput) -> float:
-    """Return deterministic simulated recovery time in minutes."""
-
-    changed_lines = record.lines_added + record.lines_deleted
-    jitter = stable_unit_interval(f"{record.commit_sha}:mttr") * 15
-    mttr = 10 + (record.files_changed * 1.5) + (changed_lines / 75) + jitter
-
-    if record.risky_folder_touched:
-        mttr += 20
-
-    return round(mttr, 2)
 
 
 def from_mapping(row: Any) -> BaselineInput:
@@ -325,12 +274,13 @@ def load_records_from_database(
     db_path: str | Path = DEFAULT_DB_PATH,
     limit: int = 200,
 ) -> list[BaselineInput]:
-    """Load Phase 1 deployment records as baseline inputs."""
+    """Load baseline inputs from the audit database.
 
-    initialize_database(db_path)
-    with connect(db_path) as connection:
-        rows = list_deployments(connection, limit=limit)
-    return [from_mapping(row) for row in rows]
+    The legacy single-table 'deployments' schema was replaced by the five-table
+    audit schema in task A7. Real data for evaluation should come through
+    data/loaders.py rather than this function.
+    """
+    return []  # placeholder — real data comes via data/loaders.py
 
 
 def demo_records() -> list[BaselineInput]:

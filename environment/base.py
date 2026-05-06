@@ -1,4 +1,4 @@
-"""Abstract base class for deployment environments; all environments implement this interface."""
+"""Abstract deployment-environment interface for trajectory generation and replay."""
 
 from __future__ import annotations
 
@@ -9,7 +9,12 @@ from data.schemas import Action, Context, Reward
 
 
 class DeploymentEnvironment(ABC):
-    """Abstract deployment environment: observe a context, take an action, receive a delayed reward."""
+    """Environment contract shared by synthetic and replay deployment settings.
+
+    Implementations expose only pre-action ``Context`` objects through
+    :meth:`observe`. Actions are applied through :meth:`step`, while delayed
+    rewards are surfaced by :meth:`advance_time` after their observation step.
+    """
 
     @abstractmethod
     def observe(self) -> Context:
@@ -18,16 +23,17 @@ class DeploymentEnvironment(ABC):
         Must contain only pre-action observable features — no hidden state,
         no outcome information.
         """
-        # TODO: implement in subclasses
+        raise NotImplementedError
 
     @abstractmethod
     def step(self, action: Action) -> Optional[Reward]:
-        """Apply action and return any reward that has become observable this step.
+        """Apply ``action`` at the current decision step.
 
-        Returns None if no reward has arrived yet (delayed feedback still in flight).
-        The reward for this action may arrive in a future call to advance_time().
+        Delayed environments should return ``None`` here and release rewards
+        through :meth:`advance_time`. Replay-style environments may return an
+        already-observed reward when no simulated delay is being modeled.
         """
-        # TODO: implement in subclasses
+        raise NotImplementedError
 
     @abstractmethod
     def advance_time(self) -> list[Reward]:
@@ -36,21 +42,21 @@ class DeploymentEnvironment(ABC):
         Policies must call this at the start of each decision step to flush
         pending rewards from the delayed buffer.
         """
-        # TODO: implement in subclasses
+        raise NotImplementedError
 
     @abstractmethod
     def reset(self) -> Context:
         """Reset the environment to its initial state and return the first context."""
-        # TODO: implement in subclasses
+        raise NotImplementedError
 
     @property
     @abstractmethod
     def current_step(self) -> int:
         """Current discrete time step index."""
-        # TODO: implement in subclasses
+        raise NotImplementedError
 
     @property
     @abstractmethod
     def done(self) -> bool:
         """True when the trajectory is exhausted (replay) or time horizon reached (synthetic)."""
-        # TODO: implement in subclasses
+        raise NotImplementedError
