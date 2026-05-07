@@ -154,6 +154,41 @@ Result files: `experiments/results/real_github_actions/{0..29}/online_summary.js
 
 ---
 
+## §6.4 — Cost-Ratio Sweep (F11)
+
+Config: `experiments/run_cost_sweep.py` (5 inline CostLevel entries)  
+Dataset: `data/raw/travistorrent_smoke.csv`  
+Seeds: 0–29 (n=30); bootstrap seed 42  
+Result file: `experiments/results/cost_sweep/cost_sweep_summary.json`
+
+| Claim | Level | static\_rules | linucb | Δ | Paper text |
+|---|---|---|---|---|---|
+| 5:1 | deploy\_failure=5, block\_bad=1 | 1598 | 1486 | −7.0% | −7.0% |
+| 10:1 | deploy\_failure=5, block\_bad=0.5 | 1535 | 1440 | −6.2% | −6.2% |
+| 20:1 (default) | deploy\_failure=10, block\_bad=0.5 | 1878 | 1879 | +0.05% | tied |
+| 40:1 | deploy\_failure=20, block\_bad=0.5 | 2564 | 2079 | −18.9% | −18.9% |
+| 100:1 | deploy\_failure=50, block\_bad=0.5 | 4622 | 2330 | −49.6% | −49.6% |
+
+---
+
+## §6.4 — Drift-Mode Evaluation (F12)
+
+Config: `experiments/run_drift_eval.py` (inline LOW\_RISK/HIGH\_RISK SegmentParams)  
+Dataset: Synthetic (SyntheticEnvironment), horizon=500  
+Seeds: 0–29 (n=30); bootstrap seed 42  
+Result file: `experiments/results/drift_eval/drift_eval_summary.json`
+
+| Claim | Drift mode | linucb mean | csb\_no\_drift mean | csb\_full mean | static mean | Paper text |
+|---|---|---|---|---|---|---|
+| Stationary | none | 536.9 | 536.9 | 581.9 | 540.1 | +8.4% overhead (csb\_full vs linucb) |
+| Abrupt drift | abrupt | 602.7 | 602.7 | 768.5 | 572.5 | +27.5% overhead |
+| Gradual drift | gradual | 685.8 | 685.8 | 874.1 | 651.1 | +27.4% overhead |
+| csb\_full resets — none | — | — | — | 10.6 resets/traj | — | 10.6 |
+| csb\_full resets — abrupt | — | — | — | 25.3 resets/traj | — | 25.3 |
+| csb\_full resets — gradual | — | — | — | 42.2 resets/traj | — | 42.2 |
+
+---
+
 ## Bootstrap / Statistical Parameters
 
 | Claim | Source |
@@ -171,5 +206,5 @@ Result files: `experiments/results/real_github_actions/{0..29}/online_summary.js
 | Bootstrap seed: paper says 42, default is 0 | `run_robustness.py` overrides to 42; paper claim correct for robustness section. Default seed=0 is unused for any reported number. |
 | Ablation uses seed 0 only, not 5 seeds | Intentional (ablation is deterministic on this dataset; all seeds produce same values for non-Thompson policies). |
 | Smoke dataset project-level breakdown (alpha=600/15%, beta=550/35%) | Not verified from CSV at time of audit; requires `data/raw/travistorrent_smoke.csv` inspection. |
-| ADWIN not implemented | `drift/detectors.py::ADWINDetector` raises `NotImplementedError`. UNBLOCKED-5 will implement it. |
-| `run_drift_eval.py`, `run_cost_sweep.py` | Not yet implemented. UNBLOCKED-4 will implement them. |
+| ADWIN implemented | `drift/detectors.py::ADWINDetector` fully implemented (Bifet & Gavaldà 2007, bucket compression). Not used in any reported experiment — PageHinkley is the paper's detector. |
+| `run_drift_eval.py`, `run_cost_sweep.py` | Implemented and run (30 seeds each). Results in `experiments/results/drift_eval/` and `experiments/results/cost_sweep/`. F11 and F12 added to §6.4. |
