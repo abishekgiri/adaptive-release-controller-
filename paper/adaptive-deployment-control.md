@@ -10,7 +10,7 @@ Continuous deployment pipelines require a decision at every commit: deploy immed
 
 We apply disjoint LinUCB (Li et al., 2010) and Bayesian linear Thompson Sampling (Agrawal & Goyal, 2013) to this three-action problem using an asymmetric cost matrix (a production incident costs 20× a correctly blocked bad change) and a pending-reward buffer that enforces the delayed-feedback invariant.
 
-Results are two-sided. **Positive:** on synthetic data, the bandit outperforms a static rule by 19% when failure cost doubles and by 27% when blocking becomes cheaper — regimes where the cost structure rewards adaptation. An ablation confirms cost weighting is the dominant component: binary reward degrades cumulative cost by 31%. **Negative:** on real GitHub Actions CI data (600 runs, two public repositories), LinUCB over-blocks a 5.3%-failure-rate project — where deploy is optimal — and costs 3.8% *more* than a static rule. Feature sparsity and short trajectories prevent convergence to the project-specific optimal policy. Within the bandit family, Thompson Sampling outperforms LinUCB by 6.8% on real data (Thompson 624, LinUCB 669.5; 95% CI [598, 648] entirely below LinUCB); Thompson and the static rule are statistically tied (static 644.5 falls inside Thompson's CI). The exploration-strategy choice — posterior sampling versus upper confidence bound — matters more in this regime than the bandit-vs-rule choice.
+Results are two-sided. **Positive:** on synthetic data, the bandit outperforms a static rule by 19% when failure cost doubles and by 27% when blocking becomes cheaper — regimes where the cost structure rewards adaptation. An ablation confirms cost weighting is the dominant component: binary reward degrades cumulative cost by 31%. On the synthetic environment, the LinUCB advantage scales monotonically with cost asymmetry — from −7% at 5:1 to −49.6% at 100:1 — defining a clear operating envelope. **Negative:** on real GitHub Actions CI data (600 runs, two public repositories), LinUCB over-blocks a 5.3%-failure-rate project — where deploy is optimal — and costs 3.8% *more* than a static rule. Feature sparsity and short trajectories prevent convergence to the project-specific optimal policy. Within the bandit family, Thompson Sampling outperforms LinUCB by 6.8% on real data (Thompson 624, LinUCB 669.5; 95% CI [598, 648] entirely below LinUCB); Thompson and the static rule are statistically tied (static 644.5 falls inside Thompson's CI). The exploration-strategy choice — posterior sampling versus upper confidence bound — matters more in this regime than the bandit-vs-rule choice.
 
 The takeaway: the bandit framing helps when failure costs are high and context is informative. When features are sparse or failure rates are low, well-calibrated static rules remain competitive. When they do not, the choice of exploration strategy within the bandit family has first-order impact on cost.
 
@@ -56,8 +56,8 @@ LinUCB and Thompson Sampling are well-established algorithms. Our contributions 
 
 - **Reframing:** Deployment control recast as sequential cost minimization with a three-action space {deploy, canary, block} and an explicit asymmetric cost matrix. Cumulative cost replaces accuracy as the primary metric.
 - **Evaluation framework:** Online-replay protocol with a pending-reward buffer enforcing the delayed-feedback invariant; explicit bias disclosure; cost as the sole headline metric.
-- **Component ablation:** Cost weighting, delayed feedback, and drift adaptation isolated and quantified. Cost weighting is the dominant factor (+31% cumulative cost when removed).
-- **Two-sided empirical characterization:** Bandits outperform static rules when failure costs are high and context is informative. In the low-failure regime with feature sparsity (5.3% failure rate, no commit-level features), UCB-based policies over-block and cost 3.8% more than a static rule — a negative result that defines the operating envelope of the framing.
+- **Component ablation:** Cost weighting, delayed feedback, and drift adaptation isolated and quantified. Cost weighting is the dominant factor (+31% cumulative cost when removed); drift adaptation, under the chosen Page-Hinkley calibration, is net-negative across all three drift modes due to false-alarm resets — a measured limit of off-the-shelf drift detectors on cost-stream data.
+- **Two-sided empirical characterization:** Bandits outperform static rules when failure costs are high and context is informative. In the low-failure regime with feature sparsity (5.3% failure rate, no commit-level features), UCB-based policies over-block and cost 3.8% more than a static rule — a negative result that defines the operating envelope of the framing. A cost-ratio sweep (5:1 to 100:1) confirms the advantage is monotone: the default 20:1 ratio in this paper sits at the envelope boundary where bandits break even; at 40:1 and above, the advantage is 19–50%.
 - **Within-bandits exploration finding:** In the feature-sparse regime where LinUCB underperforms, Thompson Sampling outperforms LinUCB by 6.8% on real data (CI [598, 648] entirely below LinUCB = 669.5; p < 0.01). Thompson and the static rule are statistically tied. The choice of exploration strategy — posterior sampling vs. UCB — is the first-order variable in this regime, not the bandit framing itself.
 
 ---
@@ -130,9 +130,9 @@ Cumulative operational cost is the sole primary metric throughout this paper. Ac
 
 ## 3. Method
 
-### 3.1 CostSensitiveBandit (Disjoint LinUCB with Cost-Sensitive Reward)
+### 3.1 LinUCBWithDrift (Disjoint LinUCB with Cost-Sensitive Reward and Optional Drift Reset)
 
-`CostSensitiveBandit` applies disjoint LinUCB (Li et al., 2010) to the deployment decision, replacing click-through reward with negative operational cost and routing all updates through the delayed-feedback buffer.
+`LinUCBWithDrift` applies disjoint LinUCB (Li et al., 2010) to the deployment decision, replacing click-through reward with negative operational cost and routing all updates through the delayed-feedback buffer. Its update equations are identical to plain LinUCB; the only structural addition is an optional PageHinkley detector that can reset the per-arm weight matrices on drift events.
 
 **Per-arm model.** For each arm *a ∈ A*:
 
@@ -438,17 +438,17 @@ At the default 20:1 ratio the policies are indistinguishable (difference < 1 uni
 
 Evaluating six policies across three drift schedules (30 seeds, 500-step synthetic trajectories):
 
-| Drift mode | linucb | csb\_no\_drift | csb\_full | static\_rules |
+| Drift mode | linucb | linucb\_with\_drift\_no\_reset | linucb\_with\_drift\_full | static\_rules |
 | --- | ---: | ---: | ---: | ---: |
 | none (stationary) | 536.9 | 536.9 | 581.9 (+8.4%) | 540.1 |
 | abrupt (midpoint) | 602.7 | 602.7 | 768.5 (+27.5%) | 572.5 |
 | gradual (25-segment) | 685.8 | 685.8 | 874.1 (+27.4%) | 651.1 |
 
-`csb_no_drift` (PageHinkley detector present but resets disabled) is numerically identical to `linucb` in all three modes — confirming the detector is inactive when reset_on_drift=False. `csb_full` (resets enabled) is worse in every condition: 10.6 resets/trajectory under stationarity (false alarms), rising to 25.3 under abrupt drift and 42.2 under gradual drift. The PageHinkley threshold λ=50 is insufficiently conservative for 500-step trajectories with the cost stream's natural variance; it fires on distributional noise rather than genuine concept drift.
+`linucb_with_drift_no_reset` (PageHinkley detector present but resets disabled) is numerically identical to `linucb` in all three modes — confirming the detector is inactive when reset_on_drift=False. `linucb_with_drift_full` (resets enabled) is worse in every condition: 10.6 resets/trajectory under stationarity (false alarms), rising to 25.3 under abrupt drift and 42.2 under gradual drift. The PageHinkley threshold λ=50 is insufficiently conservative for 500-step trajectories with the cost stream's natural variance; it fires on distributional noise rather than genuine concept drift.
 
-Static rules are cheapest under abrupt and gradual drift. This is a boundary effect: static rules do not explore, so they pay no reset cost and have no parameter to unlearn. The bandit's re-learning overhead after a midpoint shift exceeds the gain from adaptation over the remaining 250 steps. With longer trajectories (>1000 steps per segment), this balance would favor the adaptive policy.
+Static rules are cheapest under abrupt and gradual drift. This is a boundary effect: static rules do not explore, so they pay no reset cost and have no parameter to unlearn. The bandit's re-learning overhead after a midpoint shift exceeds the gain from adaptation over the remaining 250 steps. Whether longer trajectories would amortize the reset overhead is an open question we do not address here.
 
-**Operating envelope summary.** The bandit framing is worth deploying when: (1) the cost asymmetry ratio is ≥ 40:1, (2) the deployment trajectory is long enough that re-learning overhead after drift is amortized (>1000 steps/segment), and (3) drift detection thresholds are calibrated to the cost-stream variance. The current paper's synthetic setting at 20:1 with 500-step trajectories sits on the boundary of condition (1) and below condition (2), explaining why the results are mixed.
+**Operating envelope summary.** The bandit framing is worth deploying when: (1) the cost asymmetry ratio is ≥ 40:1 on the synthetic environment used here; the absolute threshold is environment-dependent, (2) the deployment trajectory is long enough that re-learning overhead after drift is amortized, and (3) drift detection thresholds are calibrated to the cost-stream variance. The current paper's synthetic setting at 20:1 with 500-step trajectories sits on the boundary of condition (1), explaining why the results are mixed.
 
 ---
 
@@ -470,13 +470,13 @@ The primary experiment uses 1,150 rows across two synthetic projects at fixed fa
 
 The GitHub Actions experiment uses a feature vector in which 11 of 13 dimensions carry no commit-level signal. The bandit degenerates to learning from failure rate and bias term. With 300 steps per project and d=13 dimensions, the bandit is near its minimum convergence threshold (O(d²) = 169 updates per arm). Both conditions in §1.3 are violated: psf/requests is in the low-failure regime AND feature sparsity prevents informative context. The negative result (LinUCB loses to static rules) is expected under these conditions and should not be interpreted as evidence that bandits generally underperform static rules.
 
-### 7.4 LinUCB and CostSensitiveBandit Are Identical at Same Hyperparameters
+### 7.4 LinUCBWithDrift with reset_on_drift=False Is Numerically Identical to LinUCB
 
-‖b-vector difference‖₂ = 0 at α=1.0, λ=1.0. The implementations diverge only when α differs, the drift detector is active, or future extensions are applied. The current experiments cannot distinguish them.
+‖b-vector difference‖₂ = 0 at α=1.0, λ=1.0, reset_on_drift=False. The `linucb_with_drift_no_reset` variant matches `linucb` exactly in all three drift-mode conditions. The policies diverge only when the drift detector fires and reset_on_drift=True — i.e., only in the `linucb_with_drift_full` configuration. This confirms `LinUCBWithDrift` is not a distinct algorithm; it is LinUCB plus a drift-triggered weight reset.
 
-### 7.5 Drift Detection Is Miscalibrated for Stationary Data
+### 7.5 Drift Detection Conclusions Are Conditional on PageHinkley Calibration
 
-Page-Hinkley at λ_PH = 50 fires 44 false alarms on 1,150 stationary steps, erasing learned weights each time. The component is implemented and mechanistically correct; it requires non-stationary data to evaluate its intended behavior. The `full` model is excluded from all performance claims.
+Page-Hinkley at λ_PH = 50 fires 44 false alarms on 1,150 stationary steps in the ablation experiment, and 10.6 resets per 500-step trajectory in the drift-mode evaluation. The threshold was set by the PageHinkley default and never tuned to the cost stream's variance. All findings about drift adaptation performance — specifically that `linucb_with_drift_full` is 8–28% more expensive than plain LinUCB across all three drift modes — are conditional on this calibration. A lower λ_PH (fewer false alarms) or a different detector (ADWIN) may change the direction of the drift finding. We report the result for λ_PH = 50 as a measured limit of this detector on this cost stream; we make no claim about whether drift adaptation is intrinsically harmful.
 
 ### 7.6 Thompson Sampling Propensities Are Intractable
 

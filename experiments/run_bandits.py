@@ -127,7 +127,7 @@ def build_policies(config: OnlineExperimentConfig, seed: int) -> list:
             ),
             feature_dim=FeatureEncoder.DIM,
             rng=np.random.default_rng(seed),
-            policy_id="cost_sensitive_bandit",
+            policy_id="linucb_with_drift",
         ),
         ThompsonSamplingPolicy(
             config=ThompsonConfig(prior_variance=1.0, noise_variance=0.1),

@@ -140,7 +140,7 @@ Result files: `experiments/results/real_github_actions/{0..29}/online_summary.js
 | Thompson action fractions (mean) | 0–29 | per-file fracs | deploy=50.6%, canary=15.5%, block=33.9% | 50.6%/15.5%/33.9% |
 | psf/requests failure rate | — | CSV: 16 failures / 300 rows | 5.33% | 5.3% |
 | pallets/flask failure rate | — | CSV: 70 failures / 300 rows | 23.3% | 23.3% |
-| Censored rewards | 0 | \*.total\_censored\_skipped | 17 (csb), 21 (static), 22 (heuristic) | — | 17–22 |
+| Censored rewards | 0 | \*.total\_censored\_skipped | 17 (linucb\_with\_drift), 21 (static), 22 (heuristic) | — | 17–22 |
 | ~~Thompson mean (n=5 pilot)~~ | ~~0–4~~ | ~~585.3~~ | ~~SUPERSEDED by n=30~~ | ~~retired~~ |
 
 ---
@@ -178,14 +178,14 @@ Dataset: Synthetic (SyntheticEnvironment), horizon=500
 Seeds: 0–29 (n=30); bootstrap seed 42  
 Result file: `experiments/results/drift_eval/drift_eval_summary.json`
 
-| Claim | Drift mode | linucb mean | csb\_no\_drift mean | csb\_full mean | static mean | Paper text |
+| Claim | Drift mode | linucb mean | linucb\_with\_drift\_no\_reset mean | linucb\_with\_drift\_full mean | static mean | Paper text |
 |---|---|---|---|---|---|---|
-| Stationary | none | 536.9 | 536.9 | 581.9 | 540.1 | +8.4% overhead (csb\_full vs linucb) |
+| Stationary | none | 536.9 | 536.9 | 581.9 | 540.1 | +8.4% overhead (linucb\_with\_drift\_full vs linucb) |
 | Abrupt drift | abrupt | 602.7 | 602.7 | 768.5 | 572.5 | +27.5% overhead |
 | Gradual drift | gradual | 685.8 | 685.8 | 874.1 | 651.1 | +27.4% overhead |
-| csb\_full resets — none | — | — | — | 10.6 resets/traj | — | 10.6 |
-| csb\_full resets — abrupt | — | — | — | 25.3 resets/traj | — | 25.3 |
-| csb\_full resets — gradual | — | — | — | 42.2 resets/traj | — | 42.2 |
+| linucb\_with\_drift\_full resets — none | — | — | — | 10.6 resets/traj | — | 10.6 |
+| linucb\_with\_drift\_full resets — abrupt | — | — | — | 25.3 resets/traj | — | 25.3 |
+| linucb\_with\_drift\_full resets — gradual | — | — | — | 42.2 resets/traj | — | 42.2 |
 
 ---
 
