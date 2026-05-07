@@ -488,7 +488,7 @@ The primary experiment uses 1,150 rows across two synthetic projects at fixed fa
 
 ### 7.3 Real Sanity Check: Feature Sparsity, Short Trajectories, Relaxed Filters
 
-The GitHub Actions experiment uses a feature vector in which 11 of 13 dimensions carry no commit-level signal. The bandit degenerates to learning from failure rate and bias term. With 300 steps per project and d=13 dimensions, the bandit is near its minimum convergence threshold (O(d²) = 169 updates per arm). Both conditions in §1.3 are violated: psf/requests is in the low-failure regime AND feature sparsity prevents informative context. The negative result (LinUCB loses to static rules) is expected under these conditions and should not be interpreted as evidence that bandits generally underperform static rules.
+The GitHub Actions experiment uses a feature vector in which 11 of 13 dimensions carry no commit-level signal. The bandit degenerates to learning from failure rate and bias term. With 300 steps per project and d=13 dimensions, the bandit is near its minimum convergence threshold (O(d²) = 169 updates per arm). Both conditions in §1.3 are violated: psf/requests is in the low-failure regime AND feature sparsity prevents informative context. The negative result (LinUCB loses to static rules) is expected under these conditions and should not be interpreted as evidence that bandits generally underperform static rules. Additionally, the experiment covers only two projects with failure rates of 5.3% and 23.3% — a specific rate combination that happens to favor static rules' explicit threshold. No generalization to the distribution of real-world project failure rates is intended; both the direction and magnitude of the real-data results are specific to this pair.
 
 ### 7.4 LinUCBWithDrift with reset_on_drift=False Is Numerically Identical to LinUCB
 
@@ -505,6 +505,22 @@ The true selection probability for Thompson Sampling requires integrating over t
 ### 7.7 Seed Counts Below 30 Produce Misleading Direction Findings
 
 Seed counts below approximately 30 produced misleading direction findings in our pilot runs (n=5 showed Thompson as the cheapest policy on synthetic data; n=30 reverses the direction with a non-overlapping CI). All headline numbers in this paper use ≥30 seeds and bootstrap seed 42.
+
+### 7.8 CI Outcome Is a Proxy for Deployment Failure, Not a Direct Measure
+
+The entire evaluation chain — cost computation, policy update, and result reporting — treats the logged CI outcome (pass/fail) as a proxy for the deployment failure outcome a human engineer would observe in production. This proxy relationship is imperfect in both directions. A CI pass does not guarantee safe deployment: integration-test gaps, environment-specific faults, and configuration drift can produce production incidents on passing builds. A CI failure does not guarantee a production incident would have occurred: flaky tests, dependency version mismatches, and transient infrastructure errors produce false CI failures. The cost model therefore mis-prices a fraction of deployment decisions. The direction and magnitude of this mis-pricing depend on the test suite quality and build environment stability of each repository, neither of which is measured here. All cost claims should be read as costs under the CI-outcome proxy, not costs under the true deployment-failure outcome.
+
+### 7.9 Real-Data Evaluation Assumes Stationarity; No Drift Analysis Was Performed
+
+The GitHub Actions evaluation treats each 300-step project trajectory as a stationary distribution and uses all steps for both learning and evaluation. If the true CI failure rate changes over the 300-step window — for example, due to a large dependency upgrade, a project refactor, or infrastructure migration — then the earlier steps of the trajectory correspond to a different distribution than the later steps. In that case, a policy that learns from early steps may be mis-calibrated for later steps, producing an underestimate of the cost gap between adaptive and non-adaptive policies. We performed no stationarity test on the real-data trajectories. The drift evaluation in §6.4 is conducted exclusively on synthetic data; its findings do not imply anything about whether the real GitHub Actions trajectories are stationary.
+
+### 7.10 Synthetic Failure Rates Are Unobservable Hidden State
+
+The synthetic dataset assigns failure rates at the project level (smoke/alpha: 15%, smoke/beta: 35%), but these rates are not part of the feature vector presented to the policy. From the policy's perspective, the failure rate is a latent variable that must be inferred from the reward history. This creates a structural advantage for policies that converge quickly on the majority class: after seeing enough failures, LinUCB correctly assigns high probability to the block arm for smoke/beta, but the feature vector provides no direct signal that smoke/beta is a high-failure project. In a real setting, project metadata (team size, language, test coverage) could make the failure rate more directly observable. The synthetic evaluation therefore measures a lower bound on bandit performance: a policy with access to project-type features could converge faster. The aggregate tie on the synthetic dataset does not reflect what would happen with a richer feature representation.
+
+### 7.11 Bootstrap Results Depend on a Single Fixed Seed; Different Seeds May Yield Different p-Values
+
+All bootstrap confidence intervals and paired bootstrap p-values in this paper use seed 42 with 10,000 resamples (as noted in §2 and `experiments/run_robustness.py`). The bootstrap procedure is deterministic given this seed. We did not evaluate sensitivity of p-values or CI endpoints to the choice of bootstrap seed. For the F9 Thompson-vs-LinUCB result (p<0.0001, 0/10,000 bootstrap samples with Thompson mean ≥ LinUCB), the finding is robust: the p-value is at the floor for any 10,000-resample procedure and will not change under different seeds. For findings where the p-value is near a threshold — particularly the Thompson-vs-static "tied" result, where static=644.5 falls inside CI [598, 648] — a different bootstrap seed could shift the CI endpoints by a few units and change the coverage interpretation. Readers should treat the [598, 648] endpoints as approximate to ±5 units under seed variation.
 
 ---
 
