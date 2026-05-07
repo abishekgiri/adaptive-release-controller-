@@ -22,7 +22,7 @@ The takeaway: the bandit framing helps when failure costs are high and context i
 
 Every passing CI build triggers a deployment decision: ship to production, route through a canary, or block? A failed production deployment means incidents, on-call pages, and rollbacks. A blocked safe change costs developer time. A canary offers partial protection at throughput cost. Getting this right matters, and at scale it happens thousands of times per day.
 
-Current tooling treats this as a prediction problem. Just-in-time defect prediction models (Kamei et al., 2013) estimate failure probability and apply a static threshold. Three structural limitations follow:
+Current tooling treats this as a prediction problem. Just-in-time defect prediction models (Kamei et al., 2013; McIntosh & Kamei, 2018) estimate failure probability and apply a static threshold. Three structural limitations follow:
 
 1. **The threshold encodes an implicit cost assumption.** Setting it requires a judgment about the cost of blocking safe changes vs. deploying bad ones. This assumption is rarely explicit and never adapts.
 2. **Costs are asymmetric and context-dependent.** A production incident at a payment service costs an order of magnitude more than one at an internal tool. A single fixed threshold cannot represent this.
@@ -132,7 +132,7 @@ Cumulative operational cost is the sole primary metric throughout this paper. Ac
 
 ### 3.1 LinUCBWithDrift (Disjoint LinUCB with Cost-Sensitive Reward and Optional Drift Reset)
 
-`LinUCBWithDrift` applies disjoint LinUCB (Li et al., 2010) to the deployment decision, replacing click-through reward with negative operational cost and routing all updates through the delayed-feedback buffer. Its update equations are identical to plain LinUCB; the only structural addition is an optional PageHinkley detector that can reset the per-arm weight matrices on drift events.
+`LinUCBWithDrift` applies disjoint LinUCB (Li et al., 2010; Chu et al., 2011) to the deployment decision, replacing click-through reward with negative operational cost and routing all updates through the delayed-feedback buffer. Its update equations are identical to plain LinUCB; the only structural addition is an optional PageHinkley detector that can reset the per-arm weight matrices on drift events.
 
 **Per-arm model.** For each arm *a ∈ A*:
 
@@ -181,7 +181,7 @@ The `PendingRewardBuffer` (`delayed/buffer.py`) holds *(context, action, cost, o
 
 ### 3.4 Drift Adaptation (Exploratory — Excluded from Main Claims)
 
-`CostSensitiveBandit` optionally accepts a Page-Hinkley detector (Mouss et al., 2004) that triggers model reset on detected distribution shift. On stationary data, the detector at *λ_PH = 50* fires 44 false alarms over 1,150 steps, making the full model 27% more expensive than the no-drift variant. Drift results are excluded from main claims; the threshold requires calibration against non-stationary data not yet available.
+`CostSensitiveBandit` optionally accepts a Page-Hinkley detector (Mouss et al., 2004) that triggers model reset on detected distribution shift (Gama et al., 2014). On stationary data, the detector at *λ_PH = 50* fires 44 false alarms over 1,150 steps, making the full model 27% more expensive than the no-drift variant. Drift results are excluded from main claims; the threshold requires calibration against non-stationary data not yet available.
 
 ### 3.5 Baselines
 
@@ -200,7 +200,7 @@ At identical α, λ, and reward signal, `linucb` and `cost_sensitive_bandit` are
 
 ### 4.1 Synthetic Dataset
 
-The primary experiment uses a synthetic dataset (`data/raw/travistorrent_smoke.csv`) generated to match the TravisTorrent schema (Beller et al., MSR 2017):
+The primary experiment uses a synthetic dataset (`data/raw/travistorrent_smoke.csv`) generated to match the TravisTorrent schema (Beller et al., 2017):
 
 | Project | Builds | Failure rate | History span |
 | --- | ---: | ---: | ---: |
@@ -272,9 +272,9 @@ To test whether the synthetic findings are contradicted by real CI data, we coll
 
 **[Preliminary — synthetic 2-project dataset. Deterministic policies have zero CI width.]**
 
-**Figure 1** (`fig_cumulative_cost_synthetic`): Cumulative cost per policy on the synthetic dataset (n=30 seeds, error bars = ±1 std). Thompson's higher cost and wider spread relative to LinUCB and static rules are visible; see also Figure 7 for the seed distribution.
+**Figure 1** (`fig_cumulative_cost_synthetic`): Cumulative cost per policy on the synthetic dataset (n=30 seeds, error bars = ±1 std). Thompson's higher cost and wider spread relative to LinUCB and static rules are visible; see also Figure 6 for the seed distribution.
 
-**Figure 8** (`fig_cumulative_cost_curves`): Cumulative cost over time (mean across 30 seeds), synthetic dataset. All deterministic policies follow identical step functions; Thompson shows seed-driven variance.
+**Figure 2** (`fig_cumulative_cost_curves`): Cumulative cost over time (mean across 30 seeds), synthetic dataset. All deterministic policies follow identical step functions; Thompson shows seed-driven variance.
 
 **Table 1:** Cumulative cost, default cost matrix, synthetic dataset. All 1,150 rewards matured (0 censored). Thompson: mean ± std across seeds 0–29 (n=30), bootstrap seed 42. *Takeaway: Thompson is 1.4% more expensive than static on aggregate (CI [1884, 1922]; static = 1878). The 5-seed result that showed Thompson as cheapest was a sampling artifact: three of the five seeds hit low-cost trajectories below the population mean. The n=30 result reverses the direction with a non-overlapping CI.*
 
@@ -327,7 +327,7 @@ Under long delay (doubled step-count delay), the bandit's uninformed-prior phase
 
 **[Preliminary — synthetic data. All 5 seeds identical for deterministic variants.]**
 
-**Figure 6** (`fig_ablation_bars`): Bar chart comparing cumulative cost across the four ablation variants. `no_cost` and `full` are dramatically more expensive than `no_drift` and `no_delay`, isolating cost weighting as the dominant factor.
+**Figure 3** (`fig_ablation_bars`): Bar chart comparing cumulative cost across the four ablation variants. `no_cost` and `full` are dramatically more expensive than `no_drift` and `no_delay`, isolating cost weighting as the dominant factor.
 
 **Table 2:** Component ablation, default cost matrix, seed 0. Reference = `no_drift`. *Takeaway: cost weighting is the dominant component (+31%); drift detection is destructive on stationary data (+27%); the buffer costs 1.1% for temporal validity.*
 
@@ -354,13 +354,13 @@ Under long delay (doubled step-count delay), the bandit's uninformed-prior phase
 
 **[Highly preliminary — real GitHub Actions data, 2 projects, feature sparsity, relaxed filters, biased evaluation. Do not compare magnitudes against synthetic results.]**
 
-**Figure 2** (`fig_cumulative_cost_real`): Cumulative cost per policy on real GitHub Actions data (n=30 seeds, error bars = ±1 std). Thompson's lower mean and high variance relative to LinUCB are visible; static rules sit between the two bandit policies.
+**Figure 4** (`fig_cumulative_cost_real`): Cumulative cost per policy on real GitHub Actions data (n=30 seeds, error bars = ±1 std). Thompson's lower mean and high variance relative to LinUCB are visible; static rules sit between the two bandit policies.
 
-**Figure 3** (`fig_action_distribution`): Stacked-bar action distribution (deploy/canary/block) for all policies on synthetic (left) and real (right) datasets. LinUCB's block-heavy convergence and Thompson's persistent canary allocation are visible on both panels.
+**Figure 5** (`fig_action_distribution`): Stacked-bar action distribution (deploy/canary/block) for all policies on synthetic (left) and real (right) datasets. LinUCB's block-heavy convergence and Thompson's persistent canary allocation are visible on both panels.
 
-**Figure 7** (`fig_thompson_seed_distribution`): Boxplot of Thompson's per-seed cumulative cost distribution across 30 seeds, synthetic (left) and real (right). The real-data spread (std=72, range 445.5–725.5) illustrates that no individual seed reliably dominates static rules.
+**Figure 6** (`fig_thompson_seed_distribution`): Boxplot of Thompson's per-seed cumulative cost distribution across 30 seeds, synthetic (left) and real (right). The real-data spread (std=72, range 445.5–725.5) illustrates that no individual seed reliably dominates static rules.
 
-**Figure 10** (`fig_cost_cdf_per_step`): Empirical CDF of per-step costs pooled across all seeds and steps. The heavier left tail for Thompson on real data reflects its lower block rate and correspondingly more deploys on low-failure projects.
+**Figure 7** (`fig_cost_cdf_per_step`): Empirical CDF of per-step costs pooled across all seeds and steps. The heavier left tail for Thompson on real data reflects its lower block rate and correspondingly more deploys on low-failure projects.
 
 **Table 3:** Online replay on real GitHub Actions data, default cost matrix, seeds 0–29 (n=30), bootstrap seed 42. *Takeaway: LinUCB over-blocks and costs 3.8% more than static; Thompson outperforms LinUCB by 6.8% but is statistically tied with static (static=644.5 falls inside Thompson's CI [598, 648]).*
 
@@ -436,7 +436,7 @@ Cancelled runs produce 3% censored rewards, with policy-dependent variation. Thi
 
 **F11: LinUCB advantage over static rules grows monotonically with the deploy_failure/block_bad cost ratio.**
 
-**Figure 4** (`fig_cost_sweep`): Line chart of cumulative cost vs. cost ratio (log-x) for static rules, LinUCB, and heuristic policies. LinUCB's advantage widens monotonically; the crossover from parity to advantage occurs near 30:1.
+**Figure 8** (`fig_cost_sweep`): Line chart of cumulative cost vs. cost ratio (log-x) for static rules, LinUCB, and heuristic policies. LinUCB's advantage widens monotonically; the crossover from parity to advantage occurs near 30:1.
 
 Sweeping five cost-ratio levels (30 seeds each, synthetic dataset):
 
@@ -452,9 +452,9 @@ At the default 20:1 ratio the policies are indistinguishable (difference < 1 uni
 
 **F12: Page-Hinkley drift resets (λ=50) increase cost in all three drift conditions; the no-reset variant matches LinUCB exactly.**
 
-**Figure 5** (`fig_drift_mode_bars`): Grouped bar chart of mean cumulative cost by drift mode × policy. `linucb_with_drift_full` is uniformly worst; `linucb_with_drift_no_reset` is visually indistinguishable from `linucb`.
+**Figure 9** (`fig_drift_mode_bars`): Grouped bar chart of mean cumulative cost by drift mode × policy. `linucb_with_drift_full` is uniformly worst; `linucb_with_drift_no_reset` is visually indistinguishable from `linucb`.
 
-**Figure 9** (`fig_drift_recovery_curves`): Cumulative regret over time for all three drift modes (3-panel). Under abrupt and gradual drift, `linucb_with_drift_full` accumulates regret spikes at each reset; `linucb` and `linucb_with_drift_no_reset` track together throughout.
+**Figure 10** (`fig_drift_recovery_curves`): Cumulative regret over time for all three drift modes (3-panel). Under abrupt and gradual drift, `linucb_with_drift_full` accumulates regret spikes at each reset; `linucb` and `linucb_with_drift_no_reset` track together throughout.
 
 Evaluating six policies across three drift schedules (30 seeds, 500-step synthetic trajectories):
 
