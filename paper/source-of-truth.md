@@ -43,6 +43,10 @@ Result files: `experiments/results/online_smoke/{0..29}/online_summary.json`
 | Thompson mean/step | 0–29 | 1903.4/1150 | **1.6551 ≈ 1.655** | 1.655 |
 | Thompson std/step | 0–29 | 54.1/1150 | **0.0470 ≈ 0.047** | ±0.047 |
 | Thompson action fractions (mean) | 0–29 | per-file fracs | deploy=6.5%, canary=22.4%, block=71.1% | 6.5%/22.4%/71.1% |
+| LinUCB action fractions (mean) | 0–29 (deterministic) | per-file fracs | deploy=8.2%, canary=5.7%, block=86.3% | 5.7%/86.3% (§5.1 body) |
+| Updates per arm — smoke/alpha | derived | 600 steps ÷ 3 arms | **200** | 200 (§1.3 supp., §5.1) |
+| Updates per arm — smoke/beta | derived | 550 steps ÷ 3 arms | **183** | 183 (§1.3 supp., §5.1) |
+| O(d²) convergence threshold | derived | d=13; 13²=169 | **169** | 169 (§1.3 Condition 2, §5.1) |
 | ~~Thompson mean (n=5 pilot)~~ | ~~0–4~~ | ~~1877.7~~ | ~~SUPERSEDED by n=30~~ | ~~retired~~ |
 
 ---
