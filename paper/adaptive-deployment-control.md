@@ -276,7 +276,7 @@ To test whether the synthetic findings are contradicted by real CI data, we coll
 | `static_rules` | 1150 | **1878.0** | **1.633** | 2.6% | 60.9% | 36.5% |
 | `heuristic_score` | 1150 | 2319.0 | 2.017 | 37.3% | 62.7% | 0.0% |
 | `linucb` / `cost_sensitive_bandit` | 1150 | 1879.0 | 1.634 | 8.0% | 5.7% | 86.3% |
-| `thompson` (n=5 seeds) | 1150 | **1877 ± 58** | 1.633 ± 0.050 | 6.4% | 30.5% | 63.1% |
+| `thompson` (n=5 seeds) | 1150 | **1877 ± 72** | 1.633 ± 0.062 | 6.4% | 30.5% | 63.1% |
 
 `linucb` and `cost_sensitive_bandit` are identical at the same α and λ — mathematically expected (‖b-vector difference‖₂ = 0).
 
@@ -289,7 +289,7 @@ The aggregate tie (1878 vs. 1879) is a dataset artifact. **Per-project, the band
 
 At 15% failure, canary is cheaper than block (1.45 vs. 1.775/step); the static rule's canary-heavy strategy is near-optimal and LinUCB over-blocks. At 35% failure, block is cheapest (1.475/step); LinUCB correctly converges to 86.3% block.
 
-**Thompson Sampling** produces the same mean cost as LinUCB but with std = 58 across seeds (range 1814–1970). Its action distribution differs: 30.5% canary vs. 5.7% for LinUCB, reflecting posterior uncertainty rather than point-estimate UCB. This is the expected behavioral difference between posterior sampling and optimism-based exploration.
+**Thompson Sampling** produces the same mean cost as LinUCB but with std = 72 across seeds (range 1814–1970). Its action distribution differs: 30.5% canary vs. 5.7% for LinUCB, reflecting posterior uncertainty rather than point-estimate UCB. This is the expected behavioral difference between posterior sampling and optimism-based exploration.
 
 ### 5.2 Robustness Results (Synthetic Data)
 
@@ -386,7 +386,7 @@ Removing the buffer improves performance because immediate feedback accelerates 
 **F3: Page-Hinkley at λ_PH = 50 fires 44 false alarms on 1,150 stationary steps.**
 Expected behavior for a sensitive detector on data with no drift. The threshold requires calibration; we make no claim about its performance on non-stationary data.
 
-**F4: Thompson Sampling produces nonzero seed variance (std = 58 synthetic, std = 99 real); LinUCB does not.**
+**F4: Thompson Sampling produces nonzero seed variance (std = 72 synthetic, std = 99 real); LinUCB does not.**
 Stochastic posterior sampling yields different per-trajectory behavior. On real short-trajectory data, this variance is large enough that any individual seed can be best or worst of all policies.
 
 ### 6.2 Preliminary Findings (synthetic data — cannot generalize)
