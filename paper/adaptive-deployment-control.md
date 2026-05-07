@@ -496,7 +496,7 @@ Seed counts below approximately 30 produced misleading direction findings in our
 
 **The bandit framing delivers when both conditions in §1.3 hold.** At deploy_failure=20 (doubled), the bandit outperforms static rules by 19% by learning a block-heavy strategy the static rule cannot reach. At low block cost, it outperforms by 27%. The framing's advantage is conditional, not universal — it requires sufficient failure rate and sufficient context signal to justify the exploration cost.
 
-**Thompson Sampling's stochastic exploration is the right tool for short or uncertain trajectories.** Its mean performance on real data (585 vs. 644.5 for static rules) is better, and its variance across seeds (±99) makes it the only policy for which uncertainty quantification is meaningful in the current setup.
+**Thompson Sampling's stochastic exploration is the right tool for short or uncertain trajectories.** Its mean performance on real data (624 vs. 644.5 for static rules; n=30 seeds) is 3.2% lower on the point estimate, but the two policies are statistically tied (static=644.5 falls inside Thompson's CI [598, 648]). Its variance across seeds (±72) makes it the only policy for which uncertainty quantification is meaningful in the current setup.
 
 ### What Doesn't Work (and Why)
 
