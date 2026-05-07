@@ -155,6 +155,7 @@ def run_experiment(config: OnlineExperimentConfig, seed: int) -> dict[str, Any]:
 
     summary = build_summary(config=config, seed=seed, results=all_results)
     write_results(summary, config=config, seed=seed)
+    write_step_arrays(all_results, config=config, seed=seed)
     return summary
 
 
@@ -217,6 +218,28 @@ def records_by_project_count(results: dict[str, list[OnlineTrajectoryResult]]) -
         for traj in traj_list:
             projects.add(traj.project_slug)
     return projects
+
+
+def write_step_arrays(
+    results: dict[str, list[OnlineTrajectoryResult]],
+    config: OnlineExperimentConfig,
+    seed: int,
+) -> None:
+    """Write per-step cost arrays to disk for plotting.
+
+    Extracts costs from already-populated step_records (no new RNG calls).
+    Arrays are concatenated across projects in trajectory order.
+    Saved as compressed numpy: step_costs_<policy_id>.npy
+    """
+    output_dir = config.results_root / config.config_name / str(seed)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    for policy_id, traj_list in results.items():
+        costs: list[float] = []
+        for traj in traj_list:
+            for sr in traj.step_records:
+                costs.append(sr.cost)
+        arr = np.array(costs, dtype=np.float32)
+        np.save(output_dir / f"step_costs_{policy_id}.npy", arr)
 
 
 def write_results(

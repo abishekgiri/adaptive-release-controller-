@@ -272,6 +272,10 @@ To test whether the synthetic findings are contradicted by real CI data, we coll
 
 **[Preliminary — synthetic 2-project dataset. Deterministic policies have zero CI width.]**
 
+**Figure 1** (`fig_cumulative_cost_synthetic`): Cumulative cost per policy on the synthetic dataset (n=30 seeds, error bars = ±1 std). Thompson's higher cost and wider spread relative to LinUCB and static rules are visible; see also Figure 7 for the seed distribution.
+
+**Figure 8** (`fig_cumulative_cost_curves`): Cumulative cost over time (mean across 30 seeds), synthetic dataset. All deterministic policies follow identical step functions; Thompson shows seed-driven variance.
+
 **Table 1:** Cumulative cost, default cost matrix, synthetic dataset. All 1,150 rewards matured (0 censored). Thompson: mean ± std across seeds 0–29 (n=30), bootstrap seed 42. *Takeaway: Thompson is 1.4% more expensive than static on aggregate (CI [1884, 1922]; static = 1878). The 5-seed result that showed Thompson as cheapest was a sampling artifact: three of the five seeds hit low-cost trajectories below the population mean. The n=30 result reverses the direction with a non-overlapping CI.*
 
 | Policy | Steps | Cumul. Cost | Mean/Step | Deploy% | Canary% | Block% |
@@ -323,6 +327,8 @@ Under long delay (doubled step-count delay), the bandit's uninformed-prior phase
 
 **[Preliminary — synthetic data. All 5 seeds identical for deterministic variants.]**
 
+**Figure 6** (`fig_ablation_bars`): Bar chart comparing cumulative cost across the four ablation variants. `no_cost` and `full` are dramatically more expensive than `no_drift` and `no_delay`, isolating cost weighting as the dominant factor.
+
 **Table 2:** Component ablation, default cost matrix, seed 0. Reference = `no_drift`. *Takeaway: cost weighting is the dominant component (+31%); drift detection is destructive on stationary data (+27%); the buffer costs 1.1% for temporal validity.*
 
 | Variant | Cumul. Cost | Mean/Step | Deploy% | Block% | Drift Resets |
@@ -347,6 +353,14 @@ Under long delay (doubled step-count delay), the bandit's uninformed-prior phase
 ### 5.4 Real-World Sanity Check
 
 **[Highly preliminary — real GitHub Actions data, 2 projects, feature sparsity, relaxed filters, biased evaluation. Do not compare magnitudes against synthetic results.]**
+
+**Figure 2** (`fig_cumulative_cost_real`): Cumulative cost per policy on real GitHub Actions data (n=30 seeds, error bars = ±1 std). Thompson's lower mean and high variance relative to LinUCB are visible; static rules sit between the two bandit policies.
+
+**Figure 3** (`fig_action_distribution`): Stacked-bar action distribution (deploy/canary/block) for all policies on synthetic (left) and real (right) datasets. LinUCB's block-heavy convergence and Thompson's persistent canary allocation are visible on both panels.
+
+**Figure 7** (`fig_thompson_seed_distribution`): Boxplot of Thompson's per-seed cumulative cost distribution across 30 seeds, synthetic (left) and real (right). The real-data spread (std=72, range 445.5–725.5) illustrates that no individual seed reliably dominates static rules.
+
+**Figure 10** (`fig_cost_cdf_per_step`): Empirical CDF of per-step costs pooled across all seeds and steps. The heavier left tail for Thompson on real data reflects its lower block rate and correspondingly more deploys on low-failure projects.
 
 **Table 3:** Online replay on real GitHub Actions data, default cost matrix, seeds 0–29 (n=30), bootstrap seed 42. *Takeaway: LinUCB over-blocks and costs 3.8% more than static; Thompson outperforms LinUCB by 6.8% but is statistically tied with static (static=644.5 falls inside Thompson's CI [598, 648]).*
 
@@ -422,6 +436,8 @@ Cancelled runs produce 3% censored rewards, with policy-dependent variation. Thi
 
 **F11: LinUCB advantage over static rules grows monotonically with the deploy_failure/block_bad cost ratio.**
 
+**Figure 4** (`fig_cost_sweep`): Line chart of cumulative cost vs. cost ratio (log-x) for static rules, LinUCB, and heuristic policies. LinUCB's advantage widens monotonically; the crossover from parity to advantage occurs near 30:1.
+
 Sweeping five cost-ratio levels (30 seeds each, synthetic dataset):
 
 | Ratio | static_rules | linucb | Δ (LinUCB vs static) |
@@ -435,6 +451,10 @@ Sweeping five cost-ratio levels (30 seeds each, synthetic dataset):
 At the default 20:1 ratio the policies are indistinguishable (difference < 1 unit). As the deploy-failure penalty grows relative to the block cost, LinUCB's ability to learn a block-heavy strategy pays off dramatically — 49.6% cheaper than static rules at 100:1. The relationship is monotone: every doubling of the ratio increases LinUCB's relative advantage. The operating envelope for bandit deployment is therefore high cost-asymmetry regimes (ratio ≥ 40:1), where the exploration cost is amortized over a larger penalty gap.
 
 **F12: Page-Hinkley drift resets (λ=50) increase cost in all three drift conditions; the no-reset variant matches LinUCB exactly.**
+
+**Figure 5** (`fig_drift_mode_bars`): Grouped bar chart of mean cumulative cost by drift mode × policy. `linucb_with_drift_full` is uniformly worst; `linucb_with_drift_no_reset` is visually indistinguishable from `linucb`.
+
+**Figure 9** (`fig_drift_recovery_curves`): Cumulative regret over time for all three drift modes (3-panel). Under abrupt and gradual drift, `linucb_with_drift_full` accumulates regret spikes at each reset; `linucb` and `linucb_with_drift_no_reset` track together throughout.
 
 Evaluating six policies across three drift schedules (30 seeds, 500-step synthetic trajectories):
 
@@ -468,7 +488,7 @@ The primary experiment uses 1,150 rows across two synthetic projects at fixed fa
 
 ### 7.3 Real Sanity Check: Feature Sparsity, Short Trajectories, Relaxed Filters
 
-The GitHub Actions experiment uses a feature vector in which 11 of 13 dimensions carry no commit-level signal. The bandit degenerates to learning from failure rate and bias term. With 300 steps per project and d=13 dimensions, the bandit is near its minimum convergence threshold (O(d²) = 169 updates per arm). Both conditions in §1.3 are violated: psf/requests is in the low-failure regime AND feature sparsity prevents informative context. The negative result (LinUCB loses to static rules) is expected under these conditions and should not be interpreted as evidence that bandits generally underperform static rules.
+The GitHub Actions experiment uses a feature vector in which 11 of 13 dimensions carry no commit-level signal. The bandit degenerates to learning from failure rate and bias term. With 300 steps per project and d=13 dimensions, the bandit is near its minimum convergence threshold (O(d²) = 169 updates per arm). Both conditions in §1.3 are violated: psf/requests is in the low-failure regime AND feature sparsity prevents informative context. The negative result (LinUCB loses to static rules) is expected under these conditions and should not be interpreted as evidence that bandits generally underperform static rules. Additionally, the experiment covers only two projects with failure rates of 5.3% and 23.3% — a specific rate combination that happens to favor static rules' explicit threshold. No generalization to the distribution of real-world project failure rates is intended; both the direction and magnitude of the real-data results are specific to this pair.
 
 ### 7.4 LinUCBWithDrift with reset_on_drift=False Is Numerically Identical to LinUCB
 
@@ -485,6 +505,22 @@ The true selection probability for Thompson Sampling requires integrating over t
 ### 7.7 Seed Counts Below 30 Produce Misleading Direction Findings
 
 Seed counts below approximately 30 produced misleading direction findings in our pilot runs (n=5 showed Thompson as the cheapest policy on synthetic data; n=30 reverses the direction with a non-overlapping CI). All headline numbers in this paper use ≥30 seeds and bootstrap seed 42.
+
+### 7.8 CI Outcome Is a Proxy for Deployment Failure, Not a Direct Measure
+
+The entire evaluation chain — cost computation, policy update, and result reporting — treats the logged CI outcome (pass/fail) as a proxy for the deployment failure outcome a human engineer would observe in production. This proxy relationship is imperfect in both directions. A CI pass does not guarantee safe deployment: integration-test gaps, environment-specific faults, and configuration drift can produce production incidents on passing builds. A CI failure does not guarantee a production incident would have occurred: flaky tests, dependency version mismatches, and transient infrastructure errors produce false CI failures. The cost model therefore mis-prices a fraction of deployment decisions. The direction and magnitude of this mis-pricing depend on the test suite quality and build environment stability of each repository, neither of which is measured here. All cost claims should be read as costs under the CI-outcome proxy, not costs under the true deployment-failure outcome.
+
+### 7.9 Real-Data Evaluation Assumes Stationarity; No Drift Analysis Was Performed
+
+The GitHub Actions evaluation treats each 300-step project trajectory as a stationary distribution and uses all steps for both learning and evaluation. If the true CI failure rate changes over the 300-step window — for example, due to a large dependency upgrade, a project refactor, or infrastructure migration — then the earlier steps of the trajectory correspond to a different distribution than the later steps. In that case, a policy that learns from early steps may be mis-calibrated for later steps, producing an underestimate of the cost gap between adaptive and non-adaptive policies. We performed no stationarity test on the real-data trajectories. The drift evaluation in §6.4 is conducted exclusively on synthetic data; its findings do not imply anything about whether the real GitHub Actions trajectories are stationary.
+
+### 7.10 Synthetic Failure Rates Are Unobservable Hidden State
+
+The synthetic dataset assigns failure rates at the project level (smoke/alpha: 15%, smoke/beta: 35%), but these rates are not part of the feature vector presented to the policy. From the policy's perspective, the failure rate is a latent variable that must be inferred from the reward history. This creates a structural advantage for policies that converge quickly on the majority class: after seeing enough failures, LinUCB correctly assigns high probability to the block arm for smoke/beta, but the feature vector provides no direct signal that smoke/beta is a high-failure project. In a real setting, project metadata (team size, language, test coverage) could make the failure rate more directly observable. The synthetic evaluation therefore measures a lower bound on bandit performance: a policy with access to project-type features could converge faster. The aggregate tie on the synthetic dataset does not reflect what would happen with a richer feature representation.
+
+### 7.11 Bootstrap Results Depend on a Single Fixed Seed; Different Seeds May Yield Different p-Values
+
+All bootstrap confidence intervals and paired bootstrap p-values in this paper use seed 42 with 10,000 resamples (as noted in §2 and `experiments/run_robustness.py`). The bootstrap procedure is deterministic given this seed. We did not evaluate sensitivity of p-values or CI endpoints to the choice of bootstrap seed. For the F9 Thompson-vs-LinUCB result (p<0.0001, 0/10,000 bootstrap samples with Thompson mean ≥ LinUCB), the finding is robust: the p-value is at the floor for any 10,000-resample procedure and will not change under different seeds. For findings where the p-value is near a threshold — particularly the Thompson-vs-static "tied" result, where static=644.5 falls inside CI [598, 648] — a different bootstrap seed could shift the CI endpoints by a few units and change the coverage interpretation. Readers should treat the [598, 648] endpoints as approximate to ±5 units under seed variation.
 
 ---
 
@@ -539,18 +575,36 @@ Three directions are tractable extensions of the current infrastructure:
 
 ## Appendix A: Validity Classification
 
-| Claim | Status | Evidence | Condition for promotion |
-| --- | --- | --- | --- |
-| Cost weighting important (+31% without it) | **Preliminary** | Smoke dataset, 2 projects | Replicate on ≥10 real projects with full features |
-| Bandit advantage grows with failure cost | **Preliminary** | Smoke dataset | Real data, multiple projects |
-| Delay reduces learning speed by 1.1% | **Preliminary** | Smoke dataset | Stochastic delay experiment |
-| Thompson variance > LinUCB variance | **Reliable** | Smoke + GitHub Actions, 5 seeds each | — |
-| Buffer enforces delayed-feedback correctness | **Reliable** | Code + 180 passing tests | — |
-| PageHinkley fires false alarms at λ_PH=50, stationary data | **Reliable** | Expected detector behavior | — |
-| Infrastructure runs correctly on real GitHub Actions data | **Reliable** | 600 real runs, 2 projects executed | — |
-| LinUCB over-blocks in low-failure regime with feature sparsity | **Preliminary** | GitHub Actions sanity check, 1 project | Feature-rich real data |
-| Drift adaptation reduces cost on non-stationary data | **Not evaluated** | Experiment not run | Synthetic drift schedule |
-| Bandit generally outperforms static rules | **Not established** | Static rules win on real low-failure data | Feature-rich multi-project real data |
+**Labels:**
+- **Demonstrated** — mechanism verified; result is robust across n=30 seeds, multiple configurations, and/or follows directly from code/math. Unlikely to reverse with more data.
+- **Suggestive** — result is real on the data collected, but scope is limited (synthetic, 2 projects, short trajectory). Directionally plausible; magnitude may shift.
+- **Speculative** — claim extrapolates beyond the experimental evidence, relies on analogy, or is a conditional prediction not yet tested.
+
+| # | Claim | Section | Classification | Evidence |
+| --- | --- | --- | --- | --- |
+| 1 | The pending-reward buffer enforces the delayed-feedback invariant (no future information at decision time) | §2.2, F2 | **Demonstrated** | `tests/test_delayed_buffer.py::test_reward_becomes_available_after_delay`, `::test_delayed_reward_not_available_immediately`; `tests/test_online_replay.py::test_update_arrives_after_delay`, `::test_no_update_at_step_zero_with_delay_one`; 184 collected tests passing |
+| 2 | Removing the buffer improves cost by 1.1% on synthetic data | §5.3, F2 | **Suggestive** | Ablation seed 0 only, deterministic; mechanism is correct (faster convergence from immediate feedback); magnitude is dataset-specific; no multi-seed CI |
+| 3 | PageHinkley at λ_PH=50 fires 44 false alarms on 1,150 stationary steps | §5.3, F3 | **Demonstrated** | Direct count from `experiments/results/ablation_smoke/0/ablation_summary.json` → `full.drift_resets=44`; expected behavior for a sensitive threshold on stationary cost stream |
+| 4 | `linucb_with_drift_no_reset` is numerically identical to `linucb` in all three drift modes | §7.4, F12 | **Demonstrated** | Mathematical identity: with `reset_on_drift=False` the two code paths are identical; confirmed by `experiments/results/drift_eval/drift_eval_summary.json` (536.9 vs 536.9, 602.7 vs 602.7, 685.8 vs 685.8 across all modes) |
+| 5 | Thompson Sampling produces nonzero seed variance (std=54 synthetic, std=72 real); LinUCB does not | §5.1, F4 | **Demonstrated** | n=30 seeds, all result files; LinUCB std=0.0 (all seeds identical — deterministic); follows from stochastic vs deterministic sampling, not dataset-dependent |
+| 6 | Thompson's 95% bootstrap CI [598, 648] does not overlap LinUCB=669.5; p<0.0001 paired bootstrap | §5.4, F9 | **Demonstrated** | n=30 seeds, bootstrap seed 42, 10,000 resamples; 0/10,000 bootstrap samples had Thompson mean ≥ LinUCB; CI computed from `experiments/results/real_github_actions/{0..29}/online_summary.json` |
+| 7 | Real GitHub Actions data contains 17–22 censored rewards per trajectory (≈3%) | §5.4, F10 | **Demonstrated** | Direct count from `experiments/results/real_github_actions/0/online_summary.json` → `*.total_censored_skipped`; censoring path exercised on real CI data |
+| 8 | Cost weighting is the dominant ablation component: binary reward degrades cost by +31% | §5.3, F1; Abstract (+31%) | **Suggestive** | Ablation seed 0 only (`no_cost=2469`, `no_drift=1879`); deterministic on this dataset; mechanism (wrong gradient on asymmetric cost) is theoretically principled; magnitude is dataset-specific; no multi-seed CI |
+| 9 | LinUCB over-blocks in the low-failure regime and costs 3.8% more than static rules | §5.4, F8; Abstract (3.8%) | **Suggestive** | Deterministic outcome (no seed variance) on the 2-project dataset: LinUCB=669.5, static=644.5, gap=25 units = 3.8%. Suggestive because the 'low-failure regime' generalization rests on n=2 projects. |
+| 10 | Thompson Sampling outperforms LinUCB by 6.8% on real data (624 vs 669.5) | §5.4, F9; Abstract (6.8%) | **Demonstrated** | n=30 seeds, bootstrap seed 42: CI [598, 648] entirely below LinUCB=669.5; p<0.0001 paired bootstrap (0/10,000 samples); see also row 6 for CI details |
+| 11 | Thompson and the static rule are statistically tied on real data (static=644.5 inside CI [598, 648]) | §5.4, F9 | **Suggestive** | Static=644.5 falls inside Thompson CI [598, 648] for this 2-project dataset; static rule's threshold happens to match this failure-rate mix; may not hold on other project distributions |
+| 12 | Bandit advantage scales with failure cost: +19% at 2× failure cost, +27% at lower block cost | §5.2, F5; Abstract (19%, 27%) | **Suggestive** | Synthetic robustness configs, n=30 seeds (deterministic); qualitative direction is expected from cost-weighting mechanism; magnitudes are dataset-specific |
+| 13 | Cost-ratio sweep: LinUCB advantage monotone from −7% (5:1) to −49.6% (100:1) | §6.4, F11; Abstract (−7%, −49.6%) | **Suggestive** | 5 cost levels × 30 seeds, synthetic dataset; monotone pattern follows from cost-weighting mechanism; absolute thresholds are environment-specific; not tested on real data |
+| 14 | Severe delay (120s) costs 1.0% more than default; short delay (30s) reduces cost by 1.5% | §5.2, F6 | **Suggestive** | Synthetic robustness configs, deterministic; linucb_long=1896.5 vs static=1878 (+18.5 units = +1.0%); linucb_short=1849.5 vs static=1878 (−28.5 units = −1.5%); consistent with delay-induced regret theory (Pike-Burke et al., 2018); magnitude is dataset-specific |
+| 15 | The aggregate bandit/static tie (1878 vs 1879) is a per-project cancellation artifact | §5.1, F7 | **Suggestive** | 2-project synthetic dataset; smoke/alpha: static wins by 70.5 units; smoke/beta: linucb wins by 69.5 units; cancellation pattern is specific to this two-project design |
+| 16 | Thompson's posterior never fully collapses to the optimal arm (persistent canary allocation) | §1.3, §5.1 | **Suggestive** | Mean Thompson canary fraction=22.4%, mean LinUCB block fraction=86.3% at the same trajectory length (smoke/alpha, smoke/beta), n=30 seeds; mechanism (posterior variance) is principled; canary fraction dataset- and failure-rate-dependent |
+| 17 | LinUCB advantage over static rules requires ≥40:1 cost ratio in this synthetic setting | §6.4, operating envelope | **Suggestive** | Observed threshold from cost sweep; not analytically derived; will shift with failure rate, trajectory length, feature signal, and dataset |
+| 18 | Page-Hinkley drift resets at λ=50 are net-negative across all three drift modes | §6.4, F12 | **Suggestive** | 30 seeds × 3 drift modes × 500-step synthetic trajectories; result is specific to this λ and horizon; longer trajectories may amortize reset overhead |
+| 19 | The 5.3% failure rate of psf/requests is a measured data property | §5.4; Abstract (5.3%) | **Demonstrated** | Direct CSV count: 16 failures / 300 rows in `data/raw/github_actions_real.csv`; documented in `paper/source-of-truth.md` §5.4 |
+| 20 | The bandit framing helps when failure costs are high and context is informative | §1.2, Abstract | **Speculative** | Inferred from synthetic robustness results and the over-blocking negative result; not directly tested on feature-rich real data with high failure rates |
+| 21 | Per-project exploration calibration (adapting α to observed failure rate) would avoid over-blocking | §9 | **Speculative** | Mechanistic argument from F8; not implemented or tested; depends on whether failure rate converges fast enough to inform α |
+| 22 | Longer trajectories would amortize reset overhead under drift | §6.4 | **Speculative** | Conditional prediction consistent with O(√T) regret theory; not tested; `linucb_with_drift_full` was evaluated only on 500-step trajectories |
+| 23 | The 20:1 default cost ratio sits at the operating envelope boundary where bandits break even | §1.4, Abstract | **Speculative** | Observed at one dataset/setting combination; boundary location is not analytically characterized; the observed cost difference at 20:1 is <1 unit |
 
 ---
 

@@ -175,6 +175,8 @@ class DriftTrajectoryResult:
     total_censored: int
     action_counts: dict[str, int]
     drift_resets: int  # only non-zero for LinUCBWithDrift with reset_on_drift=True
+    step_costs: list[float] = field(default_factory=list)    # cost at each reveal step
+    step_regrets: list[float] = field(default_factory=list)  # regret at each reveal step
 
 
 def run_drift_trajectory(
@@ -210,6 +212,8 @@ def run_drift_trajectory(
     total_updates = 0
     total_censored = 0
     action_counts: dict[str, int] = {a.value: 0 for a in Action}
+    step_costs: list[float] = []
+    step_regrets: list[float] = []
 
     # Pending rewards: list of (reveal_at_step, context, action, reward)
     pending: list[tuple[int, Context, Action, Reward]] = []
@@ -239,8 +243,13 @@ def run_drift_trajectory(
                         cumulative_cost += cost
                         # Realized regret: actual cost minus oracle minimum for this outcome
                         min_cost = _oracle_cost_by_outcome(preward.outcome, cost_config)
+                        step_regret = 0.0
                         if math.isfinite(min_cost):
-                            cumulative_regret += max(0.0, cost - min_cost)
+                            step_regret = max(0.0, cost - min_cost)
+                            cumulative_regret += step_regret
+                        # Per-step logging — appended AFTER policy.update(); no RNG calls
+                        step_costs.append(cost)
+                        step_regrets.append(step_regret)
                         total_updates += 1
                     else:
                         total_censored += 1
@@ -281,6 +290,8 @@ def run_drift_trajectory(
         total_censored=total_censored,
         action_counts=action_counts,
         drift_resets=drift_resets,
+        step_costs=step_costs,
+        step_regrets=step_regrets,
     )
 
 
@@ -324,6 +335,13 @@ def run_drift_study(
     per_mode_policy_resets: dict[str, dict[str, list[int]]] = {
         dm: {} for dm in drift_modes
     }
+    # Per-step arrays: mode → policy → list of per-seed step arrays (for mean curve)
+    per_mode_policy_step_costs: dict[str, dict[str, list[list[float]]]] = {
+        dm: {} for dm in drift_modes
+    }
+    per_mode_policy_step_regrets: dict[str, dict[str, list[list[float]]]] = {
+        dm: {} for dm in drift_modes
+    }
 
     for seed in seeds:
         print(f"  seed {seed} …", flush=True)
@@ -335,6 +353,8 @@ def run_drift_study(
                 per_mode_policy[drift_mode].setdefault(pid, []).append(res.cumulative_cost)
                 per_mode_policy_regret[drift_mode].setdefault(pid, []).append(res.cumulative_regret)
                 per_mode_policy_resets[drift_mode].setdefault(pid, []).append(res.drift_resets)
+                per_mode_policy_step_costs[drift_mode].setdefault(pid, []).append(res.step_costs)
+                per_mode_policy_step_regrets[drift_mode].setdefault(pid, []).append(res.step_regrets)
 
     rng = np.random.default_rng(BOOTSTRAP_SEED)
     conditions: dict[str, Any] = {}
@@ -377,6 +397,22 @@ def run_drift_study(
         json.dumps(report, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
+
+    # Write mean step-cost and step-regret arrays per drift mode × policy.
+    # Each array shape: (n_steps_with_reward,) — mean across seeds.
+    # No RNG calls; arrays derived from already-computed trajectory results.
+    for drift_mode in drift_modes:
+        for pid, seed_arrays in per_mode_policy_step_costs[drift_mode].items():
+            if seed_arrays and seed_arrays[0]:
+                min_len = min(len(a) for a in seed_arrays)
+                arr = np.array([a[:min_len] for a in seed_arrays], dtype=np.float32)
+                np.save(results_root / f"step_costs_{drift_mode}_{pid}.npy", arr.mean(axis=0))
+        for pid, seed_arrays in per_mode_policy_step_regrets[drift_mode].items():
+            if seed_arrays and seed_arrays[0]:
+                min_len = min(len(a) for a in seed_arrays)
+                arr = np.array([a[:min_len] for a in seed_arrays], dtype=np.float32)
+                np.save(results_root / f"step_regrets_{drift_mode}_{pid}.npy", arr.mean(axis=0))
+
     return report
 
 
