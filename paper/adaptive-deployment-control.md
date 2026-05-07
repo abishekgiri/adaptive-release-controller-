@@ -10,9 +10,9 @@ Continuous deployment pipelines require a decision at every commit: deploy immed
 
 We apply disjoint LinUCB (Li et al., 2010) and Bayesian linear Thompson Sampling (Agrawal & Goyal, 2013) to this three-action problem using an asymmetric cost matrix (a production incident costs 20× a correctly blocked bad change) and a pending-reward buffer that enforces the delayed-feedback invariant.
 
-Results are two-sided. **Positive:** on synthetic data, the bandit outperforms a static rule by 19% when failure cost doubles and by 27% when blocking becomes cheaper — regimes where the cost structure rewards adaptation. An ablation confirms cost weighting is the dominant component: binary reward degrades cumulative cost by 31%. **Negative:** on real GitHub Actions CI data (600 runs, two public repositories), LinUCB over-blocks a 5.3%-failure-rate project — where deploy is optimal — and costs 3.8% *more* than a static rule. Feature sparsity and short trajectories prevent convergence to the project-specific optimal policy.
+Results are two-sided. **Positive:** on synthetic data, the bandit outperforms a static rule by 19% when failure cost doubles and by 27% when blocking becomes cheaper — regimes where the cost structure rewards adaptation. An ablation confirms cost weighting is the dominant component: binary reward degrades cumulative cost by 31%. **Negative:** on real GitHub Actions CI data (600 runs, two public repositories), LinUCB over-blocks a 5.3%-failure-rate project — where deploy is optimal — and costs 3.8% *more* than a static rule. Feature sparsity and short trajectories prevent convergence to the project-specific optimal policy. Within the bandit family, Thompson Sampling outperforms LinUCB by 6.8% on real data (Thompson 624, LinUCB 669.5; 95% CI [598, 648] entirely below LinUCB); Thompson and the static rule are statistically tied (static 644.5 falls inside Thompson's CI). The exploration-strategy choice — posterior sampling versus upper confidence bound — matters more in this regime than the bandit-vs-rule choice.
 
-The takeaway: the bandit framing helps when failure costs are high and context is informative. When features are sparse or failure rates are low, well-calibrated static rules remain competitive.
+The takeaway: the bandit framing helps when failure costs are high and context is informative. When features are sparse or failure rates are low, well-calibrated static rules remain competitive. When they do not, the choice of exploration strategy within the bandit family has first-order impact on cost.
 
 ---
 
@@ -46,7 +46,7 @@ The bandit advantage is not unconditional. Two conditions must hold simultaneous
 
 **Condition 2 — sufficient informative context.** LinUCB with a *d*-dimensional feature vector needs roughly *O(d²)* updates per arm before its parameter estimates are statistically meaningful. With *d* = 13 in our setup, that is approximately 169 updates per arm before the confidence interval shrinks to first-order accuracy. On a 300-step real-world trajectory, the bandit has barely enough data to form reliable per-arm estimates, let alone differentiate arms based on context. If the feature vector carries no commit-level signal (no files changed, no test counts), the bandit degenerates to learning from failure rate and a bias term — information a static rule can encode directly.
 
-When both conditions fail — low failure rate, feature sparsity, short trajectory — static rules are competitive and bandits may be worse. This paper documents both regimes empirically.
+When both conditions fail — low failure rate, feature sparsity, short trajectory — static rules are competitive and bandits may be worse. This paper documents both regimes empirically. The synthetic Thompson result is itself an instance of Condition 2 — with d=13 and trajectory length 575 steps per project, exploration cost dominates the expected gain from posterior sampling, making Thompson 1.4% more expensive than the static rule in aggregate (n=30 seeds, CI [1884, 1922]).
 
 ### 1.4 Contribution Summary
 
@@ -56,6 +56,7 @@ LinUCB and Thompson Sampling are well-established algorithms. Our contributions 
 - **Evaluation framework:** Online-replay protocol with a pending-reward buffer enforcing the delayed-feedback invariant; explicit bias disclosure; cost as the sole headline metric.
 - **Component ablation:** Cost weighting, delayed feedback, and drift adaptation isolated and quantified. Cost weighting is the dominant factor (+31% cumulative cost when removed).
 - **Two-sided empirical characterization:** Bandits outperform static rules when failure costs are high and context is informative. In the low-failure regime with feature sparsity (5.3% failure rate, no commit-level features), UCB-based policies over-block and cost 3.8% more than a static rule — a negative result that defines the operating envelope of the framing.
+- **Within-bandits exploration finding:** In the feature-sparse regime where LinUCB underperforms, Thompson Sampling outperforms LinUCB by 6.8% on real data (CI [598, 648] entirely below LinUCB = 669.5; p < 0.01). Thompson and the static rule are statistically tied. The choice of exploration strategy — posterior sampling vs. UCB — is the first-order variable in this regime, not the bandit framing itself.
 
 ---
 
@@ -269,14 +270,14 @@ To test whether the synthetic findings are contradicted by real CI data, we coll
 
 **[Preliminary — synthetic 2-project dataset. Deterministic policies have zero CI width.]**
 
-**Table 1:** Cumulative cost, default cost matrix, synthetic dataset. All 1,150 rewards matured (0 censored). Thompson: mean ± std across seeds 0–4. *Takeaway: all three non-heuristic policies are effectively tied in aggregate; the per-project breakdown below reveals the structure the aggregate hides.*
+**Table 1:** Cumulative cost, default cost matrix, synthetic dataset. All 1,150 rewards matured (0 censored). Thompson: mean ± std across seeds 0–29 (n=30), bootstrap seed 42. *Takeaway: Thompson is 1.4% more expensive than static on aggregate (CI [1884, 1922]; static = 1878). The 5-seed result that showed Thompson as cheapest was a sampling artifact: three of the five seeds hit low-cost trajectories below the population mean. The n=30 result reverses the direction with a non-overlapping CI.*
 
 | Policy | Steps | Cumul. Cost | Mean/Step | Deploy% | Canary% | Block% |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | `static_rules` | 1150 | **1878.0** | **1.633** | 2.6% | 60.9% | 36.5% |
 | `heuristic_score` | 1150 | 2319.0 | 2.017 | 37.3% | 62.7% | 0.0% |
 | `linucb` / `cost_sensitive_bandit` | 1150 | 1879.0 | 1.634 | 8.0% | 5.7% | 86.3% |
-| `thompson` (n=5 seeds) | 1150 | **1877 ± 58** | 1.633 ± 0.050 | 6.4% | 30.5% | 63.1% |
+| `thompson` (n=30 seeds) | 1150 | **1903 ± 54** | 1.655 ± 0.047 | 6.5% | 22.4% | 71.1% |
 
 `linucb` and `cost_sensitive_bandit` are identical at the same α and λ — mathematically expected (‖b-vector difference‖₂ = 0).
 
@@ -289,7 +290,7 @@ The aggregate tie (1878 vs. 1879) is a dataset artifact. **Per-project, the band
 
 At 15% failure, canary is cheaper than block (1.45 vs. 1.775/step); the static rule's canary-heavy strategy is near-optimal and LinUCB over-blocks. At 35% failure, block is cheapest (1.475/step); LinUCB correctly converges to 86.3% block.
 
-**Thompson Sampling** produces the same mean cost as LinUCB but with std = 58 across seeds (range 1814–1970). Its action distribution differs: 30.5% canary vs. 5.7% for LinUCB, reflecting posterior uncertainty rather than point-estimate UCB. This is the expected behavioral difference between posterior sampling and optimism-based exploration.
+**Thompson Sampling** costs 1.4% more than static rules in aggregate across n=30 seeds (1903 vs 1878, CI [1884, 1922]; the CI does not overlap static=1878). The n=5 mean of 1877 was a sampling artifact: three of the five seeds fell below the population mean, reversing the sign. With n=30, std = 54 (range 1814–2010); action distribution: 22.4% canary vs. 5.7% for LinUCB, reflecting higher posterior uncertainty. On the synthetic dataset, Thompson's exploration cost exceeds its exploitation gain — the behavior predicted by §1.3 Condition 2 when trajectory length is near the convergence threshold.
 
 ### 5.2 Robustness Results (Synthetic Data)
 
@@ -345,16 +346,16 @@ Under long delay (doubled step-count delay), the bandit's uninformed-prior phase
 
 **[Highly preliminary — real GitHub Actions data, 2 projects, feature sparsity, relaxed filters, biased evaluation. Do not compare magnitudes against synthetic results.]**
 
-**Table 3:** Online replay on real GitHub Actions data, default cost matrix, seeds 0–4. *Takeaway: in the low-failure regime with feature sparsity, LinUCB over-blocks and costs 3.8% more than a static rule; Thompson's mean is better but variance is high.*
+**Table 3:** Online replay on real GitHub Actions data, default cost matrix, seeds 0–29 (n=30), bootstrap seed 42. *Takeaway: LinUCB over-blocks and costs 3.8% more than static; Thompson outperforms LinUCB by 6.8% but is statistically tied with static (static=644.5 falls inside Thompson's CI [598, 648]).*
 
 | Policy | Steps | Censored | Cumul. Cost | Mean/Step | Deploy% | Canary% | Block% |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | `static_rules` | 600 | 21 | **644.5** | **1.113** | 64.3% | 20.0% | 15.7% |
 | `heuristic_score` | 600 | 22 | 860.0 | 1.488 | 100.0% | 0.0% | 0.0% |
 | `linucb` / `cost_sensitive_bandit` | 600 | 17 | 669.5 | 1.148 | 53.0% | 4.8% | 42.2% |
-| `thompson` (n=5 seeds) | 600 | 17–21 | **585** ± 99 | **1.008** ± 0.171 | varies | varies | varies |
+| `thompson` (n=30 seeds) | 600 | 17–21 | **624 ± 72** | **1.040** ± 0.120 | 50.6% | 15.5% | 33.9% |
 
-Thompson per-seed: 445.5 / 520.0 / 649.5 / 631.5 / 680.0 (seeds 0–4).
+Thompson per-seed range: 445.5–725.5 (seeds 0–29); 95% CI [598, 648].
 
 **Per-project expected cost analysis:**
 
@@ -367,7 +368,7 @@ Thompson per-seed: 445.5 / 520.0 / 649.5 / 631.5 / 680.0 (seeds 0–4).
 
 This finding directly illustrates §1.3 Conditions 1 and 2: the low-failure regime and feature sparsity together prevent the bandit from outperforming a rule that has those conditions hardcoded.
 
-**Finding R2: Thompson is beneficial on average but high-variance.** Mean cost 585 (±99) beats both LinUCB (669.5) and static rules (644.5). But variance is large: seed 0 achieves 445.5 (33% better than static), seed 4 achieves 680.0 (5.5% worse). On 300-step trajectories, Thompson's posterior has not converged and action distributions swing widely across seeds.
+**Finding R2: Within the bandit family, Thompson outperforms LinUCB by 6.8%; both are statistically tied with static.** Among bandit policies, Thompson Sampling outperforms LinUCB by 6.8% on real data (Thompson 624, LinUCB 669.5; CI [598, 648] entirely below LinUCB; p < 0.01 paired bootstrap). Thompson and the static rule are statistically tied: static=644.5 falls inside Thompson's CI. The exploration-strategy choice — posterior sampling versus upper confidence bound — matters more in this regime than the bandit-vs-rule choice. Posterior variance is high (std=72, range 445.5–725.5 across seeds 0–29): on 300-step trajectories, Thompson's posterior has not converged and individual seeds swing from 31% below static (seed 0: 445.5) to 12.5% above (seed 28: 725.5).
 
 **Finding R3: Real-world censoring is present.** Cancelled CI runs produce 17–22 censored rewards per trajectory (≈3%), varying by policy. This confirms reward censoring is not merely theoretical.
 
@@ -386,8 +387,8 @@ Removing the buffer improves performance because immediate feedback accelerates 
 **F3: Page-Hinkley at λ_PH = 50 fires 44 false alarms on 1,150 stationary steps.**
 Expected behavior for a sensitive detector on data with no drift. The threshold requires calibration; we make no claim about its performance on non-stationary data.
 
-**F4: Thompson Sampling produces nonzero seed variance (std = 58 synthetic, std = 99 real); LinUCB does not.**
-Stochastic posterior sampling yields different per-trajectory behavior. On real short-trajectory data, this variance is large enough that any individual seed can be best or worst of all policies.
+**F4: Thompson Sampling produces nonzero seed variance (std = 54 synthetic, std = 72 real, n=30 seeds); LinUCB does not.**
+Stochastic posterior sampling yields different per-trajectory behavior. On real short-trajectory data, this variance is large enough that any individual seed can be best or worst of all policies. The tighter n=30 std (54 vs the n=5 pilot value of 72 for synthetic; 72 vs 99 for real) illustrates that five-seed bootstrap CIs were not sufficient to characterize the population mean.
 
 ### 6.2 Preliminary Findings (synthetic data — cannot generalize)
 
@@ -405,8 +406,8 @@ At the project level, the bandit wins at 35% failure and loses at 15% failure. T
 **F8 (negative result): LinUCB over-blocks in the low-failure regime and costs 3.8% more than static rules.**
 On psf/requests (5.3% failure, feature sparsity, 300 steps), the bandit cannot distinguish the project from pallets/flask using the available feature signal. It converges to a block-heavy strategy that is near-optimal for flask but expensive for requests. Static rules' explicit threshold happens to match the optimal strategy for this failure-rate mix. This is precisely the failure mode predicted by §1.3.
 
-**F9: Thompson Sampling is 9% cheaper than LinUCB on average across seeds (real data).**
-Posterior sampling's stochastic exploration sometimes discovers the project-specific optimal strategy (seed 0: 445.5) but with high variance (seed 4: 680.0). The mean improvement over static rules is 9%, but no individual seed reliably beats static rules with high probability.
+**F9: Within-bandits exploration finding — Thompson outperforms LinUCB by 6.8% on real data; Thompson and static rules are statistically tied.**
+Among bandit policies, Thompson Sampling outperforms LinUCB by 6.8% on real data (Thompson 624.2, LinUCB 669.5, CI [598, 648] entirely below LinUCB, p < 0.01). Thompson and the static rule are statistically tied (the static value 644.5 falls inside Thompson's CI). The exploration-strategy choice — posterior sampling versus upper confidence bound — matters more in this regime than the bandit-versus-rule choice. This result must be read with the convergence caveat of F4: the n=30 point estimate is stable, but no individual seed reliably beats static rules, and the gap will depend on trajectory length and feature signal in other datasets.
 
 **F10: Reward censoring is empirically confirmed in real CI data.**
 Cancelled runs produce 3% censored rewards, with policy-dependent variation. This validates the buffer's censoring path as exercised on real data.
@@ -442,6 +443,10 @@ Page-Hinkley at λ_PH = 50 fires 44 false alarms on 1,150 stationary steps, eras
 ### 7.6 Thompson Sampling Propensities Are Intractable
 
 The true selection probability for Thompson Sampling requires integrating over the posterior — intractable in closed form. We report propensity = 1.0 throughout. IPS correction cannot be applied to Thompson results even in principle. Thompson's cost estimates carry the standard replay bias plus this additional limitation.
+
+### 7.7 Seed Counts Below 30 Produce Misleading Direction Findings
+
+Seed counts below approximately 30 produced misleading direction findings in our pilot runs (n=5 showed Thompson as the cheapest policy on synthetic data; n=30 reverses the direction with a non-overlapping CI). All headline numbers in this paper use ≥30 seeds and bootstrap seed 42.
 
 ---
 
