@@ -1,8 +1,10 @@
-"""Cost-sensitive contextual bandit with delayed rewards and drift adaptation.
+"""LinUCB with drift adaptation (LinUCBWithDrift) — delayed rewards and reset-on-drift.
 
-This is the first research-contribution policy. It keeps the LinUCB-style
-disjoint linear model, but optimizes operational reward ``r = -cost`` and owns a
-pending-reward buffer so learning only happens after feedback is observable.
+Formerly named CostSensitiveBandit. Renamed to reflect that the update equations
+are identical to LinUCB (A += xx^T, b += -cost * x); the only structural addition
+is an optional DriftDetector that can reset the per-arm matrices on drift events.
+CostSensitiveBandit, CostSensitiveBanditConfig, CostSensitiveBanditStats are kept
+as aliases for backward compatibility with existing test and experiment code.
 """
 
 from __future__ import annotations
@@ -22,8 +24,8 @@ from rewards.cost_model import CostConfig
 
 
 @dataclass(frozen=True)
-class CostSensitiveBanditConfig:
-    """Hyperparameters for the cost-sensitive delayed contextual bandit."""
+class LinUCBWithDriftConfig:
+    """Hyperparameters for LinUCB with optional drift-triggered weight reset."""
 
     alpha: float = 1.0
     lambda_reg: float = 1.0
@@ -34,7 +36,7 @@ class CostSensitiveBanditConfig:
 
 
 @dataclass(frozen=True)
-class CostSensitiveBanditStats:
+class LinUCBWithDriftStats:
     """Lightweight runtime counters for experiment logging."""
 
     cumulative_cost: float
@@ -45,11 +47,19 @@ class CostSensitiveBanditStats:
     pending_rewards: int
 
 
-class CostSensitiveBandit(Policy):
-    """LinUCB-style bandit for delayed, asymmetric deployment costs.
+class LinUCBWithDrift(Policy):
+    """LinUCB with optional drift-triggered weight reset.
 
-    The model estimates expected reward per action, where reward is the negative
-    operational cost. The public delayed-feedback path is:
+    Identical update equations to LinUCBPolicy (A += xx^T, b += -cost * x).
+    The only structural addition is a DriftDetector: when it fires, the per-arm
+    matrices can be reset to their initial state (reset_on_drift=True) or left
+    unchanged (reset_on_drift=False). With reset_on_drift=False this policy is
+    numerically identical to plain LinUCB.
+
+    Formerly named CostSensitiveBandit. The rename reflects that the algorithm is
+    not distinct from LinUCB — it is LinUCB plus drift adaptation.
+
+    The public delayed-feedback path is:
 
     1. ``select_action(context)``
     2. ``record_pending_reward(...)`` when the environment/logged replay has a
@@ -63,13 +73,13 @@ class CostSensitiveBandit(Policy):
 
     def __init__(
         self,
-        config: CostSensitiveBanditConfig,
+        config: LinUCBWithDriftConfig,
         feature_dim: int,
         rng: np.random.Generator,
         buffer: Optional[PendingRewardBuffer] = None,
         detector: Optional[DriftDetector] = None,
         encoder: Optional[FeatureEncoder] = None,
-        policy_id: str = "cost_sensitive_bandit",
+        policy_id: str = "linucb_with_drift",
     ) -> None:
         if config.alpha < 0:
             raise ValueError("alpha must be non-negative")
@@ -227,3 +237,11 @@ class CostSensitiveBandit(Policy):
         for action in Action:
             self._A[action] = lam * np.eye(d, dtype=np.float64)
             self._b[action] = np.zeros(d, dtype=np.float64)
+
+
+# ---------------------------------------------------------------------------
+# Backward-compatibility aliases (old name → new name)
+# ---------------------------------------------------------------------------
+CostSensitiveBanditConfig = LinUCBWithDriftConfig
+CostSensitiveBanditStats = LinUCBWithDriftStats
+CostSensitiveBandit = LinUCBWithDrift

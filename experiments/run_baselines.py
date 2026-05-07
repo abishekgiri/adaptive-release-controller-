@@ -227,7 +227,7 @@ def build_policy(policy_name: str, config: ExperimentConfig, seed: int) -> Polic
             ),
             feature_dim=FeatureEncoder.DIM,
             rng=np.random.default_rng(seed),
-            policy_id="cost_sensitive_bandit",
+            policy_id="linucb_with_drift",
         )
     raise ValueError(f"Unsupported runnable policy: {policy_name}")
 

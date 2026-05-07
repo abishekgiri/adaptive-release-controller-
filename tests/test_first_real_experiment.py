@@ -140,5 +140,5 @@ def test_run_experiment_writes_seeded_result_directory(tmp_path) -> None:
     assert (output_dir / "summary.md").exists()
     assert summary["policies"]["static_rules"]["status"] == "evaluated"
     assert summary["policies"]["linucb"]["status"] == "evaluated"
-    assert summary["policies"]["cost_sensitive_bandit"]["status"] == "evaluated"
+    assert summary["policies"]["linucb_with_drift"]["status"] == "evaluated"
     assert summary["policies"]["heuristic-score"]["status"] == "todo_placeholder"

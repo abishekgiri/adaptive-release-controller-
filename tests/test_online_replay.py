@@ -96,7 +96,7 @@ def _bandit(alpha: float = 1.0, seed: int = 0) -> CostSensitiveBandit:
         config=CostSensitiveBanditConfig(alpha=alpha, lambda_reg=1.0),
         feature_dim=FeatureEncoder.DIM,
         rng=np.random.default_rng(seed),
-        policy_id="cost_sensitive_bandit",
+        policy_id="linucb_with_drift",
     )
 
 

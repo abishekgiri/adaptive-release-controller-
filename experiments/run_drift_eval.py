@@ -147,14 +147,14 @@ def build_policies(seed: int, cost_config: CostConfig) -> list:
             feature_dim=dim,
             rng=np.random.default_rng(seed),
             detector=PageHinkleyDetector(PageHinkleyConfig(lambda_=50.0)),
-            policy_id="csb_full",
+            policy_id="linucb_with_drift_full",
         ),
         CostSensitiveBandit(
             config=cc_no_drift,
             feature_dim=dim,
             rng=np.random.default_rng(seed),
             detector=PageHinkleyDetector(PageHinkleyConfig(lambda_=50.0)),
-            policy_id="csb_no_drift",
+            policy_id="linucb_with_drift_no_reset",
         ),
     ]
 
@@ -174,7 +174,7 @@ class DriftTrajectoryResult:
     total_updates: int
     total_censored: int
     action_counts: dict[str, int]
-    drift_resets: int  # only non-zero for CostSensitiveBandit with reset_on_drift=True
+    drift_resets: int  # only non-zero for LinUCBWithDrift with reset_on_drift=True
 
 
 def run_drift_trajectory(
