@@ -183,8 +183,14 @@ def run_immediate_trajectory(
 def run_ablation_experiment(
     config: AblationConfig,
     seed: int,
-) -> dict[str, list[OnlineTrajectoryResult]]:
-    """Run all four ablation variants over every project trajectory."""
+) -> tuple[dict[str, list[OnlineTrajectoryResult]], dict[str, int]]:
+    """Run all four ablation variants over every project trajectory.
+
+    Returns (results, drift_resets) where drift_resets maps policy_id to the
+    total number of model resets triggered by the drift detector across all
+    project trajectories. Only CostSensitiveBandit policies expose this counter;
+    other variants map to 0.
+    """
     from evaluation.online_replay import run_online_trajectory
 
     loader = TravisTorrentLoader(
@@ -230,15 +236,27 @@ def run_ablation_experiment(
                 )
             results[policy.policy_id].append(result)
 
-    return results
+    # Capture drift_resets after all trajectories. reset() without reset_stats=True
+    # preserves _drift_resets, so this is the cumulative count across all projects.
+    drift_resets: dict[str, int] = {}
+    for policy in policies:
+        if isinstance(policy, CostSensitiveBandit):
+            drift_resets[policy.policy_id] = policy.stats.drift_resets
+        else:
+            drift_resets[policy.policy_id] = 0
+
+    return results, drift_resets
 
 
 def build_summary(
     config: AblationConfig,
     seed: int,
     results: dict[str, list[OnlineTrajectoryResult]],
+    drift_resets: dict[str, int] | None = None,
 ) -> dict[str, Any]:
     """Build JSON-serializable ablation summary."""
+    if drift_resets is None:
+        drift_resets = {}
     policies_summary: dict[str, Any] = {}
     for policy_id, traj_list in results.items():
         total_steps = sum(r.total_steps for r in traj_list)
@@ -251,7 +269,7 @@ def build_summary(
                 action_counts[a] = action_counts.get(a, 0) + cnt
 
         finite_steps = total_steps - total_censored
-        policies_summary[policy_id] = {
+        entry: dict[str, Any] = {
             "total_steps": total_steps,
             "total_updates": total_updates,
             "total_censored_skipped": total_censored,
@@ -263,6 +281,9 @@ def build_summary(
                 for a, cnt in action_counts.items()
             },
         }
+        if policy_id in drift_resets:
+            entry["drift_resets"] = drift_resets[policy_id]
+        policies_summary[policy_id] = entry
 
     return {
         "config_name": config.config_name,
@@ -310,8 +331,8 @@ def main() -> None:
         dataset_path=Path(args.dataset),
         results_root=Path(args.results_root),
     )
-    results = run_ablation_experiment(config, seed=args.seed)
-    summary = build_summary(config, seed=args.seed, results=results)
+    results, drift_resets = run_ablation_experiment(config, seed=args.seed)
+    summary = build_summary(config, seed=args.seed, results=results, drift_resets=drift_resets)
     output_dir = write_results(summary, config=config, seed=args.seed)
 
     # Print markdown table
