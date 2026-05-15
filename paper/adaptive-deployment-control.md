@@ -63,6 +63,18 @@ LinUCB and Thompson Sampling are well-established algorithms. Our contributions 
 - **Two-sided empirical characterization:** Bandits outperform static rules when failure costs are high and context is informative. In the low-failure regime with feature sparsity (5.3% failure rate, no commit-level features), UCB-based policies over-block and cost 3.8% more than a static rule — a negative result that defines the operating envelope of the framing. A cost-ratio sweep (5:1 to 100:1) confirms the advantage is monotone: the default 20:1 ratio in this paper sits at the envelope boundary where bandits break even; at 40:1 and above, the advantage is 19–50%.
 - **Within-bandits exploration finding:** In the feature-sparse regime where LinUCB underperforms, Thompson Sampling outperforms LinUCB by 6.8% on real data (CI [598, 648] entirely below LinUCB = 669.5; p < 0.01). Thompson and the static rule are statistically tied. The choice of exploration strategy — posterior sampling vs. UCB — is the first-order variable in this regime, not the bandit framing itself.
 
+### 1.5 Related Work
+
+**Just-in-time defect prediction.** Kamei et al. (2013) establish the empirical foundation for commit-level defect prediction, training logistic regression models on change metrics (churn, complexity, developer experience) across 10,000+ commits from six large open-source projects. They demonstrate that commit-level features predict defect introduction with AUC above 0.70 and that developer experience is among the most informative features. What they do not model: the asymmetric operational cost of prediction errors, the adaptive adjustment of thresholds to project-specific failure distributions, or the three-way deploy/canary/block action space. McIntosh & Kamei (2018) show that fix-inducing changes are a moving target — the feature importance and model accuracy of JIT prediction shift substantially across time periods — motivating approaches that adapt online rather than training a fixed offline model.
+
+**Contextual bandits.** Li et al. (2010) formulate personalized news recommendation as a contextual bandit problem and introduce LinUCB, demonstrating that upper-confidence-bound policies using linear payoff models outperform static and context-free baselines in online A/B comparisons. They do not address asymmetric costs, delayed rewards, or three-way action spaces. Chu et al. (2011) provide theoretical regret analysis for linear contextual bandits, establishing that the cumulative regret of LinUCB scales as O(√(dT log T)) where d is the feature dimension and T is the horizon; this bound underlies the O(d²) convergence threshold used in §1.3.
+
+**Evaluation under partial feedback.** Joachims et al. (2018) address learning from logged bandit feedback, where only the reward for the chosen action is observed. They introduce propensity-weighted empirical risk minimization to debias learning from such data and show that naive learning from logged feedback produces systematically biased models. Their analysis is relevant to the online replay evaluation used here: because every logged action in the TravisTorrent data is DEPLOY, inverse propensity scoring cannot be applied (log propensity is identically 1.0), and the bias they identify is present in our results without correction. We disclose this explicitly in §7.1.
+
+**Concept drift.** Gama et al. (2014) survey concept drift adaptation algorithms for data streams, covering drift detectors, ensemble methods, and sliding-window retraining. They characterize the trade-off between detection speed and false-alarm rate that motivates threshold calibration — the same trade-off that produces the false-alarm problem in §6.4. Bifet & Gavaldà (2007) introduce ADWIN, an adaptive windowing algorithm that detects changes in the mean of a stream statistic by testing whether older and newer subwindows have significantly different distributions. ADWIN provides theoretical false-alarm and detection-delay guarantees that Page-Hinkley lacks; it is implemented in this codebase but excluded from the reported experiments because it was not evaluated on the cost streams used here.
+
+**Delayed feedback in bandits.** Vernade et al. (2017) study the stochastic bandit problem where rewards arrive after a random delay and may be censored (never arrive). They show that naive algorithms ignoring delay structure suffer avoidable regret, and they propose algorithms with regret bounds that account for delay distribution. Their setting maps directly to the deployment evaluation problem: a CI run takes minutes to hours, and its deployment outcome (incident or not) may not be observable within the evaluation window. Joulani et al. (2013) address the same delayed-feedback setting for general online learning, showing that the regret cost of delay is O(√(d_max · T)) where d_max is the maximum delay. Pike-Burke et al. (2018) extend delay analysis to aggregated anonymous feedback. This paper applies the pending-reward buffer approach from Joulani et al. (2013) to the deployment context, routing all policy updates through a buffer that enforces the delayed-feedback invariant.
+
 ---
 
 ## 2. Problem Formulation
@@ -499,7 +511,7 @@ The GitHub Actions experiment uses a feature vector in which 11 of 13 dimensions
 
 ### 7.5 Drift Detection Conclusions Are Conditional on PageHinkley Calibration
 
-Page-Hinkley at λ_PH = 50 fires 44 false alarms on 1,150 stationary steps in the ablation experiment, and 10.6 resets per 500-step trajectory in the drift-mode evaluation. The threshold was set by the PageHinkley default and never tuned to the cost stream's variance. All findings about drift adaptation performance — specifically that `linucb_with_drift_full` is 8–28% more expensive than plain LinUCB across all three drift modes — are conditional on this calibration. A lower λ_PH (fewer false alarms) or a different detector (ADWIN) may change the direction of the drift finding. We report the result for λ_PH = 50 as a measured limit of this detector on this cost stream; we make no claim about whether drift adaptation is intrinsically harmful.
+Page-Hinkley at λ_PH = 50 fires 44 false alarms on 1,150 stationary steps in the ablation experiment, and 10.6 resets per 500-step trajectory in the drift-mode evaluation. The threshold was set by the PageHinkley default and never tuned to the cost stream's variance. All findings about drift adaptation performance — specifically that `linucb_with_drift_full` is 8–28% more expensive than plain LinUCB across all three drift modes — are conditional on this calibration. A lower λ_PH (fewer false alarms) or a different detector (ADWIN; Bifet & Gavaldà, 2007) may change the direction of the drift finding. We report the result for λ_PH = 50 as a measured limit of this detector on this cost stream; we make no claim about whether drift adaptation is intrinsically harmful.
 
 ### 7.6 Thompson Sampling Propensities Are Intractable
 
@@ -595,7 +607,7 @@ The framing is worth the engineering investment when the cost structure is calib
 
 ## AI Use Statement
 
-Claude (Anthropic) was used to draft the Abstract and §9 Discussion under the author's direction. All experimental design, code, analysis, numerical claims, and final wording decisions are the author's. Drafted prose was reviewed for accuracy against the per-claim validity classification in Appendix A. All other sections were authored by Abishek Kumar Giri.
+Generative AI assistance was used to draft the Abstract and §9 Discussion under the author's direction. All experimental design, code, analysis, numerical claims, and final wording decisions are the author's. Drafted prose was reviewed for accuracy against the per-claim validity classification in Appendix A. All other sections were authored by Abishek Kumar Giri.
 
 ---
 
@@ -603,14 +615,17 @@ Claude (Anthropic) was used to draft the Abstract and §9 Discussion under the a
 
 - Agrawal, S., Goyal, N. "Thompson Sampling for Contextual Bandits with Linear Payoffs." ICML 2013.
 - Beller, M., et al. "TravisTorrent: Synthesizing Travis CI and GitHub for Full-Stack Research." MSR 2017.
+- Bifet, A., Gavaldà, R. "Learning from Time-Changing Data with Adaptive Windowing." SIAM SDM 2007.
 - Chu, W., et al. "Contextual Bandits with Linear Payoff Functions." AISTATS 2011.
 - Gama, J., et al. "A Survey on Concept Drift Adaptation." ACM CSUR 2014.
+- Joachims, T., Swaminathan, A., Schnabel, T. "Unbiased Learning-to-Rank with Biased Feedback." WSDM 2018.
 - Joulani, P., et al. "Online Learning under Delayed Feedback." ICML 2013.
 - Kamei, Y., et al. "A Large-Scale Empirical Study of Just-in-Time Quality Assurance." TSE 2013.
 - Li, L., et al. "A Contextual-Bandit Approach to Personalized News Article Recommendation." WWW 2010.
 - McIntosh, S., Kamei, Y. "Are Fix-Inducing Changes a Moving Target?" EMSE 2018.
 - Mouss, H., et al. "Test of Page-Hinckley, an Approach for Fault Detection in an Agro-Alimentary Production System." MED 2004.
 - Pike-Burke, C., et al. "Bandits with Delayed, Aggregated Anonymous Feedback." ICML 2018.
+- Vernade, C., Cappé, O., Perchet, V. "Stochastic Bandit Models for Delayed Conversions." UAI 2017.
 
 ---
 
