@@ -1,5 +1,10 @@
 # Continuous Deployment as Cost-Sensitive Decision-Making: When Contextual Bandits Outperform Static Rules and When They Don't
 
+**Abishek Kumar Giri**
+Stockton University
+giriabishekkumar5@gmail.com
+ORCID: 0009-0005-9082-9887
+
 **Status: Research draft — not submitted. See Appendix A for the validity classification of every claim.**
 
 ---
