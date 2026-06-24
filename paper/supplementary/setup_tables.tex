@@ -1,0 +1,117 @@
+% Supplementary material — Apparatus Tables (S1-S7)
+% Extracted from adaptive-deployment-control.tex for the 10-page main-paper limit.
+\documentclass[10pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{booktabs,array,amsmath,amssymb}
+\providecommand{\tightlist}{\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\begin{document}
+
+\section*{Apparatus Tables}
+
+\noindent\textbf{Table S1:} Context feature vector (13 dimensions).
+
+\begin{table*}[t]\centering\footnotesize\begin{tabular}{lll}
+\toprule\noalign{}
+Dimension & Feature & Normalisation \\
+\midrule\noalign{}
+\bottomrule\noalign{}
+0 & files\_changed & $\div$ 50 \\
+1 & lines\_added & $\div$ 1000 \\
+2 & lines\_deleted & $\div$ 500 \\
+3 & src\_churn & $\div$ 1500 \\
+4 & is\_pr & binary \\
+5 & tests\_run & $\div$ 200 \\
+6 & tests\_added & $\div$ 10 \\
+7 & build\_duration\_s & $\div$ 180 \\
+8 & author\_experience & $\div$ 10 \\
+9 & recent\_failure\_rate & {[}0, 1{]} \\
+10 & has\_dependency\_change & binary \\
+11 & has\_risky\_path\_change & binary \\
+12 & bias & 1.0 \\
+\end{tabular}\end{table*}
+
+\noindent\textbf{Table S2:} Policy specifications.
+
+\begin{table*}[t]\centering\footnotesize\begin{tabular}{lll}
+\toprule\noalign{}
+Policy
+ & Description
+ & Learning
+ \\
+\midrule\noalign{}
+\bottomrule\noalign{}
+\texttt{static\_rules} & Deterministic threshold rule (files changed,
+failure rate, risky paths) & None \\
+\texttt{heuristic\_score} & Weighted risk score $\rightarrow$ thresholded action;
+fixed weights & None \\
+\texttt{linucb} & Disjoint LinUCB (Li et al., 2010), \emph{r = -cost} &
+UCB exploration \\
+\texttt{thompson} & Bayesian linear TS (Agrawal \& Goyal, 2013), \emph{r
+= -cost} & Posterior sampling \\
+\end{tabular}\end{table*}
+
+\noindent\textbf{Table S3:} Synthetic dataset statistics.
+
+\begin{table}[t]\centering\footnotesize\begin{tabular}{llll}
+\toprule\noalign{}
+Project & Builds & Failure rate & History span \\
+\midrule\noalign{}
+\bottomrule\noalign{}
+\texttt{smoke/alpha} & 600 & 15\% & \textgreater365 days \\
+\texttt{smoke/beta} & 550 & 35\% & \textgreater365 days \\
+\end{tabular}\end{table}
+
+\noindent\textbf{Table S4:} Hyperparameters (synthetic experiment).
+
+\begin{table*}[t]\centering\footnotesize\begin{tabular}{ll}
+\toprule\noalign{}
+Parameter & Value \\
+\midrule\noalign{}
+\bottomrule\noalign{}
+$\alpha$ & 1.0 \\
+$\lambda$ & 1.0 \\
+Delay model & \emph{k\_t = max(1, $\lceil$build\_duration\_s / 60$\rceil$)} \\
+Cost matrix & Default (§2.3) \\
+Seeds & 0--4 \\
+flush\_at\_end & True \\
+\end{tabular}\end{table*}
+
+\noindent\textbf{Table S5:} Robustness conditions.
+
+\begin{table*}[t]\centering\footnotesize\begin{tabular}{ll}
+\toprule\noalign{}
+Condition & Key change \\
+\midrule\noalign{}
+\bottomrule\noalign{}
+Default & --- \\
+High failure & deploy\_failure: 10$\rightarrow$20, canary\_failure: 4$\rightarrow$8 \\
+Low block & block\_safe: 2$\rightarrow$1, block\_unknown: 2$\rightarrow$1 \\
+Short delay & delay\_step\_seconds: 60$\rightarrow$120 \\
+Long delay & delay\_step\_seconds: 60$\rightarrow$30 \\
+\end{tabular}\end{table*}
+
+\noindent\textbf{Table S6:} Ablation variants.
+
+\begin{table*}[t]\centering\footnotesize\begin{tabular}{ll}
+\toprule\noalign{}
+Variant & What changes \\
+\midrule\noalign{}
+\bottomrule\noalign{}
+\texttt{no\_drift} (reference) & No drift reset \\
+\texttt{no\_delay} & Immediate updates (no buffer) \\
+\texttt{no\_cost} & Binary reward (-1/0 instead of -cost) \\
+\texttt{full} & + PageHinkley drift reset \\
+\end{tabular}\end{table*}
+
+\noindent\textbf{Table S7:} Real dataset statistics.
+
+\begin{table}[t]\centering\footnotesize\begin{tabular}{llll}
+\toprule\noalign{}
+Project & Runs & Failure rate & Span \\
+\midrule\noalign{}
+\bottomrule\noalign{}
+\texttt{psf/requests} & 300 & 5.3\% & 20 days \\
+\texttt{pallets/flask} & 300 & 23.3\% & 99 days \\
+\end{tabular}\end{table}
+
+\end{document}

@@ -1,0 +1,121 @@
+% Supplementary material — Extended Threats to Validity (§7.5, §7.6)
+% Extracted from adaptive-deployment-control.tex for the 10-page main-paper limit.
+\documentclass[10pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\providecommand{\tightlist}{\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\begin{document}
+\subsection{7.5 Drift Detection Conclusions Are Conditional on
+PageHinkley
+Calibration}\label{drift-detection-conclusions-are-conditional-on-pagehinkley-calibration}
+
+Page-Hinkley at $\lambda$\_PH = 50 fires 44 false alarms on 1,150 stationary
+steps in the ablation experiment, and 10.6 resets per 500-step
+trajectory in the drift-mode evaluation. The threshold was set by the
+PageHinkley default and never tuned to the cost stream's variance. All
+findings about drift adaptation performance --- specifically that
+\texttt{linucb\_with\_drift\_full} is 8--28\% more expensive than plain
+LinUCB across all three drift modes --- are conditional on this
+calibration. A lower $\lambda$\_PH (fewer false alarms) or a different detector
+(ADWIN; Bifet \& Gavald{\`a}, 2007) may change the direction of the drift
+finding. We report the result for $\lambda$\_PH = 50 as a measured limit of this
+detector on this cost stream; we make no claim about whether drift
+adaptation is intrinsically harmful.
+
+\subsection{7.6 Thompson Sampling Propensities Are
+Intractable}\label{thompson-sampling-propensities-are-intractable}
+
+The true selection probability for Thompson Sampling requires
+integrating over the posterior --- intractable in closed form. We report
+propensity = 1.0 throughout. IPS correction cannot be applied to
+Thompson results even in principle. Thompson's cost estimates carry the
+standard replay bias plus this additional limitation.
+
+
+
+\subsection{7.7 Seed Counts Below 30 Produce Misleading Direction
+Findings}\label{seed-counts-below-30-produce-misleading-direction-findings}
+
+Seed counts below approximately 30 produced misleading direction
+findings in our pilot runs (n=5 showed Thompson as the cheapest policy
+on synthetic data; n=30 reverses the direction with a non-overlapping
+CI). All headline numbers in this paper use $\geq$30 seeds and bootstrap seed
+42.
+
+\subsection{7.8 CI Outcome Is a Proxy for Deployment Failure, Not a
+Direct
+Measure}\label{ci-outcome-is-a-proxy-for-deployment-failure-not-a-direct-measure}
+
+The entire evaluation chain --- cost computation, policy update, and
+result reporting --- treats the logged CI outcome (pass/fail) as a proxy
+for the deployment failure outcome a human engineer would observe in
+production. This proxy relationship is imperfect in both directions. A
+CI pass does not guarantee safe deployment: integration-test gaps,
+environment-specific faults, and configuration drift can produce
+production incidents on passing builds. A CI failure does not guarantee
+a production incident would have occurred: flaky tests, dependency
+version mismatches, and transient infrastructure errors produce false CI
+failures. The cost model therefore mis-prices a fraction of deployment
+decisions. The direction and magnitude of this mis-pricing depend on the
+test suite quality and build environment stability of each repository,
+neither of which is measured here. All cost claims should be read as
+costs under the CI-outcome proxy, not costs under the true
+deployment-failure outcome.
+
+\subsection{7.9 Real-Data Evaluation Assumes Stationarity; No Drift
+Analysis Was
+Performed}\label{real-data-evaluation-assumes-stationarity-no-drift-analysis-was-performed}
+
+The GitHub Actions evaluation treats each 300-step project trajectory as
+a stationary distribution and uses all steps for both learning and
+evaluation. If the true CI failure rate changes over the 300-step window
+--- for example, due to a large dependency upgrade, a project refactor,
+or infrastructure migration --- then the earlier steps of the trajectory
+correspond to a different distribution than the later steps. In that
+case, a policy that learns from early steps may be mis-calibrated for
+later steps, producing an underestimate of the cost gap between adaptive
+and non-adaptive policies. We performed no stationarity test on the
+real-data trajectories. The drift evaluation in §6.4 is conducted
+exclusively on synthetic data; its findings do not imply anything about
+whether the real GitHub Actions trajectories are stationary.
+
+\subsection{7.10 Synthetic Failure Rates Are Unobservable Hidden
+State}\label{synthetic-failure-rates-are-unobservable-hidden-state}
+
+The synthetic dataset assigns failure rates at the project level
+(smoke/alpha: 15\%, smoke/beta: 35\%), but these rates are not part of
+the feature vector presented to the policy. From the policy's
+perspective, the failure rate is a latent variable that must be inferred
+from the reward history. This creates a structural advantage for
+policies that converge quickly on the majority class: after seeing
+enough failures, LinUCB correctly assigns high probability to the block
+arm for smoke/beta, but the feature vector provides no direct signal
+that smoke/beta is a high-failure project. In a real setting, project
+metadata (team size, language, test coverage) could make the failure
+rate more directly observable. The synthetic evaluation therefore
+measures a lower bound on bandit performance: a policy with access to
+project-type features could converge faster. The aggregate tie on the
+synthetic dataset does not reflect what would happen with a richer
+feature representation.
+
+\subsection{7.11 Bootstrap Results Depend on a Single Fixed Seed;
+Different Seeds May Yield Different
+p-Values}\label{bootstrap-results-depend-on-a-single-fixed-seed-different-seeds-may-yield-different-p-values}
+
+All bootstrap confidence intervals and paired bootstrap p-values in this
+paper use seed 42 with 10,000 resamples (as noted in §2 and
+\texttt{experiments/run\_robustness.py}). The bootstrap procedure is
+deterministic given this seed. We did not evaluate sensitivity of
+p-values or CI endpoints to the choice of bootstrap seed. For the F9
+Thompson-vs-LinUCB result (p\textless0.0001, 0/10,000 bootstrap samples
+with Thompson mean $\geq$ LinUCB), the finding is robust: the p-value is at
+the floor for any 10,000-resample procedure and will not change under
+different seeds. For findings where the p-value is near a threshold ---
+particularly the Thompson-vs-static ``tied'' result, where static=644.5
+falls inside CI {[}598, 648{]} --- a different bootstrap seed could
+shift the CI endpoints by a few units and change the coverage
+interpretation. Readers should treat the {[}598, 648{]} endpoints as
+approximate to $\pm$5 units under seed variation.
+
+
+\end{document}
