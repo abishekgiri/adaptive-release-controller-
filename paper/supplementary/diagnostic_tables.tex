@@ -1,0 +1,67 @@
+% Supplementary material — Diagnostic Tables (S8-S10)
+% Extracted from adaptive-deployment-control.tex for the 10-page main-paper limit.
+\documentclass[10pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{booktabs,array,amsmath,amssymb}
+\providecommand{\tightlist}{\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\begin{document}
+
+\section*{Diagnostic Tables}
+
+\noindent\textbf{Table S8:} Per-project costs and optimal arm (synthetic).
+
+\begin{table*}[t]\centering\footnotesize\begin{tabular}{lllll}
+\toprule\noalign{}
+Project
+ & Failure rate & \texttt{static\_rules} & \texttt{linucb} & Optimal arm (expected cost)
+ \\
+\midrule\noalign{}
+\bottomrule\noalign{}
+\texttt{smoke/alpha} & 15\% & \textbf{911.5} & 982.0 & canary
+(1.45/step) \\
+\texttt{smoke/beta} & 35\% & 966.5 & \textbf{897.0} & block
+(1.475/step) \\
+\end{tabular}\end{table*}
+
+\noindent\textbf{Table S9:} Delay-robustness sweep.
+
+\begin{table*}[t]\centering\footnotesize\begin{tabular}{llll}
+\toprule\noalign{}
+Policy & Default (60s) & Short delay (120s) & Long delay (30s) \\
+\midrule\noalign{}
+\bottomrule\noalign{}
+\texttt{static\_rules} & 1878 & 1878 & 1878 \\
+\texttt{linucb} & 1879 & \textbf{1849} & 1897 \\
+\texttt{cost\_sensitive\_bandit} & 1879 & \textbf{1849} & 1897 \\
+\end{tabular}\end{table*}
+
+\noindent\textbf{Table S10:} Per-component ablation deltas.
+
+\begin{table*}[t]\centering\footnotesize\begin{tabular}{llll}
+\toprule\noalign{}
+Component
+ & $\Delta$ vs.~\texttt{no\_drift} & $\Delta$\% & Interpretation
+ \\
+\midrule\noalign{}
+\bottomrule\noalign{}
+Cost weighting $\rightarrow$ binary (\texttt{no\_cost}) & +590 & +31.4\% & Destroys
+action--outcome asymmetry \\
+Drift reset on stationary data (\texttt{full}) & +504 & +26.8\% & 44
+false alarms, each erasing learned weights \\
+Delayed buffer $\rightarrow$ immediate (\texttt{no\_delay}) & -21.5 & -1.1\% &
+Faster convergence; buffer costs temporal validity \\
+\end{tabular}\end{table*}
+
+\noindent\textbf{Table S11:} Per-project expected per-action costs (real data).
+
+\begin{table*}[t]\centering\footnotesize\begin{tabular}{llllll}
+\toprule\noalign{}
+Project & Failure rate & E{[}deploy{]} & E{[}canary{]} & E{[}block{]} &
+Optimal \\
+\midrule\noalign{}
+\bottomrule\noalign{}
+\texttt{psf/requests} & 5.3\% & \textbf{0.53} & 1.16 & 1.92 & deploy \\
+\texttt{pallets/flask} & 23.3\% & 2.33 & 1.70 & \textbf{1.65} & block \\
+\end{tabular}\end{table*}
+
+\end{document}
