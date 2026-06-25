@@ -148,10 +148,9 @@ Problem}\label{the-deployment-decision-problem}
 
 Every passing continuous integration (CI) build triggers a deployment
 decision: ship to production, route through a canary, or block? A failed
-production deployment means incidents, on-call pages, and rollbacks. A
-blocked safe change costs developer time. A canary offers partial
-protection at throughput cost. Getting this right matters, and at scale
-it happens thousands of times per day.
+production deployment means incidents, on-call pages, and rollbacks; a
+blocked safe change costs developer time; a canary offers partial
+protection at throughput cost.
 
 Current tooling treats this as a prediction problem. Just-in-time defect
 prediction models (Kamei et al., 2013; McIntosh \& Kamei, 2018) estimate
@@ -162,18 +161,17 @@ limitations follow:
 \def\labelenumi{\arabic{enumi}.}
 \tightlist
 \item
-  \textbf{The threshold encodes an implicit cost assumption.} Setting it
-  requires a judgment about the cost of blocking safe changes
-  vs.~deploying bad ones. This assumption is rarely explicit and never
-  adapts.
+  \textbf{The threshold encodes an implicit cost assumption} --- a
+  judgment about the cost of blocking safe changes vs.~deploying bad
+  ones that is rarely explicit and never adapts.
 \item
-  \textbf{Costs are asymmetric and context-dependent.} A production
+  \textbf{Costs are asymmetric and context-dependent:} a production
   incident at a payment service costs an order of magnitude more than
-  one at an internal tool. A single fixed threshold cannot represent
-  this.
+  one at an internal tool, which a single fixed threshold cannot
+  represent.
 \item
-  \textbf{The model does not learn from outcomes.} JIT models are
-  trained offline on defect labels. They receive no feedback when
+  \textbf{The model does not learn from outcomes:} JIT models are
+  trained offline on defect labels and receive no feedback when
   predictions lead to incidents or unnecessary blocks.
 \end{enumerate}
 
@@ -194,16 +192,16 @@ This framing differs from classification in three ways:
 \tightlist
 \item
   \textbf{The objective is cumulative cost minimization, not accuracy
-  maximization.} The policy is evaluated on what it costs to act, not on
-  whether it correctly predicts a label.
+  maximization} --- evaluated on what it costs to act, not on whether a
+  label is predicted correctly.
 \item
-  \textbf{The three-action space makes the canary option a first-class
-  decision.} We model the action directly rather than applying a
-  threshold to a risk score.
+  \textbf{The three-action space makes the canary a first-class
+  decision,} modeled directly rather than via a threshold on a risk
+  score.
 \item
-  \textbf{The policy learns online from its own decisions.} Each
-  deployment outcome updates the policy's belief about which actions are
-  cost-effective in which contexts.
+  \textbf{The policy learns online from its own decisions:} each outcome
+  updates its belief about which actions are cost-effective in which
+  contexts.
 \end{itemize}
 
 \subsection{1.3 When Does the Bandit Framing Pay
