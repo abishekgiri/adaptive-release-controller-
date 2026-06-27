@@ -1,0 +1,14 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+type: software
+title: >-
+  Continuous Deployment as Cost-Sensitive Decision-Making: When
+  Contextual Bandits Outperform Static Rules and When They Don't
+authors:
+  - family-names: Giri
+    given-names: Abishek Kumar
+    orcid: "https://orcid.org/0009-0005-9082-9887"
+    affiliation: Stockton University
+repository-code: "https://github.com/abishekgiri/adaptive-release-controller-"
+date-released: "2026-06-27"
+version: submission-candidate-v1
