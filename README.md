@@ -1,4 +1,73 @@
-# adaptive-release-controller-
+# Adaptive Release Controller
 
-Research prototype for a self-adaptive deployment controller using a MAPE-K feedback loop.
+## Paper
 
+**Continuous Deployment as Cost-Sensitive Decision-Making: When Contextual Bandits Outperform Static Rules and When They Don't** — Abishek Kumar Giri (Stockton University). Status: `submission-candidate-v1`, manuscript in preparation for the MSR 2027 submission cycle. The paper frames the deploy/canary/block decision as a contextual bandit minimizing cumulative cost under an asymmetric cost matrix, and characterizes the operating envelope where adaptive policies beat static rules — and where they do not. Compiled PDF: [`paper/adaptive-deployment-control.pdf`](paper/adaptive-deployment-control.pdf).
+
+## Headline Claims and How to Verify Them
+
+Every number traces to [`paper/source-of-truth.md`](paper/source-of-truth.md), which maps each claim to its config, seeds, and result file. Result files for the runs below are already committed under `experiments/results/`.
+
+| Claim | Script to run | Output file | Expected number |
+|---|---|---|---|
+| +19% gain, high-failure cost matrix | `python experiments/run_robustness.py` | `experiments/results/robustness_high_failure/0/online_summary.json` | static 2564 vs LinUCB 2078.5 → **18.9%** |
+| +27% gain, low block penalty | `python experiments/run_robustness.py` | `experiments/results/robustness_low_block/0/online_summary.json` | 1584 vs 1163.5 → **26.5%** |
+| 31% cost-weighting ablation degradation | `python experiments/run_ablations.py` | `experiments/results/ablation_smoke/0/ablation_summary.json` | (2469−1879)/1879 → **31.4%** |
+| 3.8% LinUCB over-blocking on real data | `python experiments/run_bandits.py --config experiments/configs/real_github_actions.json --seed 0` | `experiments/results/real_github_actions/0/online_summary.json` | (669.5−644.5)/644.5 → **3.9%** |
+| 6.8% Thompson cheaper than LinUCB | same as above (seeds 0–29) | `experiments/results/real_github_actions/{0..29}/online_summary.json` | (669.5−624.2)/669.5 → **6.8%** |
+| −7% → −49.6% cost-sweep monotonicity | `python experiments/run_cost_sweep.py` | `experiments/results/cost_sweep/cost_sweep_summary.json` | 5:1 → **−7.0%** … 100:1 → **−49.6%** |
+| 5.3% real-data failure rate | inspect dataset | `data/raw/github_actions_real.csv` | 16 failures / 300 (psf/requests) → **5.3%** |
+| 44 PageHinkley false alarms | `python experiments/run_ablations.py` | `experiments/results/ablation_smoke/0/ablation_summary.json` | `full.drift_resets` → **44** |
+
+## Reproduction Quickstart
+
+```bash
+git clone https://github.com/abishekgiri/adaptive-release-controller-.git && cd adaptive-release-controller-
+pip install numpy matplotlib pytest
+python experiments/run_bandits.py --config experiments/configs/online_smoke.json --seed 0
+```
+
+The third command runs the synthetic smoke trajectory and writes the headline cumulative-cost numbers to `experiments/results/online_smoke/0/online_summary.json` (static 1878, LinUCB 1879, Thompson per-seed).
+
+## Repository Layout
+
+| Directory | Contents |
+|---|---|
+| `policies/` | Decision policies: static rules, heuristic score, LinUCB, Bayesian Thompson Sampling, and the feature encoder. |
+| `environment/` | Synthetic deployment environment and trajectory generation. |
+| `evaluation/` | Online-replay harness, bootstrap statistics, and figure generation. |
+| `experiments/` | Run scripts (`run_bandits`, `run_ablations`, `run_robustness`, `run_cost_sweep`, `run_drift_eval`), JSON configs, and committed `results/`. |
+| `data/` | Datasets, including the synthetic smoke CSV and the real GitHub Actions sample. |
+| `paper/` | Manuscript (`.tex`/`.md`), compiled PDF, figures, and `source-of-truth.md`. |
+| `paper/supplementary/` | Standalone supplementary material (see below). |
+
+Supporting modules: `delayed/` (pending-reward buffer), `drift/` (PageHinkley/ADWIN detectors), `features/`, `rewards/`, `ingestion/`, and `tests/`.
+
+## Supplementary Material
+
+Under [`paper/supplementary/`](paper/supplementary/):
+
+- `appendix_a.tex` — per-claim validity classification (Demonstrated / Suggestive / Speculative).
+- `appendix_b.tex` — reproducibility code and instructions.
+- `threats_extended.tex` — extended threats to validity (§7.5–§7.11).
+- `setup_tables.tex` — apparatus Tables S1–S7 (feature vector, baselines, datasets, hyperparameters, conditions, variants).
+- `diagnostic_tables.tex` — diagnostic Tables S8–S11 (optimal-arm, delay sweep, ablation deltas, per-action expectations).
+- `figures/` — three diagnostic figures referenced from the main paper.
+
+## Tests
+
+186 tests pass, 3 skipped. Run `pytest -q` to verify.
+
+## License and Citation
+
+Released under the MIT License.
+
+```bibtex
+@unpublished{giri2027cdbandit,
+  author = {Giri, Abishek Kumar},
+  title  = {Continuous Deployment as Cost-Sensitive Decision-Making:
+            When Contextual Bandits Outperform Static Rules and When They Don't},
+  note   = {Manuscript in preparation for MSR 2027},
+  year   = {2027}
+}
+```
