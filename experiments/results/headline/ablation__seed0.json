@@ -1,0 +1,81 @@
+{
+  "config_name": "ablation_smoke",
+  "dataset_path": "data/raw/travistorrent_smoke.csv",
+  "evaluation_mode": "ablation_online_replay_simulation",
+  "policies": {
+    "full": {
+      "action_counts": {
+        "block": 339,
+        "canary": 346,
+        "deploy": 465
+      },
+      "action_fractions": {
+        "block": 0.29478260869565215,
+        "canary": 0.3008695652173913,
+        "deploy": 0.4043478260869565
+      },
+      "cumulative_cost": 2383.0,
+      "drift_resets": 44,
+      "mean_cost_per_step": 2.0721739130434784,
+      "total_censored_skipped": 0,
+      "total_steps": 1150,
+      "total_updates": 1150
+    },
+    "no_cost": {
+      "action_counts": {
+        "block": 420,
+        "canary": 254,
+        "deploy": 476
+      },
+      "action_fractions": {
+        "block": 0.3652173913043478,
+        "canary": 0.22086956521739132,
+        "deploy": 0.41391304347826086
+      },
+      "cumulative_cost": 2469.0,
+      "drift_resets": 0,
+      "mean_cost_per_step": 2.1469565217391304,
+      "total_censored_skipped": 0,
+      "total_steps": 1150,
+      "total_updates": 1150
+    },
+    "no_delay": {
+      "action_counts": {
+        "block": 902,
+        "canary": 228,
+        "deploy": 20
+      },
+      "action_fractions": {
+        "block": 0.7843478260869565,
+        "canary": 0.19826086956521738,
+        "deploy": 0.017391304347826087
+      },
+      "cumulative_cost": 1857.5,
+      "drift_resets": 0,
+      "mean_cost_per_step": 1.6152173913043477,
+      "total_censored_skipped": 0,
+      "total_steps": 1150,
+      "total_updates": 1150
+    },
+    "no_drift": {
+      "action_counts": {
+        "block": 993,
+        "canary": 65,
+        "deploy": 92
+      },
+      "action_fractions": {
+        "block": 0.8634782608695653,
+        "canary": 0.05652173913043478,
+        "deploy": 0.08
+      },
+      "cumulative_cost": 1879.0,
+      "drift_resets": 36,
+      "mean_cost_per_step": 1.633913043478261,
+      "total_censored_skipped": 0,
+      "total_steps": 1150,
+      "total_updates": 1150
+    }
+  },
+  "seed": 0,
+  "warning": "Ablation costs are simulation artefacts. CI outcome used as counterfactual proxy."
+}

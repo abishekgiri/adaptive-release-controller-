@@ -1,0 +1,110 @@
+{
+  "config_name": "real_github_actions",
+  "dataset_path": "data/raw/github_actions_real.csv",
+  "evaluation_mode": "online_replay_simulation",
+  "policies": {
+    "heuristic_score": {
+      "action_counts": {
+        "block": 0,
+        "canary": 0,
+        "deploy": 600
+      },
+      "action_fractions": {
+        "block": 0.0,
+        "canary": 0.0,
+        "deploy": 1.0
+      },
+      "cumulative_cost": 860.0,
+      "finite_steps": 578,
+      "mean_cost_per_step": 1.4878892733564013,
+      "note": "SIMULATION: costs computed from logged CI outcome as counterfactual proxy. Not an unbiased causal estimate.",
+      "total_censored_skipped": 22,
+      "total_steps": 600,
+      "total_updates": 578,
+      "trajectory_count": 2
+    },
+    "linucb": {
+      "action_counts": {
+        "block": 253,
+        "canary": 29,
+        "deploy": 318
+      },
+      "action_fractions": {
+        "block": 0.4216666666666667,
+        "canary": 0.04833333333333333,
+        "deploy": 0.53
+      },
+      "cumulative_cost": 669.5,
+      "finite_steps": 583,
+      "mean_cost_per_step": 1.1483704974271012,
+      "note": "SIMULATION: costs computed from logged CI outcome as counterfactual proxy. Not an unbiased causal estimate.",
+      "total_censored_skipped": 17,
+      "total_steps": 600,
+      "total_updates": 583,
+      "trajectory_count": 2
+    },
+    "linucb_with_drift": {
+      "action_counts": {
+        "block": 253,
+        "canary": 29,
+        "deploy": 318
+      },
+      "action_fractions": {
+        "block": 0.4216666666666667,
+        "canary": 0.04833333333333333,
+        "deploy": 0.53
+      },
+      "cumulative_cost": 669.5,
+      "finite_steps": 583,
+      "mean_cost_per_step": 1.1483704974271012,
+      "note": "SIMULATION: costs computed from logged CI outcome as counterfactual proxy. Not an unbiased causal estimate.",
+      "total_censored_skipped": 17,
+      "total_steps": 600,
+      "total_updates": 583,
+      "trajectory_count": 2
+    },
+    "static_rules": {
+      "action_counts": {
+        "block": 94,
+        "canary": 120,
+        "deploy": 386
+      },
+      "action_fractions": {
+        "block": 0.15666666666666668,
+        "canary": 0.2,
+        "deploy": 0.6433333333333333
+      },
+      "cumulative_cost": 644.5,
+      "finite_steps": 579,
+      "mean_cost_per_step": 1.113126079447323,
+      "note": "SIMULATION: costs computed from logged CI outcome as counterfactual proxy. Not an unbiased causal estimate.",
+      "total_censored_skipped": 21,
+      "total_steps": 600,
+      "total_updates": 579,
+      "trajectory_count": 2
+    },
+    "thompson": {
+      "action_counts": {
+        "block": 246,
+        "canary": 68,
+        "deploy": 286
+      },
+      "action_fractions": {
+        "block": 0.41,
+        "canary": 0.11333333333333333,
+        "deploy": 0.4766666666666667
+      },
+      "cumulative_cost": 681.0,
+      "finite_steps": 582,
+      "mean_cost_per_step": 1.1701030927835052,
+      "note": "SIMULATION: costs computed from logged CI outcome as counterfactual proxy. Not an unbiased causal estimate.",
+      "total_censored_skipped": 18,
+      "total_steps": 600,
+      "total_updates": 582,
+      "trajectory_count": 2
+    }
+  },
+  "seed": 18,
+  "trajectory_count": 2,
+  "warning": "Online replay costs are simulation artefacts. CI outcome used as counterfactual proxy. Do not report as causal real-world cost estimates."
+}

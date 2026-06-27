@@ -4,7 +4,8 @@ __pycache__/
 *.db
 CLAUDE.md
 .claude/
-experiments/results/
+experiments/results/*
+!experiments/results/headline/
 experiments/results/raw_*/
 data/raw/
 
