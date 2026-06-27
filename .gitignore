@@ -5,4 +5,14 @@ __pycache__/
 CLAUDE.md
 .claude/
 experiments/results/
+experiments/results/raw_*/
 data/raw/
+
+# LaTeX intermediate files
+*.aux
+*.log
+*.out
+*.toc
+*.bbl
+*.blg
+*.synctex.gz
