@@ -1,0 +1,1101 @@
+{
+  "data/fixtures/github_actions_real.csv": {
+    "columns": {
+      "gh_files_changed": {
+        "missing": 600,
+        "unique_nonempty": 0
+      },
+      "gh_is_pr": {
+        "missing": 0,
+        "unique_nonempty": 2
+      },
+      "gh_lines_added": {
+        "missing": 600,
+        "unique_nonempty": 0
+      },
+      "gh_lines_deleted": {
+        "missing": 600,
+        "unique_nonempty": 0
+      },
+      "gh_project_name": {
+        "missing": 0,
+        "unique_nonempty": 2
+      },
+      "gh_src_churn": {
+        "missing": 600,
+        "unique_nonempty": 0
+      },
+      "gh_tests_added": {
+        "missing": 600,
+        "unique_nonempty": 0
+      },
+      "gh_tests_run": {
+        "missing": 600,
+        "unique_nonempty": 0
+      },
+      "git_author_email": {
+        "missing": 600,
+        "unique_nonempty": 0
+      },
+      "git_author_name": {
+        "missing": 0,
+        "unique_nonempty": 52
+      },
+      "git_committed_at": {
+        "missing": 600,
+        "unique_nonempty": 0
+      },
+      "git_trigger_commit": {
+        "missing": 0,
+        "unique_nonempty": 156
+      },
+      "tr_duration": {
+        "missing": 0,
+        "unique_nonempty": 130
+      },
+      "tr_finished_at": {
+        "missing": 0,
+        "unique_nonempty": 572
+      },
+      "tr_started_at": {
+        "missing": 0,
+        "unique_nonempty": 331
+      },
+      "tr_status": {
+        "missing": 0,
+        "unique_nonempty": 3
+      }
+    },
+    "path": "data/fixtures/github_actions_real.csv",
+    "projects": {
+      "pallets/flask": {
+        "context_features": {
+          "author_experience": {
+            "max": 50.0,
+            "median": 19.5,
+            "min": 0.0,
+            "unique": 51,
+            "zero_count": 44
+          },
+          "build_duration_s": {
+            "max": 86402.0,
+            "median": 18.0,
+            "min": 0.0,
+            "unique": 54,
+            "zero_count": 1
+          },
+          "files_changed": {
+            "max": 0.0,
+            "median": 0.0,
+            "min": 0.0,
+            "unique": 1,
+            "zero_count": 300
+          },
+          "has_dependency_change": {
+            "max": 0.0,
+            "median": 0.0,
+            "min": 0.0,
+            "unique": 1,
+            "zero_count": 300
+          },
+          "has_risky_path_change": {
+            "max": 0.0,
+            "median": 0.0,
+            "min": 0.0,
+            "unique": 1,
+            "zero_count": 300
+          },
+          "is_pr": {
+            "max": 1.0,
+            "median": 0.0,
+            "min": 0.0,
+            "unique": 2,
+            "zero_count": 175
+          },
+          "lines_added": {
+            "max": 0.0,
+            "median": 0.0,
+            "min": 0.0,
+            "unique": 1,
+            "zero_count": 300
+          },
+          "lines_deleted": {
+            "max": 0.0,
+            "median": 0.0,
+            "min": 0.0,
+            "unique": 1,
+            "zero_count": 300
+          },
+          "recent_failure_rate": {
+            "max": 0.5,
+            "median": 0.25,
+            "min": 0.0,
+            "unique": 73,
+            "zero_count": 42
+          },
+          "src_churn": {
+            "max": 0.0,
+            "median": 0.0,
+            "min": 0.0,
+            "unique": 1,
+            "zero_count": 300
+          },
+          "tests_added": {
+            "max": 0.0,
+            "median": 0.0,
+            "min": 0.0,
+            "unique": 1,
+            "zero_count": 300
+          },
+          "tests_run": {
+            "max": 0.0,
+            "median": 0.0,
+            "min": 0.0,
+            "unique": 1,
+            "zero_count": 300
+          }
+        },
+        "decisions_with_available_same_sha_resolved_label": 104,
+        "decisions_with_empty_7day_resolved_history": 1,
+        "distinct_shas": 103,
+        "duplicate_exact_rows": 1,
+        "encoded_rank": 5,
+        "finish_before_start": 0,
+        "finish_equal_start": 0,
+        "labels": {
+          "censored": 5,
+          "failure": 70,
+          "success": 225
+        },
+        "parsed_rows": 300,
+        "raw_columns": {
+          "gh_files_changed": {
+            "missing": 300,
+            "unique_nonempty": 0
+          },
+          "gh_is_pr": {
+            "missing": 0,
+            "unique_nonempty": 2
+          },
+          "gh_lines_added": {
+            "missing": 300,
+            "unique_nonempty": 0
+          },
+          "gh_lines_deleted": {
+            "missing": 300,
+            "unique_nonempty": 0
+          },
+          "gh_project_name": {
+            "missing": 0,
+            "unique_nonempty": 1
+          },
+          "gh_src_churn": {
+            "missing": 300,
+            "unique_nonempty": 0
+          },
+          "gh_tests_added": {
+            "missing": 300,
+            "unique_nonempty": 0
+          },
+          "gh_tests_run": {
+            "missing": 300,
+            "unique_nonempty": 0
+          },
+          "git_author_email": {
+            "missing": 300,
+            "unique_nonempty": 0
+          },
+          "git_author_name": {
+            "missing": 0,
+            "unique_nonempty": 44
+          },
+          "git_committed_at": {
+            "missing": 300,
+            "unique_nonempty": 0
+          },
+          "git_trigger_commit": {
+            "missing": 0,
+            "unique_nonempty": 103
+          },
+          "tr_duration": {
+            "missing": 0,
+            "unique_nonempty": 58
+          },
+          "tr_finished_at": {
+            "missing": 0,
+            "unique_nonempty": 299
+          },
+          "tr_started_at": {
+            "missing": 0,
+            "unique_nonempty": 210
+          },
+          "tr_status": {
+            "missing": 0,
+            "unique_nonempty": 3
+          }
+        },
+        "resolved_failure_rate": 0.23728813559322035,
+        "rows": 300,
+        "same_sha_inconsistency_counts": {
+          "gh_is_pr": 1,
+          "git_author_name": 1,
+          "tr_status": 45
+        },
+        "span_days": 99.89315972222222,
+        "start_max": "2026-05-05T00:25:30+00:00",
+        "start_min": "2026-01-25T02:59:21+00:00",
+        "unique_authors": 44,
+        "unique_start_times": 210
+      },
+      "psf/requests": {
+        "context_features": {
+          "author_experience": {
+            "max": 38.0,
+            "median": 17.0,
+            "min": 0.0,
+            "unique": 39,
+            "zero_count": 14
+          },
+          "build_duration_s": {
+            "max": 423.0,
+            "median": 68.0,
+            "min": 0.0,
+            "unique": 65,
+            "zero_count": 27
+          },
+          "files_changed": {
+            "max": 0.0,
+            "median": 0.0,
+            "min": 0.0,
+            "unique": 1,
+            "zero_count": 300
+          },
+          "has_dependency_change": {
+            "max": 0.0,
+            "median": 0.0,
+            "min": 0.0,
+            "unique": 1,
+            "zero_count": 300
+          },
+          "has_risky_path_change": {
+            "max": 0.0,
+            "median": 0.0,
+            "min": 0.0,
+            "unique": 1,
+            "zero_count": 300
+          },
+          "is_pr": {
+            "max": 1.0,
+            "median": 0.0,
+            "min": 0.0,
+            "unique": 2,
+            "zero_count": 171
+          },
+          "lines_added": {
+            "max": 0.0,
+            "median": 0.0,
+            "min": 0.0,
+            "unique": 1,
+            "zero_count": 300
+          },
+          "lines_deleted": {
+            "max": 0.0,
+            "median": 0.0,
+            "min": 0.0,
+            "unique": 1,
+            "zero_count": 300
+          },
+          "recent_failure_rate": {
+            "max": 0.12,
+            "median": 0.05065,
+            "min": 0.0,
+            "unique": 63,
+            "zero_count": 69
+          },
+          "src_churn": {
+            "max": 0.0,
+            "median": 0.0,
+            "min": 0.0,
+            "unique": 1,
+            "zero_count": 300
+          },
+          "tests_added": {
+            "max": 0.0,
+            "median": 0.0,
+            "min": 0.0,
+            "unique": 1,
+            "zero_count": 300
+          },
+          "tests_run": {
+            "max": 0.0,
+            "median": 0.0,
+            "min": 0.0,
+            "unique": 1,
+            "zero_count": 300
+          }
+        },
+        "decisions_with_available_same_sha_resolved_label": 69,
+        "decisions_with_empty_7day_resolved_history": 3,
+        "distinct_shas": 53,
+        "duplicate_exact_rows": 24,
+        "encoded_rank": 5,
+        "finish_before_start": 0,
+        "finish_equal_start": 17,
+        "labels": {
+          "censored": 17,
+          "failure": 16,
+          "success": 267
+        },
+        "parsed_rows": 300,
+        "raw_columns": {
+          "gh_files_changed": {
+            "missing": 300,
+            "unique_nonempty": 0
+          },
+          "gh_is_pr": {
+            "missing": 0,
+            "unique_nonempty": 2
+          },
+          "gh_lines_added": {
+            "missing": 300,
+            "unique_nonempty": 0
+          },
+          "gh_lines_deleted": {
+            "missing": 300,
+            "unique_nonempty": 0
+          },
+          "gh_project_name": {
+            "missing": 0,
+            "unique_nonempty": 1
+          },
+          "gh_src_churn": {
+            "missing": 300,
+            "unique_nonempty": 0
+          },
+          "gh_tests_added": {
+            "missing": 300,
+            "unique_nonempty": 0
+          },
+          "gh_tests_run": {
+            "missing": 300,
+            "unique_nonempty": 0
+          },
+          "git_author_email": {
+            "missing": 300,
+            "unique_nonempty": 0
+          },
+          "git_author_name": {
+            "missing": 0,
+            "unique_nonempty": 10
+          },
+          "git_committed_at": {
+            "missing": 300,
+            "unique_nonempty": 0
+          },
+          "git_trigger_commit": {
+            "missing": 0,
+            "unique_nonempty": 53
+          },
+          "tr_duration": {
+            "missing": 0,
+            "unique_nonempty": 108
+          },
+          "tr_finished_at": {
+            "missing": 0,
+            "unique_nonempty": 273
+          },
+          "tr_started_at": {
+            "missing": 0,
+            "unique_nonempty": 121
+          },
+          "tr_status": {
+            "missing": 0,
+            "unique_nonempty": 3
+          }
+        },
+        "resolved_failure_rate": 0.05653710247349823,
+        "rows": 300,
+        "same_sha_inconsistency_counts": {
+          "gh_is_pr": 18,
+          "git_author_name": 9,
+          "tr_status": 8
+        },
+        "span_days": 20.860150462962963,
+        "start_max": "2026-05-05T14:05:27+00:00",
+        "start_min": "2026-04-14T17:26:50+00:00",
+        "unique_authors": 10,
+        "unique_start_times": 121
+      }
+    },
+    "rows": 600,
+    "sha256": "fa2b3d5fc04bdfa195afc59779d68ec4cf74173168205c4784eec86a3225e582"
+  },
+  "data/fixtures/travistorrent_smoke.csv": {
+    "columns": {
+      "gh_files_changed": {
+        "missing": 0,
+        "unique_nonempty": 30
+      },
+      "gh_is_pr": {
+        "missing": 0,
+        "unique_nonempty": 2
+      },
+      "gh_lines_added": {
+        "missing": 0,
+        "unique_nonempty": 614
+      },
+      "gh_lines_deleted": {
+        "missing": 0,
+        "unique_nonempty": 380
+      },
+      "gh_project_name": {
+        "missing": 0,
+        "unique_nonempty": 2
+      },
+      "gh_src_churn": {
+        "missing": 0,
+        "unique_nonempty": 740
+      },
+      "gh_tests_added": {
+        "missing": 0,
+        "unique_nonempty": 11
+      },
+      "gh_tests_run": {
+        "missing": 0,
+        "unique_nonempty": 287
+      },
+      "git_author_email": {
+        "missing": 0,
+        "unique_nonempty": 5
+      },
+      "git_committed_at": {
+        "missing": 0,
+        "unique_nonempty": 1149
+      },
+      "git_trigger_commit": {
+        "missing": 0,
+        "unique_nonempty": 1150
+      },
+      "tr_duration": {
+        "missing": 0,
+        "unique_nonempty": 1132
+      },
+      "tr_finished_at": {
+        "missing": 0,
+        "unique_nonempty": 1150
+      },
+      "tr_started_at": {
+        "missing": 0,
+        "unique_nonempty": 1149
+      },
+      "tr_status": {
+        "missing": 0,
+        "unique_nonempty": 2
+      }
+    },
+    "path": "data/fixtures/travistorrent_smoke.csv",
+    "projects": {
+      "smoke/alpha": {
+        "context_features": {
+          "author_experience": {
+            "max": 129.0,
+            "median": 59.5,
+            "min": 0.0,
+            "unique": 130,
+            "zero_count": 5
+          },
+          "build_duration_s": {
+            "max": 3589.1,
+            "median": 1960.95,
+            "min": 0.0,
+            "unique": 596,
+            "zero_count": 1
+          },
+          "files_changed": {
+            "max": 30.0,
+            "median": 16.0,
+            "min": 1.0,
+            "unique": 30,
+            "zero_count": 0
+          },
+          "has_dependency_change": {
+            "max": 0.0,
+            "median": 0.0,
+            "min": 0.0,
+            "unique": 1,
+            "zero_count": 600
+          },
+          "has_risky_path_change": {
+            "max": 0.0,
+            "median": 0.0,
+            "min": 0.0,
+            "unique": 1,
+            "zero_count": 600
+          },
+          "is_pr": {
+            "max": 1.0,
+            "median": 0.0,
+            "min": 0.0,
+            "unique": 2,
+            "zero_count": 305
+          },
+          "lines_added": {
+            "max": 799.0,
+            "median": 391.0,
+            "min": 7.0,
+            "unique": 423,
+            "zero_count": 0
+          },
+          "lines_deleted": {
+            "max": 399.0,
+            "median": 201.5,
+            "min": 0.0,
+            "unique": 306,
+            "zero_count": 2
+          },
+          "recent_failure_rate": {
+            "max": 0.6667,
+            "median": 0.1429,
+            "min": 0.0,
+            "unique": 12,
+            "zero_count": 183
+          },
+          "src_churn": {
+            "max": 1199.0,
+            "median": 622.0,
+            "min": 5.0,
+            "unique": 472,
+            "zero_count": 0
+          },
+          "tests_added": {
+            "max": 10.0,
+            "median": 5.0,
+            "min": 0.0,
+            "unique": 11,
+            "zero_count": 53
+          },
+          "tests_run": {
+            "max": 300.0,
+            "median": 161.0,
+            "min": 0.0,
+            "unique": 253,
+            "zero_count": 1
+          }
+        },
+        "decisions_with_available_same_sha_resolved_label": 0,
+        "decisions_with_empty_7day_resolved_history": 1,
+        "distinct_shas": 600,
+        "duplicate_exact_rows": 0,
+        "encoded_rank": 11,
+        "finish_before_start": 0,
+        "finish_equal_start": 0,
+        "labels": {
+          "failure": 97,
+          "success": 503
+        },
+        "parsed_rows": 600,
+        "raw_columns": {
+          "gh_files_changed": {
+            "missing": 0,
+            "unique_nonempty": 30
+          },
+          "gh_is_pr": {
+            "missing": 0,
+            "unique_nonempty": 2
+          },
+          "gh_lines_added": {
+            "missing": 0,
+            "unique_nonempty": 423
+          },
+          "gh_lines_deleted": {
+            "missing": 0,
+            "unique_nonempty": 306
+          },
+          "gh_project_name": {
+            "missing": 0,
+            "unique_nonempty": 1
+          },
+          "gh_src_churn": {
+            "missing": 0,
+            "unique_nonempty": 472
+          },
+          "gh_tests_added": {
+            "missing": 0,
+            "unique_nonempty": 11
+          },
+          "gh_tests_run": {
+            "missing": 0,
+            "unique_nonempty": 253
+          },
+          "git_author_email": {
+            "missing": 0,
+            "unique_nonempty": 5
+          },
+          "git_committed_at": {
+            "missing": 0,
+            "unique_nonempty": 600
+          },
+          "git_trigger_commit": {
+            "missing": 0,
+            "unique_nonempty": 600
+          },
+          "tr_duration": {
+            "missing": 0,
+            "unique_nonempty": 596
+          },
+          "tr_finished_at": {
+            "missing": 0,
+            "unique_nonempty": 600
+          },
+          "tr_started_at": {
+            "missing": 0,
+            "unique_nonempty": 600
+          },
+          "tr_status": {
+            "missing": 0,
+            "unique_nonempty": 2
+          }
+        },
+        "resolved_failure_rate": 0.16166666666666665,
+        "rows": 600,
+        "same_sha_inconsistency_counts": {
+          "gh_is_pr": 0,
+          "git_author_name": 0,
+          "tr_status": 0
+        },
+        "span_days": 593.8100578703703,
+        "start_max": "2021-08-16T19:26:29+00:00",
+        "start_min": "2020-01-01T00:00:00+00:00",
+        "unique_authors": 5,
+        "unique_start_times": 600
+      },
+      "smoke/beta": {
+        "context_features": {
+          "author_experience": {
+            "max": 118.0,
+            "median": 54.5,
+            "min": 0.0,
+            "unique": 119,
+            "zero_count": 5
+          },
+          "build_duration_s": {
+            "max": 3588.7,
+            "median": 1675.35,
+            "min": 0.0,
+            "unique": 546,
+            "zero_count": 1
+          },
+          "files_changed": {
+            "max": 30.0,
+            "median": 15.0,
+            "min": 1.0,
+            "unique": 30,
+            "zero_count": 0
+          },
+          "has_dependency_change": {
+            "max": 0.0,
+            "median": 0.0,
+            "min": 0.0,
+            "unique": 1,
+            "zero_count": 550
+          },
+          "has_risky_path_change": {
+            "max": 0.0,
+            "median": 0.0,
+            "min": 0.0,
+            "unique": 1,
+            "zero_count": 550
+          },
+          "is_pr": {
+            "max": 1.0,
+            "median": 1.0,
+            "min": 0.0,
+            "unique": 2,
+            "zero_count": 266
+          },
+          "lines_added": {
+            "max": 798.0,
+            "median": 408.0,
+            "min": 10.0,
+            "unique": 406,
+            "zero_count": 0
+          },
+          "lines_deleted": {
+            "max": 400.0,
+            "median": 205.0,
+            "min": 0.0,
+            "unique": 295,
+            "zero_count": 1
+          },
+          "recent_failure_rate": {
+            "max": 0.8571,
+            "median": 0.3333,
+            "min": 0.0,
+            "unique": 18,
+            "zero_count": 42
+          },
+          "src_churn": {
+            "max": 1200.0,
+            "median": 614.0,
+            "min": 5.0,
+            "unique": 435,
+            "zero_count": 0
+          },
+          "tests_added": {
+            "max": 10.0,
+            "median": 5.0,
+            "min": 0.0,
+            "unique": 11,
+            "zero_count": 35
+          },
+          "tests_run": {
+            "max": 300.0,
+            "median": 142.0,
+            "min": 0.0,
+            "unique": 249,
+            "zero_count": 1
+          }
+        },
+        "decisions_with_available_same_sha_resolved_label": 0,
+        "decisions_with_empty_7day_resolved_history": 1,
+        "distinct_shas": 550,
+        "duplicate_exact_rows": 0,
+        "encoded_rank": 11,
+        "finish_before_start": 0,
+        "finish_equal_start": 0,
+        "labels": {
+          "failure": 193,
+          "success": 357
+        },
+        "parsed_rows": 550,
+        "raw_columns": {
+          "gh_files_changed": {
+            "missing": 0,
+            "unique_nonempty": 30
+          },
+          "gh_is_pr": {
+            "missing": 0,
+            "unique_nonempty": 2
+          },
+          "gh_lines_added": {
+            "missing": 0,
+            "unique_nonempty": 406
+          },
+          "gh_lines_deleted": {
+            "missing": 0,
+            "unique_nonempty": 295
+          },
+          "gh_project_name": {
+            "missing": 0,
+            "unique_nonempty": 1
+          },
+          "gh_src_churn": {
+            "missing": 0,
+            "unique_nonempty": 435
+          },
+          "gh_tests_added": {
+            "missing": 0,
+            "unique_nonempty": 11
+          },
+          "gh_tests_run": {
+            "missing": 0,
+            "unique_nonempty": 248
+          },
+          "git_author_email": {
+            "missing": 0,
+            "unique_nonempty": 5
+          },
+          "git_committed_at": {
+            "missing": 0,
+            "unique_nonempty": 550
+          },
+          "git_trigger_commit": {
+            "missing": 0,
+            "unique_nonempty": 550
+          },
+          "tr_duration": {
+            "missing": 0,
+            "unique_nonempty": 546
+          },
+          "tr_finished_at": {
+            "missing": 0,
+            "unique_nonempty": 550
+          },
+          "tr_started_at": {
+            "missing": 0,
+            "unique_nonempty": 550
+          },
+          "tr_status": {
+            "missing": 0,
+            "unique_nonempty": 2
+          }
+        },
+        "resolved_failure_rate": 0.3509090909090909,
+        "rows": 550,
+        "same_sha_inconsistency_counts": {
+          "gh_is_pr": 0,
+          "git_author_name": 0,
+          "tr_status": 0
+        },
+        "span_days": 546.0289930555556,
+        "start_max": "2021-06-30T00:41:45+00:00",
+        "start_min": "2020-01-01T00:00:00+00:00",
+        "unique_authors": 5,
+        "unique_start_times": 550
+      }
+    },
+    "rows": 1150,
+    "sha256": "a1a0dcdc752150861bdb4b467b0e1d62f5a525e65fb7e9a94b0d50a74e39ed6a"
+  },
+  "data/raw/travistorrent.csv": {
+    "columns": {
+      "gh_changed_files": {
+        "missing": 0,
+        "unique_nonempty": 2
+      },
+      "gh_files_changed": {
+        "missing": 0,
+        "unique_nonempty": 7
+      },
+      "gh_is_pr": {
+        "missing": 0,
+        "unique_nonempty": 2
+      },
+      "gh_lines_added": {
+        "missing": 0,
+        "unique_nonempty": 121
+      },
+      "gh_lines_deleted": {
+        "missing": 0,
+        "unique_nonempty": 41
+      },
+      "gh_project_name": {
+        "missing": 0,
+        "unique_nonempty": 1
+      },
+      "gh_src_churn": {
+        "missing": 0,
+        "unique_nonempty": 81
+      },
+      "gh_tests_added": {
+        "missing": 0,
+        "unique_nonempty": 4
+      },
+      "gh_tests_run": {
+        "missing": 0,
+        "unique_nonempty": 70
+      },
+      "git_author_email": {
+        "missing": 0,
+        "unique_nonempty": 12
+      },
+      "git_committed_at": {
+        "missing": 0,
+        "unique_nonempty": 600
+      },
+      "git_trigger_commit": {
+        "missing": 0,
+        "unique_nonempty": 600
+      },
+      "tr_duration": {
+        "missing": 0,
+        "unique_nonempty": 40
+      },
+      "tr_finished_at": {
+        "missing": 0,
+        "unique_nonempty": 600
+      },
+      "tr_started_at": {
+        "missing": 0,
+        "unique_nonempty": 600
+      },
+      "tr_status": {
+        "missing": 0,
+        "unique_nonempty": 2
+      }
+    },
+    "path": "data/raw/travistorrent.csv",
+    "projects": {
+      "phase17/smoke-repo": {
+        "context_features": {
+          "author_experience": {
+            "max": 49.0,
+            "median": 24.5,
+            "min": 0.0,
+            "unique": 50,
+            "zero_count": 12
+          },
+          "build_duration_s": {
+            "max": 352.0,
+            "median": 148.0,
+            "min": 0.0,
+            "unique": 41,
+            "zero_count": 1
+          },
+          "files_changed": {
+            "max": 22.0,
+            "median": 5.0,
+            "min": 3.0,
+            "unique": 7,
+            "zero_count": 0
+          },
+          "has_dependency_change": {
+            "max": 0.0,
+            "median": 0.0,
+            "min": 0.0,
+            "unique": 1,
+            "zero_count": 600
+          },
+          "has_risky_path_change": {
+            "max": 0.0,
+            "median": 0.0,
+            "min": 0.0,
+            "unique": 1,
+            "zero_count": 600
+          },
+          "is_pr": {
+            "max": 1.0,
+            "median": 0.0,
+            "min": 0.0,
+            "unique": 2,
+            "zero_count": 400
+          },
+          "lines_added": {
+            "max": 900.0,
+            "median": 144.5,
+            "min": 80.0,
+            "unique": 121,
+            "zero_count": 0
+          },
+          "lines_deleted": {
+            "max": 260.0,
+            "median": 31.0,
+            "min": 10.0,
+            "unique": 41,
+            "zero_count": 0
+          },
+          "recent_failure_rate": {
+            "max": 1.0,
+            "median": 0.1429,
+            "min": 0.0,
+            "unique": 9,
+            "zero_count": 102
+          },
+          "src_churn": {
+            "max": 1160.0,
+            "median": 174.0,
+            "min": 90.0,
+            "unique": 81,
+            "zero_count": 0
+          },
+          "tests_added": {
+            "max": 3.0,
+            "median": 1.5,
+            "min": 0.0,
+            "unique": 4,
+            "zero_count": 150
+          },
+          "tests_run": {
+            "max": 149.0,
+            "median": 113.0,
+            "min": 0.0,
+            "unique": 71,
+            "zero_count": 1
+          }
+        },
+        "decisions_with_available_same_sha_resolved_label": 0,
+        "decisions_with_empty_7day_resolved_history": 1,
+        "distinct_shas": 600,
+        "duplicate_exact_rows": 0,
+        "encoded_rank": 10,
+        "finish_before_start": 0,
+        "finish_equal_start": 0,
+        "labels": {
+          "failure": 98,
+          "success": 502
+        },
+        "parsed_rows": 600,
+        "raw_columns": {
+          "gh_changed_files": {
+            "missing": 0,
+            "unique_nonempty": 2
+          },
+          "gh_files_changed": {
+            "missing": 0,
+            "unique_nonempty": 7
+          },
+          "gh_is_pr": {
+            "missing": 0,
+            "unique_nonempty": 2
+          },
+          "gh_lines_added": {
+            "missing": 0,
+            "unique_nonempty": 121
+          },
+          "gh_lines_deleted": {
+            "missing": 0,
+            "unique_nonempty": 41
+          },
+          "gh_project_name": {
+            "missing": 0,
+            "unique_nonempty": 1
+          },
+          "gh_src_churn": {
+            "missing": 0,
+            "unique_nonempty": 81
+          },
+          "gh_tests_added": {
+            "missing": 0,
+            "unique_nonempty": 4
+          },
+          "gh_tests_run": {
+            "missing": 0,
+            "unique_nonempty": 70
+          },
+          "git_author_email": {
+            "missing": 0,
+            "unique_nonempty": 12
+          },
+          "git_committed_at": {
+            "missing": 0,
+            "unique_nonempty": 600
+          },
+          "git_trigger_commit": {
+            "missing": 0,
+            "unique_nonempty": 600
+          },
+          "tr_duration": {
+            "missing": 0,
+            "unique_nonempty": 40
+          },
+          "tr_finished_at": {
+            "missing": 0,
+            "unique_nonempty": 600
+          },
+          "tr_started_at": {
+            "missing": 0,
+            "unique_nonempty": 600
+          },
+          "tr_status": {
+            "missing": 0,
+            "unique_nonempty": 2
+          }
+        },
+        "resolved_failure_rate": 0.16333333333333333,
+        "rows": 600,
+        "same_sha_inconsistency_counts": {
+          "gh_is_pr": 0,
+          "git_author_name": 0,
+          "tr_status": 0
+        },
+        "span_days": 599.0,
+        "start_max": "2021-08-22T00:00:00+00:00",
+        "start_min": "2020-01-01T00:00:00+00:00",
+        "unique_authors": 12,
+        "unique_start_times": 600
+      }
+    },
+    "rows": 600,
+    "sha256": "1693239af7b659106075433f77637fedb265c49b72c17034a3a4da4cdf888581"
+  }
+}

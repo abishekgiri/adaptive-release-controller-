@@ -61,6 +61,8 @@ class ThompsonSamplingPolicy(Policy):
         encoder: Optional[FeatureEncoder] = None,
         policy_id: str = "thompson",
     ) -> None:
+        if config.prior_variance <= 0 or config.noise_variance <= 0:
+            raise ValueError("Thompson variances must be positive")
         self._config = config
         self._d = feature_dim
         self._rng = rng

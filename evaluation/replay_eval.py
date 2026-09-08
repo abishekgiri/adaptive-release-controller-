@@ -75,6 +75,11 @@ def evaluate_ips(
     if config.deterministic_default_propensity <= 0:
         raise ValueError("deterministic_default_propensity must be positive")
 
+    # A known deterministic logger cannot identify any off-support action.
+    # Partial empirical action coverage alone is not a sufficient overlap test;
+    # this guard handles the unambiguous all-one-propensity case used by CI logs.
+    deterministic_log = all(s.propensity == 1.0 for s in trajectory.steps)
+
     weighted_cost = 0.0
     matched_actions = 0
     evaluated_steps = 0
@@ -93,6 +98,8 @@ def evaluate_ips(
 
         evaluated_steps += 1
         candidate_action, candidate_propensity = policy.select_action(step.context)
+        if deterministic_log and candidate_action != step.action:
+            raise ValueError("Target action has no support under the deterministic logging policy")
         if candidate_action != step.action:
             weights.append(0.0)
             continue
@@ -192,7 +199,7 @@ def _logged_propensity(
     config: IPSConfig,
 ) -> _LoggedPropensity:
     propensity = step.propensity
-    if propensity is not None and propensity > 0:
+    if propensity is not None and 0 < propensity <= 1:
         return _LoggedPropensity(value=float(propensity), used_default=False)
 
     if (

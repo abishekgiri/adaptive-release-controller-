@@ -101,10 +101,14 @@ class TravisTorrentLoader:
         *,
         min_builds: int = DEFAULT_MIN_BUILDS,
         min_history_days: int = DEFAULT_MIN_HISTORY_DAYS,
+        timing_mode: str = "event_time",
+        delay_step_seconds: int = 60,
     ) -> None:
         self.path = Path(path)
         self.min_builds = min_builds
         self.min_history_days = min_history_days
+        self.timing_mode = timing_mode
+        self.delay_step_seconds = delay_step_seconds
 
     def __iter__(self) -> Iterator[TravisTorrentRecord]:
         return self.iter_records()
@@ -130,9 +134,28 @@ class TravisTorrentLoader:
             if not self._project_passes_filters(project_rows):
                 continue
 
+            observation_times = [r.finished_at for r in project_rows]
+            if self.timing_mode == "duration_steps":
+                import math
+                if self.delay_step_seconds <= 0:
+                    raise ValueError("delay_step_seconds must be positive")
+                for i, r in enumerate(project_rows):
+                    duration = ((r.finished_at-r.started_at).total_seconds()
+                                if r.finished_at and r.started_at else r.build_duration_s)
+                    j = i + max(1, math.ceil(duration/self.delay_step_seconds))
+                    observation_times[i] = ((project_rows[j].started_at or project_rows[j].committed_at)
+                                            if j < len(project_rows) else None)
+            elif self.timing_mode != "event_time":
+                raise ValueError("unknown timing_mode")
             author_counts: dict[str, int] = {}
+            seen_commits: set[str] = set()
             prior_outcomes: list[tuple[datetime | None, Outcome]] = []
+            completed_history: list[tuple[datetime | None, _ParsedRow]] = []
             for step, row in enumerate(project_rows):
+                decision_time = row.started_at or row.committed_at
+                available = [(t, p) for t, p in completed_history if t is not None
+                             and decision_time is not None and t <= decision_time]
+                latest = max(available, key=lambda pair: pair[0])[1] if available else None
                 author_experience = (
                     author_counts.get(row.author_id, 0) if row.author_id else 0
                 )
@@ -145,9 +168,9 @@ class TravisTorrentLoader:
                     lines_deleted=row.lines_deleted,
                     src_churn=row.src_churn,
                     is_pr=row.is_pr,
-                    tests_run=row.tests_run,
+                    tests_run=latest.tests_run if latest else 0,
                     tests_added=row.tests_added,
-                    build_duration_s=row.build_duration_s,
+                    build_duration_s=latest.build_duration_s if latest else 0.0,
                     author_experience=author_experience,
                     recent_failure_rate=_recent_failure_rate(
                         prior_outcomes,
@@ -168,9 +191,11 @@ class TravisTorrentLoader:
                     finished_at=row.finished_at,
                 )
 
-                if row.author_id:
+                if row.author_id and row.commit_sha not in seen_commits:
                     author_counts[row.author_id] = author_counts.get(row.author_id, 0) + 1
-                prior_outcomes.append((row.started_at or row.committed_at, row.outcome))
+                seen_commits.add(row.commit_sha)
+                completed_history.append((observation_times[step], row))
+                prior_outcomes.append((observation_times[step], row.outcome))
 
     def iter_trajectories(self) -> Iterator[Trajectory]:
         """Yield one trajectory per project with outcome held outside Context.
@@ -298,6 +323,8 @@ def _parse_row(row: dict[str, str], source_order: int) -> _ParsedRow | None:
     duration = _parse_float(row.get("tr_duration"), default=0.0)
     if duration == 0.0 and started_at is not None and finished_at is not None:
         duration = max((finished_at - started_at).total_seconds(), 0.0)
+    if finished_at is None and started_at is not None and duration > 0:
+        finished_at = started_at + timedelta(seconds=duration)
 
     lines_added = _parse_int(row.get("gh_lines_added"))
     lines_deleted = _parse_int(row.get("gh_lines_deleted"))
@@ -350,13 +377,14 @@ def _recent_failure_rate(
     current_time: datetime | None,
 ) -> float:
     if current_time is None:
-        history = prior_outcomes
+        return 0.0  # Unknown observation times cannot establish availability.
     else:
         window_start = current_time - timedelta(days=7)
         history = [
             (observed_at, outcome)
             for observed_at, outcome in prior_outcomes
-            if observed_at is not None and window_start <= observed_at < current_time
+            if observed_at is not None and window_start <= observed_at <= current_time
+            and outcome in (Outcome.SUCCESS, Outcome.FAILURE)
         ]
     if not history:
         return 0.0

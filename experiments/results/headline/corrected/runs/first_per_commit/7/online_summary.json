@@ -1,0 +1,519 @@
+{
+  "config_name": "first_per_commit",
+  "dataset_path": "experiments/results/headline/corrected/fixtures/first_per_commit.csv",
+  "dataset_sha256": "3426d231320781123e7013abad569f3df3eed1e04d8e195c94f74b15f233d0fd",
+  "evaluation_mode": "online_replay_simulation",
+  "policies": {
+    "always_block": {
+      "action_counts": {
+        "block": 156,
+        "canary": 0,
+        "deploy": 0
+      },
+      "action_fractions": {
+        "block": 1.0,
+        "canary": 0.0,
+        "deploy": 0.0
+      },
+      "cumulative_cost": 255.5,
+      "finite_steps": 151,
+      "mean_cost_per_step": 1.6920529801324504,
+      "note": "SIMULATION: costs computed from logged CI outcome as counterfactual proxy. Not an unbiased causal estimate.",
+      "per_project": {
+        "pallets/flask": {
+          "action_counts": {
+            "block": 103,
+            "canary": 0,
+            "deploy": 0
+          },
+          "cumulative_cost": 163.5,
+          "observed_steps": 102,
+          "total_steps": 103,
+          "total_updates": 102
+        },
+        "psf/requests": {
+          "action_counts": {
+            "block": 53,
+            "canary": 0,
+            "deploy": 0
+          },
+          "cumulative_cost": 92.0,
+          "observed_steps": 49,
+          "total_steps": 53,
+          "total_updates": 49
+        }
+      },
+      "total_censored_skipped": 5,
+      "total_steps": 156,
+      "total_updates": 151,
+      "trajectory_count": 2
+    },
+    "always_canary": {
+      "action_counts": {
+        "block": 0,
+        "canary": 156,
+        "deploy": 0
+      },
+      "action_fractions": {
+        "block": 0.0,
+        "canary": 1.0,
+        "deploy": 0.0
+      },
+      "cumulative_cost": 244.0,
+      "finite_steps": 151,
+      "mean_cost_per_step": 1.6158940397350994,
+      "note": "SIMULATION: costs computed from logged CI outcome as counterfactual proxy. Not an unbiased causal estimate.",
+      "per_project": {
+        "pallets/flask": {
+          "action_counts": {
+            "block": 0,
+            "canary": 103,
+            "deploy": 0
+          },
+          "cumulative_cost": 183.0,
+          "observed_steps": 102,
+          "total_steps": 103,
+          "total_updates": 102
+        },
+        "psf/requests": {
+          "action_counts": {
+            "block": 0,
+            "canary": 53,
+            "deploy": 0
+          },
+          "cumulative_cost": 61.0,
+          "observed_steps": 49,
+          "total_steps": 53,
+          "total_updates": 49
+        }
+      },
+      "total_censored_skipped": 5,
+      "total_steps": 156,
+      "total_updates": 151,
+      "trajectory_count": 2
+    },
+    "always_deploy": {
+      "action_counts": {
+        "block": 0,
+        "canary": 0,
+        "deploy": 156
+      },
+      "action_fractions": {
+        "block": 0.0,
+        "canary": 0.0,
+        "deploy": 1.0
+      },
+      "cumulative_cost": 310.0,
+      "finite_steps": 151,
+      "mean_cost_per_step": 2.052980132450331,
+      "note": "SIMULATION: costs computed from logged CI outcome as counterfactual proxy. Not an unbiased causal estimate.",
+      "per_project": {
+        "pallets/flask": {
+          "action_counts": {
+            "block": 0,
+            "canary": 0,
+            "deploy": 103
+          },
+          "cumulative_cost": 270.0,
+          "observed_steps": 102,
+          "total_steps": 103,
+          "total_updates": 102
+        },
+        "psf/requests": {
+          "action_counts": {
+            "block": 0,
+            "canary": 0,
+            "deploy": 53
+          },
+          "cumulative_cost": 40.0,
+          "observed_steps": 49,
+          "total_steps": 53,
+          "total_updates": 49
+        }
+      },
+      "total_censored_skipped": 5,
+      "total_steps": 156,
+      "total_updates": 151,
+      "trajectory_count": 2
+    },
+    "bayesian_rate": {
+      "action_counts": {
+        "block": 47,
+        "canary": 37,
+        "deploy": 72
+      },
+      "action_fractions": {
+        "block": 0.30128205128205127,
+        "canary": 0.23717948717948717,
+        "deploy": 0.46153846153846156
+      },
+      "cumulative_cost": 219.5,
+      "finite_steps": 151,
+      "mean_cost_per_step": 1.4536423841059603,
+      "note": "SIMULATION: costs computed from logged CI outcome as counterfactual proxy. Not an unbiased causal estimate.",
+      "per_project": {
+        "pallets/flask": {
+          "action_counts": {
+            "block": 44,
+            "canary": 34,
+            "deploy": 25
+          },
+          "cumulative_cost": 170.5,
+          "observed_steps": 102,
+          "total_steps": 103,
+          "total_updates": 102
+        },
+        "psf/requests": {
+          "action_counts": {
+            "block": 3,
+            "canary": 3,
+            "deploy": 47
+          },
+          "cumulative_cost": 49.0,
+          "observed_steps": 49,
+          "total_steps": 53,
+          "total_updates": 49
+        }
+      },
+      "total_censored_skipped": 5,
+      "total_steps": 156,
+      "total_updates": 151,
+      "trajectory_count": 2
+    },
+    "cost_rule": {
+      "action_counts": {
+        "block": 57,
+        "canary": 23,
+        "deploy": 76
+      },
+      "action_fractions": {
+        "block": 0.36538461538461536,
+        "canary": 0.14743589743589744,
+        "deploy": 0.48717948717948717
+      },
+      "cumulative_cost": 199.5,
+      "finite_steps": 151,
+      "mean_cost_per_step": 1.3211920529801324,
+      "note": "SIMULATION: costs computed from logged CI outcome as counterfactual proxy. Not an unbiased causal estimate.",
+      "per_project": {
+        "pallets/flask": {
+          "action_counts": {
+            "block": 57,
+            "canary": 18,
+            "deploy": 28
+          },
+          "cumulative_cost": 162.5,
+          "observed_steps": 102,
+          "total_steps": 103,
+          "total_updates": 102
+        },
+        "psf/requests": {
+          "action_counts": {
+            "block": 0,
+            "canary": 5,
+            "deploy": 48
+          },
+          "cumulative_cost": 37.0,
+          "observed_steps": 49,
+          "total_steps": 53,
+          "total_updates": 49
+        }
+      },
+      "total_censored_skipped": 5,
+      "total_steps": 156,
+      "total_updates": 151,
+      "trajectory_count": 2
+    },
+    "heuristic_score": {
+      "action_counts": {
+        "block": 0,
+        "canary": 2,
+        "deploy": 154
+      },
+      "action_fractions": {
+        "block": 0.0,
+        "canary": 0.01282051282051282,
+        "deploy": 0.9871794871794872
+      },
+      "cumulative_cost": 305.0,
+      "finite_steps": 151,
+      "mean_cost_per_step": 2.019867549668874,
+      "note": "SIMULATION: costs computed from logged CI outcome as counterfactual proxy. Not an unbiased causal estimate.",
+      "per_project": {
+        "pallets/flask": {
+          "action_counts": {
+            "block": 0,
+            "canary": 2,
+            "deploy": 101
+          },
+          "cumulative_cost": 265.0,
+          "observed_steps": 102,
+          "total_steps": 103,
+          "total_updates": 102
+        },
+        "psf/requests": {
+          "action_counts": {
+            "block": 0,
+            "canary": 0,
+            "deploy": 53
+          },
+          "cumulative_cost": 40.0,
+          "observed_steps": 49,
+          "total_steps": 53,
+          "total_updates": 49
+        }
+      },
+      "total_censored_skipped": 5,
+      "total_steps": 156,
+      "total_updates": 151,
+      "trajectory_count": 2
+    },
+    "linucb": {
+      "action_counts": {
+        "block": 47,
+        "canary": 62,
+        "deploy": 47
+      },
+      "action_fractions": {
+        "block": 0.30128205128205127,
+        "canary": 0.3974358974358974,
+        "deploy": 0.30128205128205127
+      },
+      "cumulative_cost": 217.0,
+      "finite_steps": 151,
+      "mean_cost_per_step": 1.4370860927152318,
+      "note": "SIMULATION: costs computed from logged CI outcome as counterfactual proxy. Not an unbiased causal estimate.",
+      "per_project": {
+        "pallets/flask": {
+          "action_counts": {
+            "block": 43,
+            "canary": 43,
+            "deploy": 17
+          },
+          "cumulative_cost": 158.0,
+          "observed_steps": 102,
+          "total_steps": 103,
+          "total_updates": 102
+        },
+        "psf/requests": {
+          "action_counts": {
+            "block": 4,
+            "canary": 19,
+            "deploy": 30
+          },
+          "cumulative_cost": 59.0,
+          "observed_steps": 49,
+          "total_steps": 53,
+          "total_updates": 49
+        }
+      },
+      "total_censored_skipped": 5,
+      "total_steps": 156,
+      "total_updates": 151,
+      "trajectory_count": 2
+    },
+    "linucb_bias_only": {
+      "action_counts": {
+        "block": 55,
+        "canary": 13,
+        "deploy": 88
+      },
+      "action_fractions": {
+        "block": 0.3525641025641026,
+        "canary": 0.08333333333333333,
+        "deploy": 0.5641025641025641
+      },
+      "cumulative_cost": 202.0,
+      "finite_steps": 151,
+      "mean_cost_per_step": 1.3377483443708609,
+      "note": "SIMULATION: costs computed from logged CI outcome as counterfactual proxy. Not an unbiased causal estimate.",
+      "per_project": {
+        "pallets/flask": {
+          "action_counts": {
+            "block": 53,
+            "canary": 6,
+            "deploy": 44
+          },
+          "cumulative_cost": 159.0,
+          "observed_steps": 102,
+          "total_steps": 103,
+          "total_updates": 102
+        },
+        "psf/requests": {
+          "action_counts": {
+            "block": 2,
+            "canary": 7,
+            "deploy": 44
+          },
+          "cumulative_cost": 43.0,
+          "observed_steps": 49,
+          "total_steps": 53,
+          "total_updates": 49
+        }
+      },
+      "total_censored_skipped": 5,
+      "total_steps": 156,
+      "total_updates": 151,
+      "trajectory_count": 2
+    },
+    "linucb_with_drift": {
+      "action_counts": {
+        "block": 47,
+        "canary": 62,
+        "deploy": 47
+      },
+      "action_fractions": {
+        "block": 0.30128205128205127,
+        "canary": 0.3974358974358974,
+        "deploy": 0.30128205128205127
+      },
+      "cumulative_cost": 217.0,
+      "finite_steps": 151,
+      "mean_cost_per_step": 1.4370860927152318,
+      "note": "SIMULATION: costs computed from logged CI outcome as counterfactual proxy. Not an unbiased causal estimate.",
+      "per_project": {
+        "pallets/flask": {
+          "action_counts": {
+            "block": 43,
+            "canary": 43,
+            "deploy": 17
+          },
+          "cumulative_cost": 158.0,
+          "observed_steps": 102,
+          "total_steps": 103,
+          "total_updates": 102
+        },
+        "psf/requests": {
+          "action_counts": {
+            "block": 4,
+            "canary": 19,
+            "deploy": 30
+          },
+          "cumulative_cost": 59.0,
+          "observed_steps": 49,
+          "total_steps": 53,
+          "total_updates": 49
+        }
+      },
+      "total_censored_skipped": 5,
+      "total_steps": 156,
+      "total_updates": 151,
+      "trajectory_count": 2
+    },
+    "static_rules": {
+      "action_counts": {
+        "block": 39,
+        "canary": 37,
+        "deploy": 80
+      },
+      "action_fractions": {
+        "block": 0.25,
+        "canary": 0.23717948717948717,
+        "deploy": 0.5128205128205128
+      },
+      "cumulative_cost": 223.0,
+      "finite_steps": 151,
+      "mean_cost_per_step": 1.4768211920529801,
+      "note": "SIMULATION: costs computed from logged CI outcome as counterfactual proxy. Not an unbiased causal estimate.",
+      "per_project": {
+        "pallets/flask": {
+          "action_counts": {
+            "block": 39,
+            "canary": 34,
+            "deploy": 30
+          },
+          "cumulative_cost": 181.0,
+          "observed_steps": 102,
+          "total_steps": 103,
+          "total_updates": 102
+        },
+        "psf/requests": {
+          "action_counts": {
+            "block": 0,
+            "canary": 3,
+            "deploy": 50
+          },
+          "cumulative_cost": 42.0,
+          "observed_steps": 49,
+          "total_steps": 53,
+          "total_updates": 49
+        }
+      },
+      "total_censored_skipped": 5,
+      "total_steps": 156,
+      "total_updates": 151,
+      "trajectory_count": 2
+    },
+    "thompson": {
+      "action_counts": {
+        "block": 50,
+        "canary": 59,
+        "deploy": 47
+      },
+      "action_fractions": {
+        "block": 0.32051282051282054,
+        "canary": 0.3782051282051282,
+        "deploy": 0.30128205128205127
+      },
+      "cumulative_cost": 220.5,
+      "finite_steps": 151,
+      "mean_cost_per_step": 1.4602649006622517,
+      "note": "SIMULATION: costs computed from logged CI outcome as counterfactual proxy. Not an unbiased causal estimate.",
+      "per_project": {
+        "pallets/flask": {
+          "action_counts": {
+            "block": 46,
+            "canary": 40,
+            "deploy": 17
+          },
+          "cumulative_cost": 167.5,
+          "observed_steps": 102,
+          "total_steps": 103,
+          "total_updates": 102
+        },
+        "psf/requests": {
+          "action_counts": {
+            "block": 4,
+            "canary": 19,
+            "deploy": 30
+          },
+          "cumulative_cost": 53.0,
+          "observed_steps": 49,
+          "total_steps": 53,
+          "total_updates": 49
+        }
+      },
+      "total_censored_skipped": 5,
+      "total_steps": 156,
+      "total_updates": 151,
+      "trajectory_count": 2
+    }
+  },
+  "resolved_config": {
+    "config_name": "first_per_commit",
+    "cost_config": {
+      "block_bad": 0.5,
+      "block_safe": 2.0,
+      "block_unknown": 2.0,
+      "canary_failure": 4.0,
+      "canary_success": 1.0,
+      "deploy_failure": 10.0,
+      "deploy_success": 0.0
+    },
+    "cost_sensitive_alpha": 1.0,
+    "cost_sensitive_lambda_reg": 1.0,
+    "dataset_path": "experiments/results/headline/corrected/fixtures/first_per_commit.csv",
+    "delay_step_seconds": 60,
+    "flush_at_end": true,
+    "linucb_alpha": 1.0,
+    "linucb_lambda_reg": 1.0,
+    "max_trajectories": null,
+    "min_builds": 1,
+    "min_history_days": 0,
+    "results_root": "experiments/results/headline/corrected/runs",
+    "timing_mode": "event_time"
+  },
+  "seed": 7,
+  "trajectory_count": 2,
+  "warning": "Online replay costs are simulation artefacts. CI outcome used as counterfactual proxy. Do not report as causal real-world cost estimates."
+}

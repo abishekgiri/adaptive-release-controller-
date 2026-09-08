@@ -1,0 +1,28 @@
+{
+  "review": "timing-boundary-rescue-and-pivot",
+  "verified_at": "2026-09-07T18:27:25.365215+00:00",
+  "primary_recommendation": "PATH B",
+  "v2_status": "DRAFT ONLY; not ratified or implemented",
+  "live_enforcement": "UNVERIFIED",
+  "new_repository_api_calls": 0,
+  "new_model_or_policy_runs": 0,
+  "live_repository_tests": 0,
+  "frozen_design_sha256": "71c8a3d61f377b028cc6d37116cf5900eb180b01e3d44aabbb051775d36146cb",
+  "frozen_design_integrity_errors": [],
+  "pilot_inputs_and_artifacts_unchanged": true,
+  "old_source_and_delivery_hashes_unchanged": 70,
+  "timing_reconstruction_invariants": "passed; 60 timelines, 49 job records, zero measured usable margins",
+  "document_links": "all local links resolve",
+  "files": {
+    "review/timing-boundary-review.md": "f68758b403484bb313014accff29f78685c849ad66e7af7a7aa505c7d57dce84",
+    "review/github-event-semantics.md": "947f25349eb206a452cde82982c183325bc2266a0e8d7fb98195e07c637c759f",
+    "review/enforcement-mechanisms.md": "db27471189319bbd70177cd3eac07b89acaf0ab0fde7fa6a5887f6f1d97dbbac",
+    "review/feedback-contract-reassessment.md": "afa03f1ba0682bb86104d335d6f893bbeba5987ee629fc58029182016a376e71",
+    "review/ci-design-v2-draft.md": "1f88cfbde577d80345dfcd83889845538a9ef39c19efe1404ae58f93a1af7b5c",
+    "review/timing/prospective-evidence-status.md": "a1118e2df6a93d5074f262afbf266d7830ec98dca480262d7017520f091c8c51",
+    "review/timing/reconstruct.py": "dbb04aec727d187ca653ca057e38f7d7e1137fc18738e513dace1fe149a727f4",
+    "review/timing/evidence/reconstructed-timelines.csv": "395cfdea1563b553888d0ff04815c1f7584c857f9332d73c1a259e7183470614",
+    "review/timing/evidence/timing-summary.json": "c2b21d86b1f98b9096cfb4a82fcc40b112e1890094ed96143be23d3674e3b973"
+  },
+  "reproduction_command": "python3.13 -m review.timing.reconstruct"
+}

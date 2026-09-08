@@ -38,7 +38,7 @@ class CostConfig:
     def __post_init__(self) -> None:
         for field, value in self.__dataclass_fields__.items():
             v = getattr(self, field)
-            if not isinstance(v, (int, float)) or v < 0:
+            if not isinstance(v, (int, float)) or not math.isfinite(v) or v < 0:
                 raise ValueError(
                     f"CostConfig.{field} must be a non-negative number, got {v!r}"
                 )

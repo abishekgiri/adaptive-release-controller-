@@ -1,0 +1,20 @@
+{
+  "experiment_manifest_entries_verified": 60,
+  "experiment_manifest_mismatches": [],
+  "tests": "200 passed, 3 legacy skips; review/evidence/final-tests.txt",
+  "independent_reproduction": "review/evidence/isolated-reproduction.json",
+  "fresh_dependency_install_verified": false,
+  "git_diff_check": "passed",
+  "artifact_sha256": {
+    "review/submission-review.md": "001f6c64311220761af007785654d7252795e32d7bac66eaec62e16440bc3c46",
+    "paper/source-of-truth.md": "2806d7c2c7b24abd581692e66801e600af8b1ab46603b7056a790997a77ee611",
+    "paper/adaptive-deployment-control.md": "95ee39c2aad47ca0ad02f125276fbd7a5d8d7aae3d1327d19065f161446f68f2",
+    "paper/adaptive-deployment-control.pdf": "18d5224f1585f75e91f1a8ff6630097573675d3cbcec9d152232fd53a964e809",
+    "paper/adaptive-deployment-control.docx": "9fba56510e99c1715ae08d4c640b8c44c035c64206c5af3ec320fe4322538c46",
+    "paper/supplementary/supplementary.pdf": "2937188a8c475ca5323de69aadbdec1c9ef84876bd3af905111bcacea8e63964",
+    "paper/build_corrected.py": "1119507356ff25dfc15f65de88a7e17269c1fa4bef74748994816821472b6123",
+    "paper/build_documents.sh": "7bd13f495fe6e71c1e288f3f003397eccda6380396d0455bd5ccd63643f827c0",
+    "paper/finish_docx.py": "c3e9b92b00cbce6c43f5d955d7fe8cbde8db74996c50d2dc15c4bd711f5074be",
+    "paper/finish_tex.py": "2e95bb3801467d7f15df348ae9ce29ecf98f03b49ff7b8e0a4c47191b6af86c8"
+  }
+}

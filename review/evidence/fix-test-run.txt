@@ -1,0 +1,220 @@
+.........................................F.F............................ [ 37%]
+...........................................F...FF.....F................. [ 74%]
+.....................................sss.F.......                        [100%]
+=================================== FAILURES ===================================
+____________________ test_drift_reset_refreshes_model_state ____________________
+
+    def test_drift_reset_refreshes_model_state() -> None:
+        detector = OneShotDriftDetector(threshold=5.0)
+        policy = _policy(detector=detector)
+        ctx = _ctx()
+    
+        policy.update(
+            ctx,
+            Action.DEPLOY,
+            _reward(Action.DEPLOY, cost=10.0, outcome=Outcome.FAILURE),
+        )
+    
+        np.testing.assert_array_equal(
+            policy._A[Action.DEPLOY],
+            np.eye(FeatureEncoder.DIM),
+        )
+        np.testing.assert_array_equal(
+            policy._b[Action.DEPLOY],
+            np.zeros(FeatureEncoder.DIM),
+        )
+        assert policy.stats.drift_resets == 1
+>       assert detector.reset_calls == 1
+E       assert 2 == 1
+E        +  where 2 = <tests.test_cost_sensitive_bandit.OneShotDriftDetector object at 0x10710be00>.reset_calls
+
+tests/test_cost_sensitive_bandit.py:168: AssertionError
+___________________ test_loader_yields_valid_context_objects ___________________
+
+tmp_path = PosixPath('/private/var/folders/fj/3ryvbmxj35z25r6v6z52sx_m0000gn/T/pytest-of-abishekkumargiri/pytest-47/test_loader_yields_valid_conte0')
+
+    def test_loader_yields_valid_context_objects(tmp_path):
+        csv_path = tmp_path / "travistorrent.csv"
+        _write_csv(
+            csv_path,
+            [
+                {
+                    "git_trigger_commit": "abc123",
+                    "gh_project_name": "owner/repo",
+                    "git_committed_at": "2020-01-01T00:00:00Z",
+                    "gh_files_changed": "2",
+                    "gh_lines_added": "10",
+                    "gh_lines_deleted": "3",
+                    "gh_src_churn": "13",
+                    "gh_tests_run": "42",
+                    "gh_tests_added": "1",
+                    "tr_duration": "120",
+                    "gh_is_pr": "true",
+                    "tr_status": "passed",
+                    "tr_started_at": "2020-01-01T00:01:00Z",
+                    "tr_finished_at": "2020-01-01T00:03:00Z",
+                    "git_author_email": "dev@example.com",
+                    "gh_changed_files": "requirements.txt,src/app.py",
+                },
+            ],
+        )
+    
+        records = list(
+            TravisTorrentLoader(csv_path, min_builds=1, min_history_days=0).iter_records()
+        )
+    
+        assert len(records) == 1
+        assert isinstance(records[0].context, Context)
+        assert records[0].context.commit_sha == "abc123"
+        assert records[0].context.project_slug == "owner/repo"
+        assert records[0].context.files_changed == 2
+        assert records[0].context.lines_added == 10
+        assert records[0].context.lines_deleted == 3
+        assert records[0].context.src_churn == 13
+>       assert records[0].context.tests_run == 42
+E       AssertionError: assert 0 == 42
+E        +  where 0 = Context(commit_sha='abc123', project_slug='owner/repo', step=0, files_changed=2, lines_added=10, lines_deleted=3, src_..._duration_s=0.0, author_experience=0, recent_failure_rate=0.0, has_dependency_change=True, has_risky_path_change=False).tests_run
+E        +    where Context(commit_sha='abc123', project_slug='owner/repo', step=0, files_changed=2, lines_added=10, lines_deleted=3, src_..._duration_s=0.0, author_experience=0, recent_failure_rate=0.0, has_dependency_change=True, has_risky_path_change=False) = TravisTorrentRecord(context=Context(commit_sha='abc123', project_slug='owner/repo', step=0, files_changed=2, lines_add... 1, 0, 1, tzinfo=datetime.timezone.utc), finished_at=datetime.datetime(2020, 1, 1, 0, 3, tzinfo=datetime.timezone.utc)).context
+
+tests/test_data_loader.py:74: AssertionError
+___________ TestEffectiveOutcome.test_block_censored_becomes_blocked ___________
+
+self = <tests.test_online_replay.TestEffectiveOutcome object at 0x1074b8c00>
+
+    def test_block_censored_becomes_blocked(self) -> None:
+        # BLOCK + CENSORED has no valid cost-matrix entry; must map to BLOCKED.
+>       assert _effective_outcome(Action.BLOCK, Outcome.CENSORED) == Outcome.BLOCKED
+E       AssertionError: assert <Outcome.CENSORED: 'censored'> == <Outcome.BLOCKED: 'blocked'>
+E         
+E         - blocked
+E         + censored
+
+tests/test_online_replay.py:125: AssertionError
+____________________ TestDelayFromRecord.test_ceil_applied _____________________
+
+self = <tests.test_online_replay.TestDelayFromRecord object at 0x10743d0f0>
+
+    def test_ceil_applied(self) -> None:
+        # 90s / 60s_per_step = 1.5 → ceil → 2
+        record = _make_record(0, build_duration_s=90.0)
+>       assert _delay_from_record(record, delay_step_seconds=60) == 2
+E       AssertionError: assert 1 == 2
+E        +  where 1 = _delay_from_record(TravisTorrentRecord(context=Context(commit_sha='sha0000', project_slug='test/repo', step=0, files_changed=3, lines_add... 1, 0, 0, tzinfo=datetime.timezone.utc), finished_at=datetime.datetime(2022, 1, 1, 0, 0, tzinfo=datetime.timezone.utc)), delay_step_seconds=60)
+
+tests/test_online_replay.py:143: AssertionError
+___________________ TestDelayFromRecord.test_exact_multiple ____________________
+
+self = <tests.test_online_replay.TestDelayFromRecord object at 0x10743d220>
+
+    def test_exact_multiple(self) -> None:
+        record = _make_record(0, build_duration_s=120.0)
+>       assert _delay_from_record(record, delay_step_seconds=60) == 2
+E       AssertionError: assert 1 == 2
+E        +  where 1 = _delay_from_record(TravisTorrentRecord(context=Context(commit_sha='sha0000', project_slug='test/repo', step=0, files_changed=3, lines_add... 1, 0, 0, tzinfo=datetime.timezone.utc), finished_at=datetime.datetime(2022, 1, 1, 0, 0, tzinfo=datetime.timezone.utc)), delay_step_seconds=60)
+
+tests/test_online_replay.py:147: AssertionError
+_________ TestDelayedRewardsRespected.test_update_arrives_after_delay __________
+
+self = <tests.test_online_replay.TestDelayedRewardsRespected object at 0x10740d810>
+
+    def test_update_arrives_after_delay(self) -> None:
+        policy = _linucb()
+        # Use delay=2 (build_duration_s=90, delay_step_seconds=60 → ceil(1.5)=2)
+        records = _make_records(10, build_duration_s=90.0)
+        result = run_online_trajectory(
+            policy=policy,
+            records=records,
+            cost_config=CostConfig(),
+            rng=np.random.default_rng(0),
+            flush_at_end=False,
+        )
+        # Reward from step 0 arrives at step 0+2=2 (updates_applied at step 2).
+        # Steps 0 and 1 must have 0 updates each.
+        assert result.step_records[0].updates_applied == 0
+>       assert result.step_records[1].updates_applied == 0
+E       AssertionError: assert 1 == 0
+E        +  where 1 = OnlineStepRecord(step=1, policy_action=<Action.CANARY: 'canary'>, logged_outcome=<Outcome.SUCCESS: 'success'>, effecti...ccess'>, cost=1.0, delay_steps=1, updates_applied=1, pending_count_before=1, recent_failure_rate=0.0, reveal_at_step=2).updates_applied
+
+tests/test_online_replay.py:255: AssertionError
+________________ test_mismatched_actions_contribute_zero_weight ________________
+
+    def test_mismatched_actions_contribute_zero_weight() -> None:
+        trajectory = _trajectory(
+            _step(0, Action.DEPLOY, cost=10.0, propensity=1.0),
+        )
+    
+>       result = evaluate_ips(FixedPolicy(Action.BLOCK), trajectory)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_replay_eval.py:119: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+policy = <tests.test_replay_eval.FixedPolicy object at 0x107614550>
+trajectory = Trajectory(trajectory_id='t1', project_slug='owner/repo', policy_id='logged', drift_segment_id=None, steps=(Trajectory...ction_id='a-0', outcome=<Outcome.SUCCESS: 'success'>, cost=10.0, delay_steps=1, censored=False, observed_at_step=1)),))
+config = IPSConfig(propensity_clip=20.0, allow_missing_propensity_for_deterministic=False, deterministic_default_propensity=1.0)
+
+    def evaluate_ips(
+        policy: Policy,
+        trajectory: Trajectory,
+        config: IPSConfig = IPSConfig(),
+    ) -> IPSResult:
+        """Evaluate a candidate policy with inverse propensity scoring.
+    
+        For cost minimisation, the IPS cumulative cost is:
+    
+        ``Σ_t I(a_logged = a_candidate) / p_logged * cost_t``
+    
+        Censored rewards and missing rewards are skipped consistently because their
+        operational cost is not observable.
+    
+        Args:
+            policy: Candidate policy being evaluated. The policy is not trained here.
+            trajectory: Logged trajectory with action, propensity, and reward fields.
+            config: IPS configuration including clipping and missing propensity rules.
+    
+        Returns:
+            IPSResult containing policy value, cost, matched-action count, and ESS.
+        """
+    
+        if config.propensity_clip <= 0:
+            raise ValueError("propensity_clip must be positive")
+        if config.deterministic_default_propensity <= 0:
+            raise ValueError("deterministic_default_propensity must be positive")
+    
+        # A known deterministic logger cannot identify any off-support action.
+        # Partial empirical action coverage alone is not a sufficient overlap test;
+        # this guard handles the unambiguous all-one-propensity case used by CI logs.
+        deterministic_log = all(s.propensity == 1.0 for s in trajectory.steps)
+    
+        weighted_cost = 0.0
+        matched_actions = 0
+        evaluated_steps = 0
+        skipped_censored = 0
+        skipped_missing_reward = 0
+        used_default_propensity = 0
+        weights: list[float] = []
+    
+        for step in trajectory.steps:
+            if step.reward is None:
+                skipped_missing_reward += 1
+                continue
+            if step.reward.censored or step.reward.outcome == Outcome.CENSORED:
+                skipped_censored += 1
+                continue
+    
+            evaluated_steps += 1
+            candidate_action, candidate_propensity = policy.select_action(step.context)
+            if deterministic_log and candidate_action != step.action:
+>               raise ValueError("Target action has no support under the deterministic logging policy")
+E               ValueError: Target action has no support under the deterministic logging policy
+
+evaluation/replay_eval.py:102: ValueError
+=========================== short test summary info ============================
+FAILED tests/test_cost_sensitive_bandit.py::test_drift_reset_refreshes_model_state
+FAILED tests/test_data_loader.py::test_loader_yields_valid_context_objects - ...
+FAILED tests/test_online_replay.py::TestEffectiveOutcome::test_block_censored_becomes_blocked
+FAILED tests/test_online_replay.py::TestDelayFromRecord::test_ceil_applied - ...
+FAILED tests/test_online_replay.py::TestDelayFromRecord::test_exact_multiple
+FAILED tests/test_online_replay.py::TestDelayedRewardsRespected::test_update_arrives_after_delay
+FAILED tests/test_replay_eval.py::test_mismatched_actions_contribute_zero_weight
+7 failed, 183 passed, 3 skipped in 0.31s

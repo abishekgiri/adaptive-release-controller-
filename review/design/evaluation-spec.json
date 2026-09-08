@@ -1,0 +1,192 @@
+{
+  "protocol_version": "ci-design-v1",
+  "status": "NO-GO",
+  "framing": "delayed_full_information_cost_sensitive_CI_prediction",
+  "primary_unit": [
+    "repository_id",
+    "run_id",
+    "run_attempt"
+  ],
+  "primary_attempt": 1,
+  "primary_training_and_outcome_history_attempts": [
+    1
+  ],
+  "primary_events": [
+    "push",
+    "pull_request"
+  ],
+  "decision_rule": "sealed_collector_snapshot_strictly_before_verified_attempt_start",
+  "history_ties": "decisions_before_equal_time_feedback",
+  "label_mapping": {
+    "success": 0,
+    "failure": 1,
+    "timed_out": 1
+  },
+  "other_terminal_states": "retain_nonbinary_no_training_or_loss_vector",
+  "followup_days": 30,
+  "primary_period_calendar_months": 6,
+  "cold_start_reporting_decisions": 100,
+  "evaluation_utc_start": null,
+  "evaluation_utc_end": null,
+  "actions": [
+    "deploy",
+    "canary",
+    "block"
+  ],
+  "cost_column_order": [
+    "success",
+    "failure"
+  ],
+  "cost_matrices": {
+    "primary": [
+      [
+        0,
+        10
+      ],
+      [
+        1,
+        4
+      ],
+      [
+        2,
+        0.5
+      ]
+    ],
+    "deploy_failure_5": [
+      [
+        0,
+        5
+      ],
+      [
+        1,
+        4
+      ],
+      [
+        2,
+        0.5
+      ]
+    ],
+    "deploy_failure_20": [
+      [
+        0,
+        20
+      ],
+      [
+        1,
+        4
+      ],
+      [
+        2,
+        0.5
+      ]
+    ],
+    "block_success_1": [
+      [
+        0,
+        10
+      ],
+      [
+        1,
+        4
+      ],
+      [
+        1,
+        0.5
+      ]
+    ],
+    "block_success_4": [
+      [
+        0,
+        10
+      ],
+      [
+        1,
+        4
+      ],
+      [
+        4,
+        0.5
+      ]
+    ]
+  },
+  "primary_cost_matrix": "primary",
+  "secondary_matrices_confirmatory": false,
+  "base_probability_rule": "macro_mean_resolved_failure_rate_over_development_repositories_available_before_freeze",
+  "reference_probability_thresholds": [
+    0.15,
+    0.3
+  ],
+  "max_candidates_per_family": 24,
+  "development_inner_folds": 3,
+  "validation_selection_passes": 1,
+  "tuning_objective": "macro_project_mean_normalized_cost_primary_matrix",
+  "model_families": [
+    "static_rule",
+    "constant_probability_expected_cost",
+    "empirical_rate_expected_cost",
+    "beta_rate_expected_cost",
+    "rolling_rate_expected_cost",
+    "supervised_history",
+    "supervised_context",
+    "full_information_action_loss_regression",
+    "linucb",
+    "thompson"
+  ],
+  "primary_contrasts": [
+    "same_history_probability_expected_cost_minus_fixed_threshold_mapping_cost",
+    "validation_selected_history_rate_minus_constant_probability_cost",
+    "supervised_context_minus_supervised_history_cost",
+    "supervised_context_minus_supervised_history_brier",
+    "linucb_minus_supervised_context_cost",
+    "thompson_minus_supervised_context_cost",
+    "validation_selected_history_rate_minus_supervised_context_cost"
+  ],
+  "family_alpha": 0.05,
+  "multiplicity": "Holm_across_seven_primary_contrasts",
+  "precision_planning_multiplicity": "Bonferroni_seven_contrasts_normal_approximation",
+  "planning_power": 0.8,
+  "proposed_cost_margin_normalized": 0.025,
+  "proposed_brier_margin": 0.01,
+  "margins_human_ratified": false,
+  "stochastic_seeds_future_only": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29
+  ],
+  "seed_runs_authorized_now": false,
+  "existing_projects_development_only": [
+    "pallets/flask",
+    "psf/requests"
+  ],
+  "project_registry": "project-registry.template.json",
+  "repository_assignments_complete": false,
+  "human_approval": null,
+  "simultaneous_intervals": "Bonferroni_two_sided_project_t_intervals_across_seven_primary_contrasts"
+}

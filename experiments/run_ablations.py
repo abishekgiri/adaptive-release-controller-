@@ -42,7 +42,7 @@ from policies.linucb import LinUCBConfig
 from rewards.cost_model import CostConfig, compute_cost
 
 
-DEFAULT_DATASET_PATH = Path("data/raw/travistorrent_smoke.csv")
+DEFAULT_DATASET_PATH = Path("data/fixtures/travistorrent_smoke.csv")
 DEFAULT_RESULTS_ROOT = Path("experiments/results")
 _ALPHA = 1.0
 _LAMBDA_REG = 1.0
@@ -62,22 +62,24 @@ class AblationConfig:
     linucb_alpha: float = _ALPHA
     linucb_lambda_reg: float = _LAMBDA_REG
     flush_at_end: bool = True
+    timing_mode: str = "event_time"
 
 
-def build_ablation_policies(seed: int) -> list:
+def build_ablation_policies(seed: int, config: AblationConfig | None = None) -> list:
     """Instantiate all four ablation variants."""
+    config = config or AblationConfig()
     rng = np.random.default_rng(seed)
-    lc = LinUCBConfig(alpha=_ALPHA, lambda_reg=_LAMBDA_REG)
+    lc = LinUCBConfig(alpha=config.linucb_alpha, lambda_reg=config.linucb_lambda_reg)
     cc = CostSensitiveBanditConfig(
-        alpha=_ALPHA,
-        lambda_reg=_LAMBDA_REG,
-        cost_config=CostConfig(),
+        alpha=config.linucb_alpha,
+        lambda_reg=config.linucb_lambda_reg,
+        cost_config=config.cost_config,
         reset_on_drift=True,
     )
     cc_no_drift = CostSensitiveBanditConfig(
-        alpha=_ALPHA,
-        lambda_reg=_LAMBDA_REG,
-        cost_config=CostConfig(),
+        alpha=config.linucb_alpha,
+        lambda_reg=config.linucb_lambda_reg,
+        cost_config=config.cost_config,
         reset_on_drift=False,
     )
     return [
@@ -197,12 +199,13 @@ def run_ablation_experiment(
         config.dataset_path,
         min_builds=config.min_builds,
         min_history_days=config.min_history_days,
+        timing_mode=config.timing_mode, delay_step_seconds=config.delay_step_seconds,
     )
     records_by_project: dict[str, list[TravisTorrentRecord]] = {}
     for record in loader.iter_records():
         records_by_project.setdefault(record.context.project_slug, []).append(record)
 
-    policies = build_ablation_policies(seed)
+    policies = build_ablation_policies(seed, config)
     rng = np.random.default_rng(seed)
     project_keys = sorted(records_by_project)
     project_seeds = rng.integers(0, 2**31, size=len(project_keys))
@@ -210,6 +213,7 @@ def run_ablation_experiment(
     results: dict[str, list[OnlineTrajectoryResult]] = {
         p.policy_id: [] for p in policies
     }
+    drift_resets = {p.policy_id: 0 for p in policies}
 
     for project_key, project_seed in zip(project_keys, project_seeds):
         records = records_by_project[project_key]
@@ -233,17 +237,11 @@ def run_ablation_experiment(
                     delay_step_seconds=config.delay_step_seconds,
                     trajectory_id=traj_id,
                     flush_at_end=config.flush_at_end,
+                    timing_mode=config.timing_mode,
                 )
             results[policy.policy_id].append(result)
-
-    # Capture drift_resets after all trajectories. reset() without reset_stats=True
-    # preserves _drift_resets, so this is the cumulative count across all projects.
-    drift_resets: dict[str, int] = {}
-    for policy in policies:
-        if isinstance(policy, CostSensitiveBandit):
-            drift_resets[policy.policy_id] = policy.stats.drift_resets
-        else:
-            drift_resets[policy.policy_id] = 0
+            if isinstance(policy, CostSensitiveBandit):
+                drift_resets[policy.policy_id] += policy.stats.drift_resets
 
     return results, drift_resets
 

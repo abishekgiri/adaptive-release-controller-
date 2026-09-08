@@ -1,0 +1,69 @@
+FFFF                                                                     [100%]
+=================================== FAILURES ===================================
+______________ test_overlapping_build_cannot_reveal_prior_outcome ______________
+
+tmp_path = PosixPath('/private/var/folders/fj/3ryvbmxj35z25r6v6z52sx_m0000gn/T/pytest-of-abishekkumargiri/pytest-46/test_overlapping_build_cannot_0')
+
+    def test_overlapping_build_cannot_reveal_prior_outcome(tmp_path):
+        path = tmp_path / "overlap.csv"
+        rows = [
+            dict(git_trigger_commit="a", gh_project_name="p", tr_status="failed",
+                 tr_started_at="2020-01-01T00:00:00Z", tr_finished_at="2020-01-01T01:00:00Z"),
+            dict(git_trigger_commit="b", gh_project_name="p", tr_status="passed",
+                 tr_started_at="2020-01-01T00:01:00Z", tr_finished_at="2020-01-01T00:02:00Z"),
+            dict(git_trigger_commit="c", gh_project_name="p", tr_status="passed",
+                 tr_started_at="2020-01-01T02:00:00Z", tr_finished_at="2020-01-01T02:01:00Z"),
+        ]
+        with path.open("w", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=list(rows[0]))
+            writer.writeheader()
+            writer.writerows(rows)
+        records = list(TravisTorrentLoader(path, min_builds=1, min_history_days=0))
+>       assert records[1].context.recent_failure_rate == 0.0
+E       AssertionError: assert 1.0 == 0.0
+E        +  where 1.0 = Context(commit_sha='b', project_slug='p', step=1, files_changed=0, lines_added=0, lines_deleted=0, src_churn=0, is_pr=...uration_s=60.0, author_experience=0, recent_failure_rate=1.0, has_dependency_change=False, has_risky_path_change=False).recent_failure_rate
+E        +    where Context(commit_sha='b', project_slug='p', step=1, files_changed=0, lines_added=0, lines_deleted=0, src_churn=0, is_pr=...uration_s=60.0, author_experience=0, recent_failure_rate=1.0, has_dependency_change=False, has_risky_path_change=False) = TravisTorrentRecord(context=Context(commit_sha='b', project_slug='p', step=1, files_changed=0, lines_added=0, lines_de... 1, 0, 1, tzinfo=datetime.timezone.utc), finished_at=datetime.datetime(2020, 1, 1, 0, 2, tzinfo=datetime.timezone.utc)).context
+
+tests/test_submission_regressions.py:32: AssertionError
+___________ test_constant_positive_stream_has_no_page_hinkley_alarms ___________
+
+    def test_constant_positive_stream_has_no_page_hinkley_alarms():
+        detector = PageHinkleyDetector()
+        alarms = 0
+        for _ in range(1150):
+            if detector.update(2.0):
+                alarms += 1
+                detector.reset()
+>       assert alarms == 0
+E       assert 44 == 0
+
+tests/test_submission_regressions.py:43: AssertionError
+________________ test_regret_keeps_joint_observation_alignment _________________
+
+    def test_regret_keeps_joint_observation_alignment():
+        record = EpisodeRecord("p", 0, costs=[10, math.nan, 4], oracle_costs=[1, 2, 3])
+>       np.testing.assert_allclose(cumulative_regret(record), [9, 10])
+E       AssertionError: 
+E       Not equal to tolerance rtol=1e-07, atol=0
+E       
+E       Mismatched elements: 1 / 2 (50%)
+E       Max absolute difference among violations: 1.
+E       Max relative difference among violations: 0.1
+E        ACTUAL: array([ 9., 11.])
+E        DESIRED: array([ 9, 10])
+
+tests/test_submission_regressions.py:48: AssertionError
+_______ test_ips_rejects_zero_support_instead_of_reporting_free_blocking _______
+
+    def test_ips_rejects_zero_support_instead_of_reporting_free_blocking():
+>       with pytest.raises(ValueError, match="support"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE <class 'ValueError'>
+
+tests/test_submission_regressions.py:52: Failed
+=========================== short test summary info ============================
+FAILED tests/test_submission_regressions.py::test_overlapping_build_cannot_reveal_prior_outcome
+FAILED tests/test_submission_regressions.py::test_constant_positive_stream_has_no_page_hinkley_alarms
+FAILED tests/test_submission_regressions.py::test_regret_keeps_joint_observation_alignment
+FAILED tests/test_submission_regressions.py::test_ips_rejects_zero_support_instead_of_reporting_free_blocking
+4 failed in 0.09s

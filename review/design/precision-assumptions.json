@@ -1,0 +1,94 @@
+{
+  "status": "illustrative_normal_approximation_not_a_sample_size_guarantee",
+  "units": "project paired difference in normalized cost or Brier score",
+  "normality_and_independent_project_assumptions": true,
+  "confirmatory_contrasts": 7,
+  "family_alpha": 0.05,
+  "planning_power": 0.8,
+  "real_effect_sizes_estimated": false,
+  "policy_runs_executed": false,
+  "known_sigma_assumed": true,
+  "small_sample_correction": "Required using justified variance bounds or external evidence for initial approval; development-only refinement after authorization and before evaluation access. These are optimistic lower planning approximations.",
+  "expected_binary_events": [
+    {
+      "decisions": 250,
+      "failure_probability": 0.02,
+      "expected_failures": 5.0
+    },
+    {
+      "decisions": 250,
+      "failure_probability": 0.05,
+      "expected_failures": 12.5
+    },
+    {
+      "decisions": 250,
+      "failure_probability": 0.1,
+      "expected_failures": 25.0
+    },
+    {
+      "decisions": 250,
+      "failure_probability": 0.2,
+      "expected_failures": 50.0
+    },
+    {
+      "decisions": 500,
+      "failure_probability": 0.02,
+      "expected_failures": 10.0
+    },
+    {
+      "decisions": 500,
+      "failure_probability": 0.05,
+      "expected_failures": 25.0
+    },
+    {
+      "decisions": 500,
+      "failure_probability": 0.1,
+      "expected_failures": 50.0
+    },
+    {
+      "decisions": 500,
+      "failure_probability": 0.2,
+      "expected_failures": 100.0
+    },
+    {
+      "decisions": 1000,
+      "failure_probability": 0.02,
+      "expected_failures": 20.0
+    },
+    {
+      "decisions": 1000,
+      "failure_probability": 0.05,
+      "expected_failures": 50.0
+    },
+    {
+      "decisions": 1000,
+      "failure_probability": 0.1,
+      "expected_failures": 100.0
+    },
+    {
+      "decisions": 1000,
+      "failure_probability": 0.2,
+      "expected_failures": 200.0
+    },
+    {
+      "decisions": 2000,
+      "failure_probability": 0.02,
+      "expected_failures": 40.0
+    },
+    {
+      "decisions": 2000,
+      "failure_probability": 0.05,
+      "expected_failures": 100.0
+    },
+    {
+      "decisions": 2000,
+      "failure_probability": 0.1,
+      "expected_failures": 200.0
+    },
+    {
+      "decisions": 2000,
+      "failure_probability": 0.2,
+      "expected_failures": 400.0
+    }
+  ]
+}

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import uuid
 from dataclasses import dataclass
 from typing import Optional
 
@@ -154,6 +153,8 @@ class SyntheticEnvironment(DeploymentEnvironment):
         self._hidden: HiddenState = self._sample_hidden_state(segment=0)
         # Each entry: (reveal_at_step, Reward)
         self._pending: list[tuple[int, Reward]] = []
+        self.last_action_id: str | None = None
+        self._action_sequence = 0
 
     # ------------------------------------------------------------------
     # DeploymentEnvironment interface
@@ -163,6 +164,8 @@ class SyntheticEnvironment(DeploymentEnvironment):
         """Reset environment to step 0 and return the first context."""
         self._step = 0
         self._pending = []
+        self._action_sequence = 0
+        self.last_action_id = None
         self._hidden = self._sample_hidden_state(segment=0)
         return self.observe()
 
@@ -184,8 +187,10 @@ class SyntheticEnvironment(DeploymentEnvironment):
         reveal_at = self._step + delay
         censored = delay >= self._max_delay
 
+        self.last_action_id = f"synth_{self._step}_{self._action_sequence}"
+        self._action_sequence += 1
         reward = Reward(
-            action_id=f"synth_{self._step}_{uuid.uuid4().hex[:6]}",
+            action_id=self.last_action_id,
             outcome=Outcome.CENSORED if censored else outcome,
             cost=float("nan"),   # cost_model.compute_cost() must be called by caller
             delay_steps=delay,
@@ -194,6 +199,14 @@ class SyntheticEnvironment(DeploymentEnvironment):
         )
         self._pending.append((reveal_at, reward))
         return None
+
+    def expected_action_costs(self, config) -> dict[Action, float]:
+        """Evaluation-only hidden-state oracle; never exposed to policies."""
+        from rewards.cost_model import compute_cost
+        return {a: ((1-self._hidden.true_failure_prob*_ACTION_FAILURE_MULTIPLIER[a])
+                    * compute_cost(a, Outcome.SUCCESS, config)
+                    + self._hidden.true_failure_prob*_ACTION_FAILURE_MULTIPLIER[a]
+                    * compute_cost(a, Outcome.FAILURE, config)) for a in Action}
 
     def advance_time(self) -> list[Reward]:
         """Advance the clock by one step; apply drift if segment boundary crossed.

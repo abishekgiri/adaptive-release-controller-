@@ -1,0 +1,146 @@
+{
+  "phase": "ACCESS ACQUISITION",
+  "updated_at": "2026-09-07",
+  "canonical_record": true,
+  "objective": "Obtain 2 genuinely qualifying repositories; then assess a credible path to the existing larger multi-organization study.",
+  "constraints": "No outreach without explicit approval. No scraping, experiments, model/manuscript/design changes. Existing screening criteria apply.",
+  "counts": {
+    "candidates": 5,
+    "serious_outreach_attempts": 0,
+    "qualified_responses": 0,
+    "qualified_repositories": 0,
+    "participating_organizations": 0
+  },
+  "follow_up_policy": "Dates remain null until an actual message is confirmed sent. Proposed follow-up 7–10 days after actual contact, at most one, subject to authorization. No reminders or automated messages scheduled.",
+  "history": [
+    {
+      "date": "2026-09-07",
+      "event": "INITIALIZED",
+      "detail": "Five public-evidence leads assessed and drafts prepared. No messages sent; no owner confirmations or repository screening performed."
+    }
+  ],
+  "candidates": [
+    {
+      "id": "ACQ-001",
+      "candidate": "Astral release-infrastructure owner / Ruff release maintainers",
+      "organization_project": "Astral / astral-sh/ruff",
+      "priority": "HIGH",
+      "lead_type": "operator",
+      "reason_for_contact": "Maintainer release instructions describe GitHub Actions builds followed by another team member's deployment approval before PyPI publication.",
+      "qualification_likelihood": "Plausible; strongest first operator inquiry. Exact gate/job scope, 20 approved started executions/month, natural adverse cases and passive access remain unverified.",
+      "contact_method": "Ruff GitHub Discussions, General: https://github.com/astral-sh/ruff/discussions ; ask for the release-infrastructure owner. No verified direct owner email.",
+      "sources": [
+        "https://github.com/astral-sh/ruff/blob/main/CONTRIBUTING.md",
+        "https://github.com/astral-sh/ruff/actions/runs/25183731115/workflow?pr=24581",
+        "https://github.com/astral-sh/ruff/discussions"
+      ],
+      "next_action": "User reviews ACQ-001 draft and chooses whether to authorize this one message.",
+      "research_date": "2026-09-07",
+      "date_contacted": null,
+      "response": "NOT CONTACTED",
+      "follow_up_date": null,
+      "screening_status": "NOT SCREENED — public evidence only",
+      "final_outcome": "OPEN — no qualification or participation decision",
+      "outreach_approval": "NOT GRANTED",
+      "message_sent": false,
+      "draft_reference": "first-five-candidates.md#acq-001"
+    },
+    {
+      "id": "ACQ-002",
+      "candidate": "Dask release managers",
+      "organization_project": "Dask / dask/dask (distributed is related, not an independent organization)",
+      "priority": "MEDIUM",
+      "lead_type": "operator",
+      "reason_for_contact": "Maintainer release procedure explicitly describes manual pypi approval after build, checks and smoke tests.",
+      "qualification_likelihood": "Strong documentary timing/operation fit; full qualification unknown. Activity floor and adverse-event availability may disqualify; related projects cannot be counted as independent.",
+      "contact_method": "Dask Discourse general discussion: https://dask.discourse.group/ ; ask for the current release manager, as directed by project community documentation.",
+      "sources": [
+        "https://github.com/dask/dask/blob/main/docs/release-procedure.md",
+        "https://docs.dask.org/en/stable/support.html"
+      ],
+      "next_action": "Hold draft; after first candidate, ask only current protected execution volume and willingness to discuss.",
+      "research_date": "2026-09-07",
+      "date_contacted": null,
+      "response": "NOT CONTACTED",
+      "follow_up_date": null,
+      "screening_status": "NOT SCREENED — public evidence only",
+      "final_outcome": "OPEN — no qualification or participation decision",
+      "outreach_approval": "NOT GRANTED",
+      "message_sent": false,
+      "draft_reference": "first-five-candidates.md#acq-002"
+    },
+    {
+      "id": "ACQ-003",
+      "candidate": "Lucain Pouget (@Wauplin), as a route to the release owner",
+      "organization_project": "Hugging Face / huggingface/huggingface_hub",
+      "priority": "MEDIUM",
+      "lead_type": "operator_or_owner_introduction",
+      "reason_for_contact": "Public maintainer identification and authored release-process post; workflow documents pypi required reviewers.",
+      "qualification_likelihood": "Relevant operator contact, but repository fit has material concerns: documented weekly releases, multiple publish jobs sharing pypi scope, build inside protected job, and unverified upstream CI timing. Owner confirmation required; no threshold exception.",
+      "contact_method": "Hugging Face forum profile https://discuss.huggingface.co/u/Wauplin ; direct message only if enabled and approved, otherwise appropriate Hub forum routing request. No verified email.",
+      "sources": [
+        "https://huggingface.co/blog/huggingface-hub-release-ci",
+        "https://github.com/huggingface/huggingface_hub/blob/main/.github/workflows/release.yml",
+        "https://discuss.huggingface.co/t/outside-contributions-silently-ignored-multiple-times-now/175134",
+        "https://discuss.huggingface.co/u/Wauplin"
+      ],
+      "next_action": "Hold draft; resolve volume and exact pre-publish approval scope before requesting records.",
+      "research_date": "2026-09-07",
+      "date_contacted": null,
+      "response": "NOT CONTACTED",
+      "follow_up_date": null,
+      "screening_status": "NOT SCREENED — public evidence only",
+      "final_outcome": "OPEN — no qualification or participation decision",
+      "outreach_approval": "NOT GRANTED",
+      "message_sent": false,
+      "draft_reference": "first-five-candidates.md#acq-003"
+    },
+    {
+      "id": "ACQ-004",
+      "candidate": "Michael Hilton",
+      "organization_project": "Carnegie Mellon University / no nominated repository",
+      "priority": "MEDIUM",
+      "lead_type": "research_introduction",
+      "reason_for_contact": "Professional departmental page identifies continuous-integration research; potential route to an operator introduction.",
+      "qualification_likelihood": "Unknown as repository source. No evidence he personally operates a qualifying protected release workflow or can grant data access.",
+      "contact_method": "Professional email: mhilton@cmu.edu",
+      "sources": [
+        "https://www.cs.cmu.edu/~mhilton/",
+        "https://s3d.cmu.edu/people/core-faculty/hilton-michael.html"
+      ],
+      "next_action": "Hold introduction-only draft; a positive research reply is not repository qualification.",
+      "research_date": "2026-09-07",
+      "date_contacted": null,
+      "response": "NOT CONTACTED",
+      "follow_up_date": null,
+      "screening_status": "NOT SCREENED — no repository nominated",
+      "final_outcome": "OPEN — no qualification or participation decision",
+      "outreach_approval": "NOT GRANTED",
+      "message_sent": false,
+      "draft_reference": "first-five-candidates.md#acq-004"
+    },
+    {
+      "id": "ACQ-005",
+      "candidate": "Andy Zaidman",
+      "organization_project": "TU Delft Software Engineering Research Group / no nominated repository",
+      "priority": "MEDIUM",
+      "lead_type": "research_introduction",
+      "reason_for_contact": "Professional page documents empirical software testing/evolution and CI-related research; potential operator-introduction route.",
+      "qualification_likelihood": "Unknown as repository source. No verified qualifying deployment infrastructure or participant access under his control.",
+      "contact_method": "Professional email: a.e.zaidman@tudelft.nl",
+      "sources": [
+        "https://azaidman.github.io/"
+      ],
+      "next_action": "Hold introduction-only draft; request an operator introduction, not a new research-design review.",
+      "research_date": "2026-09-07",
+      "date_contacted": null,
+      "response": "NOT CONTACTED",
+      "follow_up_date": null,
+      "screening_status": "NOT SCREENED — no repository nominated",
+      "final_outcome": "OPEN — no qualification or participation decision",
+      "outreach_approval": "NOT GRANTED",
+      "message_sent": false,
+      "draft_reference": "first-five-candidates.md#acq-005"
+    }
+  ]
+}

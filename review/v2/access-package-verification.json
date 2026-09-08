@@ -1,0 +1,29 @@
+{
+  "review": "v2-access-validation-and-engineering-preparation",
+  "verified_at": "2026-09-07T23:55:15.006181+00:00",
+  "recommendation": "SEEK ACCESS",
+  "v2_status": "UNRATIFIED",
+  "live_enforcement": "UNVERIFIED",
+  "contacts_sent": 0,
+  "new_repository_api_calls": 0,
+  "repositories_created_or_modified_for_testing": 0,
+  "model_or_policy_runs": 0,
+  "baseline_files_verified_unchanged": 235,
+  "baseline_mismatches": [],
+  "frozen_design_sha256": "71c8a3d61f377b028cc6d37116cf5900eb180b01e3d44aabbb051775d36146cb",
+  "local_document_links": "passed",
+  "workflow_example_check": "YAML parsed; manual trigger, two bounded jobs, dependency and environment scope, no external Actions; not executed",
+  "planning_arithmetic": {
+    "six_repositories_adverse_per_month": 0.96,
+    "months_for_100": 104.16666666666667
+  },
+  "files": {
+    "review/v2/recruitment-package.md": "5fcd9d7f9ccbcaffaac2a31db0a0c71f4a43fad0bf282934e371436be2569f6f",
+    "review/v2/repository-screening-checklist.md": "30d72c699bcdba0c35ea342e3e088b33f3d38f214f4da1cf901a85619e57a5c9",
+    "review/v2/owner-verification-questionnaire.md": "8aa3ee1fc6623753b7b0b734208b66e1708ec001ee4b25d366535bef48b25330",
+    "review/v2/mechanism-validation-plan.md": "49c3d74f81d8af6d68bf684f96e775d6c02c909c10f51d9fa6371284faa74d36",
+    "review/v2/prospective-observation-plan.md": "cee0e40ff5e83d9c41fce94e8569661e96ebc6c55be1170388e98990c37b4503",
+    "review/v2/data-governance-notes.md": "4f7278844d8a36b329bc9ad20e0b61375fc66b634d3b50353f686c1953ac0b81",
+    "review/v2/recruitment-stop-rule.md": "8f9ded1fdf1239fe4c83a9ecc075eac5e0a3d9ecbf63ebd017c31296712bf0c2"
+  }
+}

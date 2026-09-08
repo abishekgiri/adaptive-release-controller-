@@ -89,7 +89,7 @@ class LinUCBWithDrift(Policy):
         self._config = config
         self._feature_dim = feature_dim
         self._rng = rng
-        self._buffer = buffer or PendingRewardBuffer(
+        self._buffer = buffer if buffer is not None else PendingRewardBuffer(
             rng=rng,
             min_delay=config.min_delay,
             max_delay=config.max_delay,
@@ -184,8 +184,8 @@ class LinUCBWithDrift(Policy):
     def reset(
         self,
         *,
-        clear_pending: bool = False,
-        reset_stats: bool = False,
+        clear_pending: bool = True,
+        reset_stats: bool = True,
     ) -> None:
         """Refresh learned model state.
 
@@ -194,6 +194,8 @@ class LinUCBWithDrift(Policy):
         """
 
         self._init_arms()
+        if self._detector is not None:
+            self._detector.reset()
         if clear_pending:
             self._buffer = PendingRewardBuffer(
                 rng=self._rng,
@@ -225,10 +227,10 @@ class LinUCBWithDrift(Policy):
         return self._policy_id
 
     def _handle_drift(self) -> None:
-        self._drift_resets += 1
         if self._config.reset_on_drift:
+            self._drift_resets += 1
             self.reset(clear_pending=False, reset_stats=False)
-        if self._detector is not None:
+        elif self._detector is not None:
             self._detector.reset()
 
     def _init_arms(self) -> None:

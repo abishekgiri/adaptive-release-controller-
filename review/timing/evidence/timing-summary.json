@@ -1,0 +1,153 @@
+{
+  "actual_decision_latency": null,
+  "actual_enforcement_latency": null,
+  "actual_prospective_feature_assembly_latency": null,
+  "actual_webhook_latency": null,
+  "api_request_to_durable_receipt_s": {
+    "max": 3.164867,
+    "median": 0.5176719999999999,
+    "min": 0.363891,
+    "n": 240,
+    "p95": 2.6705319499999995
+  },
+  "by_repository": {
+    "expressjs/express": {
+      "job_margin_from_retrospective_bundle_s": {
+        "max": -503774.197982,
+        "median": -4206412.205574,
+        "min": -7177241.504677,
+        "n": 10,
+        "p95": -503800.8338285
+      },
+      "optimistic_job_margin_from_api_receipt_s": {
+        "max": -503621.704287,
+        "median": -4206246.457057,
+        "min": -7177075.075263,
+        "n": 10,
+        "p95": -503650.954287
+      },
+      "run_to_earliest_job_created_s": {
+        "max": 11.0,
+        "median": 1.0,
+        "min": 0.0,
+        "n": 10,
+        "p95": 10.549999999999999
+      },
+      "run_to_earliest_job_s": {
+        "max": 12.0,
+        "median": 3.0,
+        "min": 2.0,
+        "n": 10,
+        "p95": 12.0
+      },
+      "samples": 20
+    },
+    "pallets/flask": {
+      "job_margin_from_retrospective_bundle_s": {
+        "max": -15515.026743,
+        "median": -5541568.7679855,
+        "min": -8993636.102414,
+        "n": 20,
+        "p95": -1763170.6249947986
+      },
+      "optimistic_job_margin_from_api_receipt_s": {
+        "max": -15446.179259,
+        "median": -5541505.672773,
+        "min": -8993599.577642,
+        "n": 20,
+        "p95": -1763104.1792589987
+      },
+      "run_to_earliest_job_created_s": {
+        "max": 1.0,
+        "median": 0.0,
+        "min": 0.0,
+        "n": 20,
+        "p95": 1.0
+      },
+      "run_to_earliest_job_s": {
+        "max": 3.0,
+        "median": 2.0,
+        "min": 2.0,
+        "n": 20,
+        "p95": 3.0
+      },
+      "samples": 20
+    },
+    "psf/requests": {
+      "job_margin_from_retrospective_bundle_s": {
+        "max": -565197.418465,
+        "median": -3587405.758961,
+        "min": -6419328.902917,
+        "n": 19,
+        "p95": -1084709.6624725012
+      },
+      "optimistic_job_margin_from_api_receipt_s": {
+        "max": -565074.282283,
+        "median": -3587327.218755,
+        "min": -6419200.743917,
+        "n": 19,
+        "p95": -1084613.6822830013
+      },
+      "run_to_earliest_job_created_s": {
+        "max": 1.0,
+        "median": 1.0,
+        "min": 0.0,
+        "n": 19,
+        "p95": 1.0
+      },
+      "run_to_earliest_job_s": {
+        "max": 3.0,
+        "median": 3.0,
+        "min": 2.0,
+        "n": 19,
+        "p95": 3.0
+      },
+      "samples": 20
+    }
+  },
+  "evidence_class": "archived_api_behavior_and_local_request_latency_only",
+  "input_sha256": {
+    "acquisition-state.json": "81aa22b3addf5f3a4899fe34bd241ab5608fb8b4b4eda82169a59e0edc087293",
+    "attempt-diagnostics.json": "d83c08da507044f6f536f4b930a864bdda3cb3475c87479f27e2abe2498c419c",
+    "source-journal.jsonl": "f01ec5d7d6843e9ff50483935ad6fc5d57fca65f0c4f7287ea61f52a623d7395"
+  },
+  "job_created_field_present": 923,
+  "live_enforcement": "UNVERIFIED",
+  "permissions_from_archived_metadata": {
+    "expressjs/express": {
+      "admin": false,
+      "maintain": false,
+      "pull": true,
+      "push": false,
+      "triage": false
+    },
+    "pallets/flask": {
+      "admin": false,
+      "maintain": false,
+      "pull": true,
+      "push": false,
+      "triage": false
+    },
+    "psf/requests": {
+      "admin": false,
+      "maintain": false,
+      "pull": true,
+      "push": false,
+      "triage": false
+    }
+  },
+  "prospective_micro_pilot": "NOT RUN: user explicitly prohibited live repository enforcement testing",
+  "sampled_jobs": 923,
+  "samples": 60,
+  "scoped_first_attempts": 227,
+  "scoped_start_equals_creation": 227,
+  "usable_margin_distribution": {
+    "max": null,
+    "median": null,
+    "min": null,
+    "n": 0,
+    "p95": null
+  },
+  "with_jobs": 49,
+  "with_non_setup_step_proxy": 49
+}

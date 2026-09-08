@@ -162,42 +162,53 @@ class PageHinkleyConfig:
 
     delta: float = 0.005    # minimum amplitude of change to detect
     lambda_: float = 50.0   # detection threshold; larger → fewer false positives
-    alpha: float = 0.9999   # forgetting factor for the running mean
+    alpha: float = 0.9999   # forgetting factor for the cumulative statistic
+    min_instances: int = 30
+
+    def __post_init__(self):
+        if not 0 < self.alpha <= 1 or self.lambda_ <= 0 or self.delta < 0 or self.min_instances < 1:
+            raise ValueError("Invalid Page-Hinkley parameters")
 
 
 class PageHinkleyDetector(DriftDetector):
     """Page-Hinkley test for detecting upward shifts in a scalar stream.
 
-    Algorithm (Mouss et al. 2004):
-        Running mean m_t = alpha * m_{t-1} + (1-alpha) * x_t
-        Cumulative sum S_t = S_{t-1} + (x_t - m_t - delta)
-        M_t = min(S_0, ..., S_t)
+    Running-mean Page-Hinkley, with River's one-sided fading-CUSUM convention:
+        Running mean m_t = m_{t-1} + (x_t - m_{t-1}) / t
+        Cumulative sum S_t = alpha * S_{t-1} + (x_t - m_t - delta)
+        M_t = min(S_1, ..., S_t)
         Drift if S_t - M_t > lambda_
+    No alarm before min_instances. Auto-reset on the observation after an alarm;
+    explicit reset is also supported. This replaces the biased zero-prior EWMA.
     """
 
     def __init__(self, config: PageHinkleyConfig = PageHinkleyConfig()) -> None:
         self._config = config
         self._detected = False
         self._cum_sum: float = 0.0
-        self._min_sum: float = 0.0
+        self._min_sum: float = float("inf")
         self._mean: float = 0.0
         self._n: int = 0
 
     def update(self, value: float) -> bool:
         """Feed one observation; returns True on the step drift is first detected."""
+        if not math.isfinite(value):
+            raise ValueError("Page-Hinkley requires finite observations")
+        if self._detected:
+            self.reset()
         self._n += 1
         alpha = self._config.alpha
-        self._mean = alpha * self._mean + (1.0 - alpha) * value
-        self._cum_sum += value - self._mean - self._config.delta
+        self._mean += (value - self._mean) / self._n
+        self._cum_sum = alpha * self._cum_sum + value - self._mean - self._config.delta
         if self._cum_sum < self._min_sum:
             self._min_sum = self._cum_sum
-        self._detected = (self._cum_sum - self._min_sum) > self._config.lambda_
+        self._detected = self._n >= self._config.min_instances and (self._cum_sum - self._min_sum) > self._config.lambda_
         return self._detected
 
     def reset(self) -> None:
         self._detected = False
         self._cum_sum = 0.0
-        self._min_sum = 0.0
+        self._min_sum = float("inf")
         self._mean = 0.0
         self._n = 0
 

@@ -1,0 +1,353 @@
+{
+  "expressjs/express": {
+    "all_status_counts": {
+      "action_required": 57,
+      "cancelled": 5,
+      "failure": 46,
+      "success": 220
+    },
+    "archived": false,
+    "attempts": 328,
+    "change_identity_limitation": "head SHA is a commit proxy; PR and tested merge identities are incomplete",
+    "complete_file_inventories": 20,
+    "created_at": "2009-06-26T18:56:01Z",
+    "descriptive_binary_variance": 0.16349480968858132,
+    "distinct_runs": 303,
+    "earliest_created_at": "2026-06-15T20:29:31Z",
+    "exploratory_sha_bootstrap_95": [
+      0.11940298507462686,
+      0.3076923076923077
+    ],
+    "first_attempts": 303,
+    "first_job_minus_reported_run_start_seconds": {
+      "distribution": {
+        "12.0": 2,
+        "2.0": 3,
+        "3.0": 5
+      },
+      "max": 12.0,
+      "median": 3.0,
+      "min": 2.0,
+      "mode_fraction": 0.5,
+      "n": 10,
+      "p01": 2.0,
+      "p25": 2.25,
+      "p75": 3.0,
+      "p99": 12.0,
+      "unique": 3,
+      "variance": 14.25
+    },
+    "fork": false,
+    "git_size_kib_proxy": 9861,
+    "language": "JavaScript",
+    "largest_sha_cluster": 2,
+    "latest_created_at": "2026-09-07T16:01:25Z",
+    "new_runs_observed_during_session": 3,
+    "observations_per_workflow": {
+      "106129301": 8,
+      "109225080": 86,
+      "10933076": 97,
+      "138197155": 27,
+      "150125695": 6,
+      "84668683": 104
+    },
+    "observed_pr_numbers": 16,
+    "observed_workflows": 6,
+    "pr_attempts_without_pr_number": 212,
+    "primary_eligible": 0,
+    "repository_id": 237159,
+    "rerun_attempts": 25,
+    "resolved_binary": 68,
+    "sample_job_statuses": {
+      "cancelled": 5,
+      "success": 195
+    },
+    "sampled_changes": 20,
+    "scope_first_attempts": 94,
+    "scope_status_counts": {
+      "action_required": 23,
+      "cancelled": 3,
+      "failure": 14,
+      "success": 54
+    },
+    "scoped_failure_rate": 0.20588235294117646,
+    "scoped_observations_per_workflow": {
+      "106129301": 6,
+      "10933076": 88
+    },
+    "scoped_run_start_equals_creation": 94,
+    "scoped_unique_head_shas": 88,
+    "selected_workflows": [
+      {
+        "id": 10933076,
+        "name": "ci",
+        "path": ".github/workflows/ci.yml"
+      },
+      {
+        "id": 106129301,
+        "name": "iojs-ci",
+        "path": ".github/workflows/iojs.yml"
+      }
+    ],
+    "sha_cluster_size_distribution": {
+      "1": 82,
+      "2": 6
+    },
+    "six_month_history_evidence": {
+      "count": 715,
+      "sample_created_at": "2026-03-02T21:26:59Z",
+      "source": {
+        "api_version": "2026-03-10",
+        "endpoint": "/repos/expressjs/express/actions/runs?created=%3C%3D2026-03-08&per_page=1",
+        "method": "GET",
+        "received_at": "2026-09-07T05:54:07.832203Z",
+        "requested_at": "2026-09-07T05:54:07.251223Z",
+        "response_headers": {
+          "date": "Mon, 07 Sep 2026 05:54:07 GMT",
+          "etag": "W/\"ccba016f750dc4d52ebb26191ffe89779dbba6fcbfc685d5a6633765998f645a\"",
+          "link": "<https://api.github.com/repositories/237159/actions/runs?created=%3C%3D2026-03-08&per_page=1&page=2>; rel=\"next\", <https://api.github.com/repositories/237159/actions/runs?created=%3C%3D2026-03-08&per_page=1&page=715>; rel=\"last\"",
+          "x-github-request-id": "F9FE:E2FC:3C90BC:C4E04A:6A9E517F",
+          "x-ratelimit-remaining": "4986",
+          "x-ratelimit-reset": "1788763967"
+        },
+        "sha256": "d58ad8341248c89f04a79f81d2edfd9bafe6095be43824d51df0e76a7ccceb17",
+        "status": 200
+      }
+    },
+    "source_time_span_days": 83.81381944444445,
+    "unique_changes_exact": null,
+    "unique_head_shas": 90,
+    "verified_preexecution": 0,
+    "verified_push_diff_basis_samples": 3,
+    "workflows_listed": 8
+  },
+  "pallets/flask": {
+    "all_status_counts": {
+      "cancelled": 1,
+      "failure": 152,
+      "success": 147
+    },
+    "archived": false,
+    "attempts": 300,
+    "change_identity_limitation": "head SHA is a commit proxy; PR and tested merge identities are incomplete",
+    "complete_file_inventories": 20,
+    "created_at": "2010-04-06T11:11:59Z",
+    "descriptive_binary_variance": 0.1875,
+    "distinct_runs": 300,
+    "earliest_created_at": "2026-05-24T23:40:23Z",
+    "exploratory_sha_bootstrap_95": [
+      0.6551724137931034,
+      0.8390804597701149
+    ],
+    "first_attempts": 300,
+    "first_job_minus_reported_run_start_seconds": {
+      "distribution": {
+        "2.0": 16,
+        "3.0": 4
+      },
+      "max": 3.0,
+      "median": 2.0,
+      "min": 2.0,
+      "mode_fraction": 0.8,
+      "n": 20,
+      "p01": 2.0,
+      "p25": 2.0,
+      "p75": 2.0,
+      "p99": 3.0,
+      "unique": 2,
+      "variance": 0.16
+    },
+    "fork": false,
+    "git_size_kib_proxy": 12368,
+    "language": "Python",
+    "largest_sha_cluster": 2,
+    "latest_created_at": "2026-09-07T01:36:18Z",
+    "new_runs_observed_during_session": 0,
+    "observations_per_workflow": {
+      "115253103": 100,
+      "1367898": 89,
+      "243361684": 3,
+      "269761080": 2,
+      "3605901": 106
+    },
+    "observed_pr_numbers": 2,
+    "observed_workflows": 5,
+    "pr_attempts_without_pr_number": 161,
+    "primary_eligible": 0,
+    "repository_id": 596892,
+    "rerun_attempts": 0,
+    "resolved_binary": 88,
+    "sample_job_statuses": {
+      "failure": 34,
+      "success": 214
+    },
+    "sampled_changes": 20,
+    "scope_first_attempts": 89,
+    "scope_status_counts": {
+      "cancelled": 1,
+      "failure": 66,
+      "success": 22
+    },
+    "scoped_failure_rate": 0.75,
+    "scoped_observations_per_workflow": {
+      "1367898": 89
+    },
+    "scoped_run_start_equals_creation": 89,
+    "scoped_unique_head_shas": 87,
+    "selected_workflows": [
+      {
+        "id": 1367898,
+        "name": "Tests",
+        "path": ".github/workflows/tests.yaml"
+      }
+    ],
+    "sha_cluster_size_distribution": {
+      "1": 85,
+      "2": 2
+    },
+    "six_month_history_evidence": {
+      "count": 573,
+      "sample_created_at": "2026-03-08T23:24:20Z",
+      "source": {
+        "api_version": "2026-03-10",
+        "endpoint": "/repos/pallets/flask/actions/runs?created=%3C%3D2026-03-08&per_page=1",
+        "method": "GET",
+        "received_at": "2026-09-07T05:53:43.476827Z",
+        "requested_at": "2026-09-07T05:53:42.700125Z",
+        "response_headers": {
+          "date": "Mon, 07 Sep 2026 05:53:43 GMT",
+          "etag": "W/\"1b47dff67031d70f7b60bcbb39ca1ec174042adb8f4d17a42a4e66d0d2d36052\"",
+          "link": "<https://api.github.com/repositories/596892/actions/runs?created=%3C%3D2026-03-08&per_page=1&page=2>; rel=\"next\", <https://api.github.com/repositories/596892/actions/runs?created=%3C%3D2026-03-08&per_page=1&page=573>; rel=\"last\"",
+          "x-github-request-id": "F9DF:1C294D:47B906:E69267:6A9E5166",
+          "x-ratelimit-remaining": "4997",
+          "x-ratelimit-reset": "1788763967"
+        },
+        "sha256": "f003bbaa35b3d1bcc899d04cdb6f4232b901fb6c9519bab1bff0fd98b6d73c42",
+        "status": 200
+      }
+    },
+    "source_time_span_days": 105.08049768518518,
+    "unique_changes_exact": null,
+    "unique_head_shas": 99,
+    "verified_preexecution": 0,
+    "verified_push_diff_basis_samples": 2,
+    "workflows_listed": 9
+  },
+  "psf/requests": {
+    "all_status_counts": {
+      "action_required": 5,
+      "failure": 70,
+      "skipped": 4,
+      "success": 241
+    },
+    "archived": false,
+    "attempts": 320,
+    "change_identity_limitation": "head SHA is a commit proxy; PR and tested merge identities are incomplete",
+    "complete_file_inventories": 20,
+    "created_at": "2011-02-13T18:38:17Z",
+    "descriptive_binary_variance": 0.12006489994591671,
+    "distinct_runs": 310,
+    "earliest_created_at": "2026-06-24T22:41:21Z",
+    "exploratory_sha_bootstrap_95": [
+      0.043478260869565216,
+      0.2631578947368421
+    ],
+    "first_attempts": 310,
+    "first_job_minus_reported_run_start_seconds": {
+      "distribution": {
+        "2.0": 7,
+        "3.0": 12
+      },
+      "max": 3.0,
+      "median": 3.0,
+      "min": 2.0,
+      "mode_fraction": 0.631578947368421,
+      "n": 19,
+      "p01": 2.0,
+      "p25": 2.0,
+      "p75": 3.0,
+      "p99": 3.0,
+      "unique": 2,
+      "variance": 0.23268698060941828
+    },
+    "fork": false,
+    "git_size_kib_proxy": 13627,
+    "language": "Python",
+    "largest_sha_cluster": 2,
+    "latest_created_at": "2026-09-07T16:54:44Z",
+    "new_runs_observed_during_session": 10,
+    "observations_per_workflow": {
+      "12530612": 75,
+      "133599238": 22,
+      "247665300": 46,
+      "254573157": 31,
+      "27729629": 46,
+      "2828917": 42,
+      "309211475": 1,
+      "3526169": 50,
+      "72331353": 7
+    },
+    "observed_pr_numbers": 2,
+    "observed_workflows": 9,
+    "pr_attempts_without_pr_number": 79,
+    "primary_eligible": 0,
+    "repository_id": 1362490,
+    "rerun_attempts": 10,
+    "resolved_binary": 43,
+    "sample_job_statuses": {
+      "failure": 3,
+      "success": 472
+    },
+    "sampled_changes": 20,
+    "scope_first_attempts": 44,
+    "scope_status_counts": {
+      "action_required": 1,
+      "failure": 6,
+      "success": 37
+    },
+    "scoped_failure_rate": 0.13953488372093023,
+    "scoped_observations_per_workflow": {
+      "3526169": 44
+    },
+    "scoped_run_start_equals_creation": 44,
+    "scoped_unique_head_shas": 30,
+    "selected_workflows": [
+      {
+        "id": 3526169,
+        "name": "Tests",
+        "path": ".github/workflows/run-tests.yml"
+      }
+    ],
+    "sha_cluster_size_distribution": {
+      "1": 16,
+      "2": 14
+    },
+    "six_month_history_evidence": {
+      "count": 802,
+      "sample_created_at": "2026-03-08T23:00:41Z",
+      "source": {
+        "api_version": "2026-03-10",
+        "endpoint": "/repos/psf/requests/actions/runs?created=%3C%3D2026-03-08&per_page=1",
+        "method": "GET",
+        "received_at": "2026-09-07T05:53:53.128995Z",
+        "requested_at": "2026-09-07T05:53:52.550129Z",
+        "response_headers": {
+          "date": "Mon, 07 Sep 2026 05:53:53 GMT",
+          "etag": "W/\"8de919df262deeab4e069c3fb68422e3ee104a9a823a7902af6805506a87fc68\"",
+          "link": "<https://api.github.com/repositories/1362490/actions/runs?created=%3C%3D2026-03-08&per_page=1&page=2>; rel=\"next\", <https://api.github.com/repositories/1362490/actions/runs?created=%3C%3D2026-03-08&per_page=1&page=802>; rel=\"last\"",
+          "x-github-request-id": "F9E7:D0CA6:3F7A1F:CEDD98:6A9E5170",
+          "x-ratelimit-remaining": "4991",
+          "x-ratelimit-reset": "1788763967"
+        },
+        "sha256": "d7728fafeccf4083b5774f47c5630a9e73b149ab854a3e4ceeada8b213d619e1",
+        "status": 200
+      }
+    },
+    "source_time_span_days": 74.75929398148148,
+    "unique_changes_exact": null,
+    "unique_head_shas": 31,
+    "verified_preexecution": 0,
+    "verified_push_diff_basis_samples": 10,
+    "workflows_listed": 12
+  }
+}

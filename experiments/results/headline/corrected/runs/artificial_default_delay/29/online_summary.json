@@ -1,0 +1,519 @@
+{
+  "config_name": "artificial_default_delay",
+  "dataset_path": "data/fixtures/travistorrent_smoke.csv",
+  "dataset_sha256": "a1a0dcdc752150861bdb4b467b0e1d62f5a525e65fb7e9a94b0d50a74e39ed6a",
+  "evaluation_mode": "online_replay_simulation",
+  "policies": {
+    "always_block": {
+      "action_counts": {
+        "block": 1150,
+        "canary": 0,
+        "deploy": 0
+      },
+      "action_fractions": {
+        "block": 1.0,
+        "canary": 0.0,
+        "deploy": 0.0
+      },
+      "cumulative_cost": 1865.0,
+      "finite_steps": 1150,
+      "mean_cost_per_step": 1.6217391304347826,
+      "note": "SIMULATION: costs computed from logged CI outcome as counterfactual proxy. Not an unbiased causal estimate.",
+      "per_project": {
+        "smoke/alpha": {
+          "action_counts": {
+            "block": 600,
+            "canary": 0,
+            "deploy": 0
+          },
+          "cumulative_cost": 1054.5,
+          "observed_steps": 600,
+          "total_steps": 600,
+          "total_updates": 600
+        },
+        "smoke/beta": {
+          "action_counts": {
+            "block": 550,
+            "canary": 0,
+            "deploy": 0
+          },
+          "cumulative_cost": 810.5,
+          "observed_steps": 550,
+          "total_steps": 550,
+          "total_updates": 550
+        }
+      },
+      "total_censored_skipped": 0,
+      "total_steps": 1150,
+      "total_updates": 1150,
+      "trajectory_count": 2
+    },
+    "always_canary": {
+      "action_counts": {
+        "block": 0,
+        "canary": 1150,
+        "deploy": 0
+      },
+      "action_fractions": {
+        "block": 0.0,
+        "canary": 1.0,
+        "deploy": 0.0
+      },
+      "cumulative_cost": 2020.0,
+      "finite_steps": 1150,
+      "mean_cost_per_step": 1.7565217391304349,
+      "note": "SIMULATION: costs computed from logged CI outcome as counterfactual proxy. Not an unbiased causal estimate.",
+      "per_project": {
+        "smoke/alpha": {
+          "action_counts": {
+            "block": 0,
+            "canary": 600,
+            "deploy": 0
+          },
+          "cumulative_cost": 891.0,
+          "observed_steps": 600,
+          "total_steps": 600,
+          "total_updates": 600
+        },
+        "smoke/beta": {
+          "action_counts": {
+            "block": 0,
+            "canary": 550,
+            "deploy": 0
+          },
+          "cumulative_cost": 1129.0,
+          "observed_steps": 550,
+          "total_steps": 550,
+          "total_updates": 550
+        }
+      },
+      "total_censored_skipped": 0,
+      "total_steps": 1150,
+      "total_updates": 1150,
+      "trajectory_count": 2
+    },
+    "always_deploy": {
+      "action_counts": {
+        "block": 0,
+        "canary": 0,
+        "deploy": 1150
+      },
+      "action_fractions": {
+        "block": 0.0,
+        "canary": 0.0,
+        "deploy": 1.0
+      },
+      "cumulative_cost": 2900.0,
+      "finite_steps": 1150,
+      "mean_cost_per_step": 2.5217391304347827,
+      "note": "SIMULATION: costs computed from logged CI outcome as counterfactual proxy. Not an unbiased causal estimate.",
+      "per_project": {
+        "smoke/alpha": {
+          "action_counts": {
+            "block": 0,
+            "canary": 0,
+            "deploy": 600
+          },
+          "cumulative_cost": 970.0,
+          "observed_steps": 600,
+          "total_steps": 600,
+          "total_updates": 600
+        },
+        "smoke/beta": {
+          "action_counts": {
+            "block": 0,
+            "canary": 0,
+            "deploy": 550
+          },
+          "cumulative_cost": 1930.0,
+          "observed_steps": 550,
+          "total_steps": 550,
+          "total_updates": 550
+        }
+      },
+      "total_censored_skipped": 0,
+      "total_steps": 1150,
+      "total_updates": 1150,
+      "trajectory_count": 2
+    },
+    "bayesian_rate": {
+      "action_counts": {
+        "block": 592,
+        "canary": 552,
+        "deploy": 6
+      },
+      "action_fractions": {
+        "block": 0.5147826086956522,
+        "canary": 0.48,
+        "deploy": 0.0052173913043478265
+      },
+      "cumulative_cost": 1713.0,
+      "finite_steps": 1150,
+      "mean_cost_per_step": 1.4895652173913043,
+      "note": "SIMULATION: costs computed from logged CI outcome as counterfactual proxy. Not an unbiased causal estimate.",
+      "per_project": {
+        "smoke/alpha": {
+          "action_counts": {
+            "block": 42,
+            "canary": 552,
+            "deploy": 6
+          },
+          "cumulative_cost": 902.5,
+          "observed_steps": 600,
+          "total_steps": 600,
+          "total_updates": 600
+        },
+        "smoke/beta": {
+          "action_counts": {
+            "block": 550,
+            "canary": 0,
+            "deploy": 0
+          },
+          "cumulative_cost": 810.5,
+          "observed_steps": 550,
+          "total_steps": 550,
+          "total_updates": 550
+        }
+      },
+      "total_censored_skipped": 0,
+      "total_steps": 1150,
+      "total_updates": 1150,
+      "trajectory_count": 2
+    },
+    "cost_rule": {
+      "action_counts": {
+        "block": 556,
+        "canary": 219,
+        "deploy": 375
+      },
+      "action_fractions": {
+        "block": 0.4834782608695652,
+        "canary": 0.19043478260869565,
+        "deploy": 0.32608695652173914
+      },
+      "cumulative_cost": 2085.0,
+      "finite_steps": 1150,
+      "mean_cost_per_step": 1.8130434782608695,
+      "note": "SIMULATION: costs computed from logged CI outcome as counterfactual proxy. Not an unbiased causal estimate.",
+      "per_project": {
+        "smoke/alpha": {
+          "action_counts": {
+            "block": 155,
+            "canary": 139,
+            "deploy": 306
+          },
+          "cumulative_cost": 1033.0,
+          "observed_steps": 600,
+          "total_steps": 600,
+          "total_updates": 600
+        },
+        "smoke/beta": {
+          "action_counts": {
+            "block": 401,
+            "canary": 80,
+            "deploy": 69
+          },
+          "cumulative_cost": 1052.0,
+          "observed_steps": 550,
+          "total_steps": 550,
+          "total_updates": 550
+        }
+      },
+      "total_censored_skipped": 0,
+      "total_steps": 1150,
+      "total_updates": 1150,
+      "trajectory_count": 2
+    },
+    "heuristic_score": {
+      "action_counts": {
+        "block": 0,
+        "canary": 711,
+        "deploy": 439
+      },
+      "action_fractions": {
+        "block": 0.0,
+        "canary": 0.6182608695652174,
+        "deploy": 0.38173913043478264
+      },
+      "cumulative_cost": 2288.0,
+      "finite_steps": 1150,
+      "mean_cost_per_step": 1.9895652173913043,
+      "note": "SIMULATION: costs computed from logged CI outcome as counterfactual proxy. Not an unbiased causal estimate.",
+      "per_project": {
+        "smoke/alpha": {
+          "action_counts": {
+            "block": 0,
+            "canary": 328,
+            "deploy": 272
+          },
+          "cumulative_cost": 885.0,
+          "observed_steps": 600,
+          "total_steps": 600,
+          "total_updates": 600
+        },
+        "smoke/beta": {
+          "action_counts": {
+            "block": 0,
+            "canary": 383,
+            "deploy": 167
+          },
+          "cumulative_cost": 1403.0,
+          "observed_steps": 550,
+          "total_steps": 550,
+          "total_updates": 550
+        }
+      },
+      "total_censored_skipped": 0,
+      "total_steps": 1150,
+      "total_updates": 1150,
+      "trajectory_count": 2
+    },
+    "linucb": {
+      "action_counts": {
+        "block": 719,
+        "canary": 343,
+        "deploy": 88
+      },
+      "action_fractions": {
+        "block": 0.6252173913043478,
+        "canary": 0.2982608695652174,
+        "deploy": 0.07652173913043478
+      },
+      "cumulative_cost": 1877.5,
+      "finite_steps": 1150,
+      "mean_cost_per_step": 1.632608695652174,
+      "note": "SIMULATION: costs computed from logged CI outcome as counterfactual proxy. Not an unbiased causal estimate.",
+      "per_project": {
+        "smoke/alpha": {
+          "action_counts": {
+            "block": 241,
+            "canary": 307,
+            "deploy": 52
+          },
+          "cumulative_cost": 955.5,
+          "observed_steps": 600,
+          "total_steps": 600,
+          "total_updates": 600
+        },
+        "smoke/beta": {
+          "action_counts": {
+            "block": 478,
+            "canary": 36,
+            "deploy": 36
+          },
+          "cumulative_cost": 922.0,
+          "observed_steps": 550,
+          "total_steps": 550,
+          "total_updates": 550
+        }
+      },
+      "total_censored_skipped": 0,
+      "total_steps": 1150,
+      "total_updates": 1150,
+      "trajectory_count": 2
+    },
+    "linucb_bias_only": {
+      "action_counts": {
+        "block": 554,
+        "canary": 584,
+        "deploy": 12
+      },
+      "action_fractions": {
+        "block": 0.4817391304347826,
+        "canary": 0.5078260869565218,
+        "deploy": 0.010434782608695653
+      },
+      "cumulative_cost": 1735.0,
+      "finite_steps": 1150,
+      "mean_cost_per_step": 1.508695652173913,
+      "note": "SIMULATION: costs computed from logged CI outcome as counterfactual proxy. Not an unbiased causal estimate.",
+      "per_project": {
+        "smoke/alpha": {
+          "action_counts": {
+            "block": 26,
+            "canary": 570,
+            "deploy": 4
+          },
+          "cumulative_cost": 897.5,
+          "observed_steps": 600,
+          "total_steps": 600,
+          "total_updates": 600
+        },
+        "smoke/beta": {
+          "action_counts": {
+            "block": 528,
+            "canary": 14,
+            "deploy": 8
+          },
+          "cumulative_cost": 837.5,
+          "observed_steps": 550,
+          "total_steps": 550,
+          "total_updates": 550
+        }
+      },
+      "total_censored_skipped": 0,
+      "total_steps": 1150,
+      "total_updates": 1150,
+      "trajectory_count": 2
+    },
+    "linucb_with_drift": {
+      "action_counts": {
+        "block": 719,
+        "canary": 343,
+        "deploy": 88
+      },
+      "action_fractions": {
+        "block": 0.6252173913043478,
+        "canary": 0.2982608695652174,
+        "deploy": 0.07652173913043478
+      },
+      "cumulative_cost": 1877.5,
+      "finite_steps": 1150,
+      "mean_cost_per_step": 1.632608695652174,
+      "note": "SIMULATION: costs computed from logged CI outcome as counterfactual proxy. Not an unbiased causal estimate.",
+      "per_project": {
+        "smoke/alpha": {
+          "action_counts": {
+            "block": 241,
+            "canary": 307,
+            "deploy": 52
+          },
+          "cumulative_cost": 955.5,
+          "observed_steps": 600,
+          "total_steps": 600,
+          "total_updates": 600
+        },
+        "smoke/beta": {
+          "action_counts": {
+            "block": 478,
+            "canary": 36,
+            "deploy": 36
+          },
+          "cumulative_cost": 922.0,
+          "observed_steps": 550,
+          "total_steps": 550,
+          "total_updates": 550
+        }
+      },
+      "total_censored_skipped": 0,
+      "total_steps": 1150,
+      "total_updates": 1150,
+      "trajectory_count": 2
+    },
+    "static_rules": {
+      "action_counts": {
+        "block": 432,
+        "canary": 690,
+        "deploy": 28
+      },
+      "action_fractions": {
+        "block": 0.37565217391304345,
+        "canary": 0.6,
+        "deploy": 0.02434782608695652
+      },
+      "cumulative_cost": 1929.0,
+      "finite_steps": 1150,
+      "mean_cost_per_step": 1.6773913043478261,
+      "note": "SIMULATION: costs computed from logged CI outcome as counterfactual proxy. Not an unbiased causal estimate.",
+      "per_project": {
+        "smoke/alpha": {
+          "action_counts": {
+            "block": 94,
+            "canary": 485,
+            "deploy": 21
+          },
+          "cumulative_cost": 947.5,
+          "observed_steps": 600,
+          "total_steps": 600,
+          "total_updates": 600
+        },
+        "smoke/beta": {
+          "action_counts": {
+            "block": 338,
+            "canary": 205,
+            "deploy": 7
+          },
+          "cumulative_cost": 981.5,
+          "observed_steps": 550,
+          "total_steps": 550,
+          "total_updates": 550
+        }
+      },
+      "total_censored_skipped": 0,
+      "total_steps": 1150,
+      "total_updates": 1150,
+      "trajectory_count": 2
+    },
+    "thompson": {
+      "action_counts": {
+        "block": 923,
+        "canary": 167,
+        "deploy": 60
+      },
+      "action_fractions": {
+        "block": 0.802608695652174,
+        "canary": 0.14521739130434783,
+        "deploy": 0.05217391304347826
+      },
+      "cumulative_cost": 1967.0,
+      "finite_steps": 1150,
+      "mean_cost_per_step": 1.7104347826086956,
+      "note": "SIMULATION: costs computed from logged CI outcome as counterfactual proxy. Not an unbiased causal estimate.",
+      "per_project": {
+        "smoke/alpha": {
+          "action_counts": {
+            "block": 454,
+            "canary": 136,
+            "deploy": 10
+          },
+          "cumulative_cost": 1043.0,
+          "observed_steps": 600,
+          "total_steps": 600,
+          "total_updates": 600
+        },
+        "smoke/beta": {
+          "action_counts": {
+            "block": 469,
+            "canary": 31,
+            "deploy": 50
+          },
+          "cumulative_cost": 924.0,
+          "observed_steps": 550,
+          "total_steps": 550,
+          "total_updates": 550
+        }
+      },
+      "total_censored_skipped": 0,
+      "total_steps": 1150,
+      "total_updates": 1150,
+      "trajectory_count": 2
+    }
+  },
+  "resolved_config": {
+    "config_name": "artificial_default_delay",
+    "cost_config": {
+      "block_bad": 0.5,
+      "block_safe": 2.0,
+      "block_unknown": 2.0,
+      "canary_failure": 4.0,
+      "canary_success": 1.0,
+      "deploy_failure": 10.0,
+      "deploy_success": 0.0
+    },
+    "cost_sensitive_alpha": 1.0,
+    "cost_sensitive_lambda_reg": 1.0,
+    "dataset_path": "data/fixtures/travistorrent_smoke.csv",
+    "delay_step_seconds": 60,
+    "flush_at_end": true,
+    "linucb_alpha": 1.0,
+    "linucb_lambda_reg": 1.0,
+    "max_trajectories": null,
+    "min_builds": 500,
+    "min_history_days": 365,
+    "results_root": "experiments/results/headline/corrected/runs",
+    "timing_mode": "duration_steps"
+  },
+  "seed": 29,
+  "trajectory_count": 2,
+  "warning": "Online replay costs are simulation artefacts. CI outcome used as counterfactual proxy. Do not report as causal real-world cost estimates."
+}

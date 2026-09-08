@@ -65,12 +65,10 @@ def mean_operational_cost(costs_or_record: Iterable[float] | EpisodeRecord) -> f
 def cumulative_regret(record: EpisodeRecord) -> np.ndarray:
     """Return cumulative regret against oracle costs."""
 
-    costs = valid_costs(record.costs)
-    oracle = valid_costs(record.oracle_costs)
-    length = min(len(costs), len(oracle))
-    if length == 0:
-        return np.array([], dtype=np.float64)
-    return np.cumsum(np.array(costs[:length]) - np.array(oracle[:length]))
+    if len(record.costs) != len(record.oracle_costs):
+        raise ValueError("Cost and oracle arrays must align by decision")
+    return np.cumsum([c - o for c, o in zip(record.costs, record.oracle_costs)
+                      if math.isfinite(c) and math.isfinite(o)])
 
 
 def best_in_hindsight_regret(

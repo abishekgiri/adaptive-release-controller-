@@ -1,0 +1,55 @@
+% Supplementary material — Appendix B (Experiment Reproducibility)
+% Extracted from adaptive-deployment-control.tex for the 10-page main-paper limit.
+\documentclass[10pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{fancyvrb,framed}
+\newenvironment{Shaded}{\begin{framed}}{\end{framed}}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+\providecommand{\NormalTok}[1]{#1}
+\providecommand{\KeywordTok}[1]{\textbf{#1}}
+\providecommand{\CommentTok}[1]{\textit{#1}}
+\providecommand{\StringTok}[1]{#1}
+\providecommand{\tightlist}{\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\begin{document}
+\section{Appendix B: Experiment
+Reproducibility}\label{appendix-b-experiment-reproducibility}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Main online replay (includes Thompson Sampling)}
+\ControlFlowTok{for}\NormalTok{ seed }\KeywordTok{in}\NormalTok{ 0 1 2 3 4}\KeywordTok{;} \ControlFlowTok{do}
+    \ExtensionTok{python} \AttributeTok{{-}m}\NormalTok{ experiments.run\_bandits }\DataTypeTok{\textbackslash{}}
+        \AttributeTok{{-}{-}config}\NormalTok{ experiments/configs/online\_smoke.json }\DataTypeTok{\textbackslash{}}
+        \AttributeTok{{-}{-}seed} \VariableTok{$seed}
+\ControlFlowTok{done}
+
+\CommentTok{\# Real{-}data sanity check (requires data/raw/github\_actions\_real.csv)}
+\ControlFlowTok{for}\NormalTok{ seed }\KeywordTok{in}\NormalTok{ 0 1 2 3 4}\KeywordTok{;} \ControlFlowTok{do}
+    \ExtensionTok{python} \AttributeTok{{-}m}\NormalTok{ experiments.run\_bandits }\DataTypeTok{\textbackslash{}}
+        \AttributeTok{{-}{-}config}\NormalTok{ experiments/configs/real\_github\_actions.json }\DataTypeTok{\textbackslash{}}
+        \AttributeTok{{-}{-}seed} \VariableTok{$seed}
+\ControlFlowTok{done}
+
+\CommentTok{\# Robustness sweep}
+\ExtensionTok{python} \AttributeTok{{-}m}\NormalTok{ experiments.run\_robustness }\DataTypeTok{\textbackslash{}}
+    \AttributeTok{{-}{-}configs}\NormalTok{ experiments/configs/online\_smoke.json }\DataTypeTok{\textbackslash{}}
+\NormalTok{              experiments/configs/robustness\_high\_failure.json }\DataTypeTok{\textbackslash{}}
+\NormalTok{              experiments/configs/robustness\_low\_block.json }\DataTypeTok{\textbackslash{}}
+\NormalTok{              experiments/configs/robustness\_short\_delay.json }\DataTypeTok{\textbackslash{}}
+\NormalTok{              experiments/configs/robustness\_long\_delay.json }\DataTypeTok{\textbackslash{}}
+    \AttributeTok{{-}{-}seeds}\NormalTok{ 0 1 2 3 4}
+
+\CommentTok{\# Ablation study}
+\ControlFlowTok{for}\NormalTok{ seed }\KeywordTok{in}\NormalTok{ 0 1 2 3 4}\KeywordTok{;} \ControlFlowTok{do}
+    \ExtensionTok{python} \AttributeTok{{-}m}\NormalTok{ experiments.run\_ablations }\AttributeTok{{-}{-}seed} \VariableTok{$seed}
+\ControlFlowTok{done}
+\end{Highlighting}
+\end{Shaded}
+
+Results are written to \texttt{experiments/results/} (gitignored). The
+smoke dataset is at \texttt{data/raw/travistorrent\_smoke.csv}
+(gitignored). All policy implementations, evaluation runners, and config
+files are tracked in version control.
+
+
+\end{document}

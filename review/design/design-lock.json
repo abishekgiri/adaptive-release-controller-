@@ -1,0 +1,42 @@
+{
+  "created_at": "2026-09-07T05:45:59.467764+00:00",
+  "files": {
+    "data/research_contract.py": "6de6ea53bfc8d8b7bcbf28ca41d50238f13b904689a5f7dc218816bd887a595e",
+    "review/automated-invariants.md": "d0002cef0694087a10a7432324c6817c7c77fd70e0923caeeb581790df22edc3",
+    "review/data-collection-plan.md": "8f27f78d27df91b5a9afa13b0510cfa30d8ebcf934d28c1033526e4b6d0be94f",
+    "review/decision-feedback-contract.md": "601261afd49c2c00c2cf338619e8bbfcff6dcdb5a8a95c45fbc675b53358c39b",
+    "review/design/README.md": "4f8e4a7c2b35815f061c1218b7d59c1c38ef460c0fc4e2edeb8f05248e13f967",
+    "review/design/dataset-schema.sql": "8cc6bbc339f3bb78635ed98a0f223bbff75b54e85ad23585f50df621c8bbd469",
+    "review/design/evaluation-spec.json": "0b7fe87d6df6ec29ff532d08a3dfc44aac61b5c52ab2273c567c581693db3938",
+    "review/design/precision-assumptions.json": "7ecfd627ff7615f5a6932cbb41a85e2f924b831f2aa5d77be3108dfb8a0f0306",
+    "review/design/precision-sensitivity.csv": "6708b63003efff8856604e373ae70e55569a22f7a93ea861391b3f8ba8ff8552",
+    "review/design/project-registry.template.json": "851b2290512f25a8df5e6439451ad3460e3549006b5fbe0037b2f8a62bf4076e",
+    "review/design_gate.py": "5d1979aa677b65686b95221f8791a2436be2c3fc9c740bc926f6789e785728f1",
+    "review/design_precision.py": "11e83588e4e67e7726b605e12019238411a1abee70c9c8ac30847641f3948d72",
+    "review/evaluation-protocol.md": "e3e9ed56f55e66c20a52fdee68440741278c48f7992c7b16bc46e2d809b97675",
+    "review/evidence/research-design-data-audit.json": "83483af25961d5b5cd625ed17cc6a269554fd15f24e79c5aae22b6421c8f4e78",
+    "review/feature-specification.md": "e38cedd14222a5ce800bffb2320cb43fdacba0b3350781f5703fba10bebe3ba9",
+    "review/leakage-checklist.md": "21600f720ded02dbc881c5ee467089f152f73f28d04a748b5f0db80eb5a77457",
+    "review/normalized-dataset-schema.md": "5eb536ce560fd82f7d911f9da8a02888860ca7056233c77f1727b959eaeb66c0",
+    "review/project-selection-protocol.md": "2f9412e48301db9fe03a906cec18aa102cec457bd86017cd9bef275475e67dd9",
+    "review/reproducibility-checklist.md": "c1395c6ca284af7cb2515347a67584e219ab405df927ce6618d313cbeea29f7c",
+    "review/research-design-review.md": "27b2096c42487b74c63f19298bf07d4593431e43e3da845798720325eef7e269",
+    "review/unresolved-design-decisions.md": "3b23c523468f40f8fcd2737c306d97d8b43664b03f4cf79deaa1dc51ee19153e",
+    "tests/test_design_gate.py": "55d663ee052a02be427f0951040c78d756eba4ce0ee9d4327f0a33a9e083f962",
+    "tests/test_research_contract.py": "7ba7d5d5426e72ad7b7d3bdf15b4352234e869a08f96e813e3442aed6880b525"
+  },
+  "go_evidence": {
+    "collection_pilot": null,
+    "fresh_environment": null,
+    "holdout_governance": null,
+    "precision_plan": null,
+    "project_frame_and_splits": null,
+    "runner_integration": null,
+    "source_lineage_integration": null
+  },
+  "human_approval": null,
+  "note": "Local integrity snapshot, not external preregistration or execution approval.",
+  "snapshot_sha256": "71c8a3d61f377b028cc6d37116cf5900eb180b01e3d44aabbb051775d36146cb",
+  "status": "NO-GO",
+  "version": "ci-design-v1"
+}

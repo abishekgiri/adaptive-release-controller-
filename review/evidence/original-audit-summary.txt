@@ -1,0 +1,146 @@
+{
+  "revision": "a437abf7ecd51e1e9da50834c72b56628e33c697",
+  "real": {
+    "sha256": "fa2b3d5fc04bdfa195afc59779d68ec4cf74173168205c4784eec86a3225e582",
+    "rows": 600,
+    "identical_duplicate_rows": 25,
+    "projects": {
+      "pallets/flask": {
+        "n": 300,
+        "unique_commits": 103,
+        "outcomes": {
+          "success": 225,
+          "failure": 70,
+          "censored": 5
+        },
+        "overlapping_decisions": 21,
+        "feature_rank": 5,
+        "variable_dimensions": [
+          4,
+          7,
+          8,
+          9
+        ],
+        "first": "2026-01-25 02:59:21+00:00",
+        "last": "2026-05-05 00:25:30+00:00"
+      },
+      "psf/requests": {
+        "n": 300,
+        "unique_commits": 53,
+        "outcomes": {
+          "success": 267,
+          "failure": 16,
+          "censored": 17
+        },
+        "overlapping_decisions": 108,
+        "feature_rank": 5,
+        "variable_dimensions": [
+          4,
+          7,
+          8,
+          9
+        ],
+        "first": "2026-04-14 17:26:50+00:00",
+        "last": "2026-05-05 14:05:27+00:00"
+      }
+    }
+  },
+  "smoke": {
+    "sha256": "a1a0dcdc752150861bdb4b467b0e1d62f5a525e65fb7e9a94b0d50a74e39ed6a",
+    "rows": 1150,
+    "identical_duplicate_rows": 0,
+    "projects": {
+      "smoke/alpha": {
+        "n": 600,
+        "unique_commits": 600,
+        "outcomes": {
+          "success": 503,
+          "failure": 97
+        },
+        "overlapping_decisions": 0,
+        "feature_rank": 11,
+        "variable_dimensions": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ],
+        "first": "2020-01-01 00:00:00+00:00",
+        "last": "2021-08-16 19:26:29+00:00"
+      },
+      "smoke/beta": {
+        "n": 550,
+        "unique_commits": 550,
+        "outcomes": {
+          "success": 357,
+          "failure": 193
+        },
+        "overlapping_decisions": 0,
+        "feature_rank": 11,
+        "variable_dimensions": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ],
+        "first": "2020-01-01 00:00:00+00:00",
+        "last": "2021-06-30 00:41:45+00:00"
+      }
+    }
+  },
+  "real_thompson": {
+    "costs": [
+      445.5,
+      520.0,
+      649.5,
+      631.5,
+      680.0,
+      635.0,
+      672.5,
+      601.0,
+      637.5,
+      666.0,
+      679.0,
+      667.0,
+      519.0,
+      677.0,
+      630.5,
+      606.5,
+      474.0,
+      637.0,
+      681.0,
+      661.5,
+      518.5,
+      653.0,
+      669.0,
+      626.5,
+      572.0,
+      723.0,
+      685.0,
+      524.5,
+      658.0,
+      725.5
+    ],
+    "mean": 624.2,
+    "sample_sd": 71.78411119941275,
+    "ci": [
+      624.2,
+      598.1829166666666,
+      648.4166666666666
+    ],
+    "p_vs_linucb": 0.00039996000399960006,
+    "p_vs_static": 0.11588841115888411
+  }
+}

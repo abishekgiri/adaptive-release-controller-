@@ -1,0 +1,17 @@
+Command: /usr/local/bin/python3.13 -m review.design_gate
+Expected and actual exit code: 2
+NO-GO: policy experiments must not run.
+- design status is NO-GO
+- no human approval bound to this snapshot
+- specification does not authorize policy execution
+- meaningful margins are not ratified
+- repository assignments are incomplete
+- fixed evaluation dates are missing
+- invalid/unassigned project registry: stable repository and family identity required
+- unverified GO gate: collection_pilot
+- unverified GO gate: source_lineage_integration
+- unverified GO gate: project_frame_and_splits
+- unverified GO gate: precision_plan
+- unverified GO gate: runner_integration
+- unverified GO gate: fresh_environment
+- unverified GO gate: holdout_governance

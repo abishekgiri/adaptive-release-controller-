@@ -1,0 +1,74 @@
+% Master file for the supplementary material.
+% Compiles appendix_a/b, threats_extended, setup_tables, and diagnostic_tables
+% into a single supplementary.pdf. The individual files remain standalone;
+% this master \input's them with the standalone package absorbing their preambles.
+\documentclass[conference]{IEEEtran}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{booktabs,array,longtable,multirow}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{fancyvrb,framed}
+\usepackage{standalone}
+
+% Layout / list helper shared by the subfiles
+\providecommand{\tightlist}{\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+
+% pandoc code-highlighting environments + token macros (needed by appendix_b)
+\newenvironment{Shaded}{\begin{framed}}{\end{framed}}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+\providecommand{\KeywordTok}[1]{\textbf{#1}}
+\providecommand{\StringTok}[1]{#1}
+\providecommand{\CommentTok}[1]{\textit{#1}}
+\providecommand{\OtherTok}[1]{#1}
+\providecommand{\NormalTok}[1]{#1}
+\providecommand{\DataTypeTok}[1]{#1}
+\providecommand{\DecValTok}[1]{#1}
+\providecommand{\BaseNTok}[1]{#1}
+\providecommand{\FloatTok}[1]{#1}
+\providecommand{\ConstantTok}[1]{#1}
+\providecommand{\CharTok}[1]{#1}
+\providecommand{\SpecialCharTok}[1]{#1}
+\providecommand{\VerbatimStringTok}[1]{#1}
+\providecommand{\SpecialStringTok}[1]{#1}
+\providecommand{\ImportTok}[1]{#1}
+\providecommand{\DocumentationTok}[1]{\textit{#1}}
+\providecommand{\AnnotationTok}[1]{\textit{#1}}
+\providecommand{\CommentVarTok}[1]{\textit{#1}}
+\providecommand{\VariableTok}[1]{#1}
+\providecommand{\ControlFlowTok}[1]{\textbf{#1}}
+\providecommand{\OperatorTok}[1]{#1}
+\providecommand{\BuiltInTok}[1]{#1}
+\providecommand{\ExtensionTok}[1]{#1}
+\providecommand{\PreprocessorTok}[1]{#1}
+\providecommand{\AttributeTok}[1]{#1}
+\providecommand{\RegionMarkerTok}[1]{#1}
+\providecommand{\InformationTok}[1]{\textit{#1}}
+\providecommand{\WarningTok}[1]{\textbf{\textit{#1}}}
+\providecommand{\AlertTok}[1]{\textbf{#1}}
+\providecommand{\ErrorTok}[1]{\textbf{#1}}
+\providecommand{\FunctionTok}[1]{#1}
+
+\title{Supplementary Material for\\
+Continuous Deployment as Cost-Sensitive Decision-Making:\\
+When Contextual Bandits Outperform Static Rules and When They Don't}
+\author{\IEEEauthorblockN{Abishek Kumar Giri}\IEEEauthorblockA{Stockton University}}
+
+\begin{document}
+\maketitle
+
+This document collects the supplementary material accompanying the main
+paper. It contains the per-claim validity classification (Appendix A),
+reproducibility instructions (Appendix B), extended threats to validity,
+and the apparatus and diagnostic tables (S1--S11) referenced from the
+main text. It is not self-contained and should be read alongside the
+main paper.
+
+\input{appendix_a.tex}
+\input{threats_extended.tex}
+\input{setup_tables.tex}
+\input{diagnostic_tables.tex}
+\input{appendix_b.tex}
+
+\end{document}

@@ -1,6 +1,6 @@
 {
   "config_name": "real_github_actions",
-  "dataset_path": "data/raw/github_actions_real.csv",
+  "dataset_path": "data/fixtures/github_actions_real.csv",
   "results_root": "experiments/results",
   "min_builds": 100,
   "min_history_days": 0,
@@ -17,5 +17,6 @@
     "block_safe": 2.0,
     "block_bad": 0.5,
     "block_unknown": 2.0
-  }
+  },
+  "timing_mode": "event_time"
 }

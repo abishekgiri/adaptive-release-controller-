@@ -113,7 +113,7 @@ def test_ips_matches_logged_policy_when_actions_match() -> None:
 
 def test_mismatched_actions_contribute_zero_weight() -> None:
     trajectory = _trajectory(
-        _step(0, Action.DEPLOY, cost=10.0, propensity=1.0),
+        _step(0, Action.DEPLOY, cost=10.0, propensity=0.5),
     )
 
     result = evaluate_ips(FixedPolicy(Action.BLOCK), trajectory)

@@ -1,6 +1,6 @@
 {
   "config_name": "robustness_low_block",
-  "dataset_path": "data/raw/travistorrent_smoke.csv",
+  "dataset_path": "data/fixtures/travistorrent_smoke.csv",
   "results_root": "experiments/results",
   "min_builds": 500,
   "min_history_days": 365,
@@ -17,5 +17,6 @@
     "block_safe": 1.0,
     "block_bad": 0.5,
     "block_unknown": 1.0
-  }
+  },
+  "timing_mode": "event_time"
 }
