@@ -20,6 +20,8 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import hashlib
+import gzip
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
@@ -38,6 +40,8 @@ from policies.linucb import LinUCBConfig, LinUCBPolicy
 from policies.static_rules import StaticRulesPolicy
 from policies.thompson import ThompsonConfig, ThompsonSamplingPolicy
 from rewards.cost_model import CostConfig
+from policies.cost_rules import ExpectedCostRule, BayesianRateRule, ConstantActionPolicy, BiasOnlyEncoder
+from data.schemas import Action
 
 
 DEFAULT_CONFIG_PATH = Path("experiments/configs/first_real_result.json")
@@ -61,6 +65,7 @@ class OnlineExperimentConfig:
     cost_sensitive_alpha: float = 1.0
     cost_sensitive_lambda_reg: float = 1.0
     flush_at_end: bool = True
+    timing_mode: str = "event_time"
 
 
 def load_config(path: str | Path) -> OnlineExperimentConfig:
@@ -81,6 +86,8 @@ def load_config(path: str | Path) -> OnlineExperimentConfig:
         linucb_lambda_reg=float(payload.get("linucb_lambda_reg", 1.0)),
         cost_sensitive_alpha=float(payload.get("cost_sensitive_alpha", 1.0)),
         cost_sensitive_lambda_reg=float(payload.get("cost_sensitive_lambda_reg", 1.0)),
+        flush_at_end=bool(payload.get("flush_at_end", True)),
+        timing_mode=str(payload.get("timing_mode", "event_time")),
     )
 
 
@@ -92,6 +99,7 @@ def load_records_by_project(
         config.dataset_path,
         min_builds=config.min_builds,
         min_history_days=config.min_history_days,
+        timing_mode=config.timing_mode, delay_step_seconds=config.delay_step_seconds,
     )
     records_by_project: dict[str, list[TravisTorrentRecord]] = {}
     for record in loader.iter_records():
@@ -108,6 +116,11 @@ def build_policies(config: OnlineExperimentConfig, seed: int) -> list:
     """Instantiate all policies for an online-replay run."""
     rng = np.random.default_rng(seed)
     return [
+        ExpectedCostRule(config.cost_config),
+        BayesianRateRule(config.cost_config),
+        *[ConstantActionPolicy(a) for a in Action],
+        LinUCBPolicy(LinUCBConfig(config.linucb_alpha, config.linucb_lambda_reg), 1,
+                     np.random.default_rng(seed), encoder=BiasOnlyEncoder(), policy_id="linucb_bias_only"),
         StaticRulesPolicy(policy_id="static_rules"),
         HeuristicScorePolicy(policy_id="heuristic_score"),
         LinUCBPolicy(
@@ -151,6 +164,7 @@ def run_experiment(config: OnlineExperimentConfig, seed: int) -> dict[str, Any]:
         rng=rng,
         delay_step_seconds=config.delay_step_seconds,
         flush_at_end=config.flush_at_end,
+        timing_mode=config.timing_mode,
     )
 
     summary = build_summary(config=config, seed=seed, results=all_results)
@@ -194,6 +208,12 @@ def build_summary(
                 "SIMULATION: costs computed from logged CI outcome as counterfactual proxy. "
                 "Not an unbiased causal estimate."
             ),
+            "per_project": {r.project_slug: {
+                "cumulative_cost": r.cumulative_cost, "total_steps": r.total_steps,
+                "observed_steps": r.total_steps-r.total_censored_skipped,
+                "action_counts": r.action_counts, "total_updates": r.total_updates,
+                "trace": [{**asdict(s), "cost": s.cost if math.isfinite(s.cost) else None} for s in r.step_records],
+            } for r in trajectory_results},
         }
 
     return {
@@ -206,6 +226,8 @@ def build_summary(
         ),
         "seed": seed,
         "dataset_path": str(config.dataset_path),
+        "dataset_sha256": hashlib.sha256(config.dataset_path.read_bytes()).hexdigest(),
+        "resolved_config": {**asdict(config), "dataset_path": str(config.dataset_path), "results_root": str(config.results_root)},
         "trajectory_count": len(records_by_project_count(results)),
         "policies": policies_summary,
     }
@@ -250,6 +272,10 @@ def write_results(
     """Write JSON and Markdown results under experiments/results/<config>/<seed>/."""
     output_dir = config.results_root / config.config_name / str(seed)
     output_dir.mkdir(parents=True, exist_ok=True)
+    for pid, result in summary["policies"].items():
+        traces = {project: data.pop("trace") for project, data in result["per_project"].items()}
+        (output_dir / f"traces_{pid}.json.gz").write_bytes(
+            gzip.compress(json.dumps(traces, separators=(",", ":")).encode(), mtime=0))
     (output_dir / "online_summary.json").write_text(
         json.dumps(summary, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",

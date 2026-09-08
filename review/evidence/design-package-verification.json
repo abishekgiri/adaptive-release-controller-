@@ -1,0 +1,17 @@
+{
+  "relative_document_links": "all resolve",
+  "feature_definitions_covered": 30,
+  "previous_experiment_manifest_entries_unchanged": 60,
+  "previous_delivery_artifacts_unchanged": 10,
+  "mismatches": [],
+  "focused_tests_passed": 51,
+  "new_policy_experiments_executed": 0,
+  "new_data_collection_executed": false,
+  "manuscript_rewritten_this_phase": false,
+  "snapshot_sha256": "71c8a3d61f377b028cc6d37116cf5900eb180b01e3d44aabbb051775d36146cb",
+  "frozen_assets": 23,
+  "snapshot_integrity_errors": [],
+  "gate_expected_exit_code": 2,
+  "gate_actual_exit_code": 2,
+  "git_diff_check": "passed"
+}

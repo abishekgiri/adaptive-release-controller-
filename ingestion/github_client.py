@@ -107,7 +107,7 @@ class GitHubClient:
         page = 1
         while len(commits) < limit:
             batch = self.list_commits(
-                per_page=min(limit - len(commits), 100),
+                per_page=min(limit, 100),
                 page=page,
                 branch=branch,
             )
@@ -128,7 +128,7 @@ class GitHubClient:
         page = 1
         while len(runs) < limit:
             batch = self.list_workflow_runs(
-                per_page=min(limit - len(runs), 100),
+                per_page=min(limit, 100),
                 page=page,
                 branch=branch,
             )

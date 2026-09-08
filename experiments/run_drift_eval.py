@@ -27,7 +27,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 from pathlib import Path
 from typing import Any
 
@@ -52,6 +52,7 @@ from rewards.cost_model import CostConfig, compute_cost, oracle_cost as _oracle_
 DEFAULT_RESULTS_ROOT = Path("experiments/results/drift_eval")
 N_BOOTSTRAP = 10_000
 BOOTSTRAP_SEED = 42
+CALIBRATED_THRESHOLD = None
 N_GRADUAL_SEGMENTS = 25  # approximation granularity for gradual drift
 
 
@@ -121,6 +122,43 @@ DRIFT_SCHEDULES: dict[str, Any] = {
 # Policy factory
 # ---------------------------------------------------------------------------
 
+class MomentRatePolicy:
+    """Scalar failure-rate control for this simulator's known canary multiplier.
+
+    A method-of-moments estimate, not a conjugate Bayesian posterior. Assumes
+    delayed labels are also available for blocked changes, as the simulator does.
+    """
+    policy_id = "moment_rate"
+
+    def __init__(self, config, window=None):
+        self.window = window
+        if window is not None:
+            self.policy_id = f"moment_rate_window_{window}"
+        self.config = config
+        self.reset()
+
+    def reset(self):
+        self.failures, self.exposure = 1., 2.
+        self.history = []
+
+    def select_action(self, context):
+        p = min(1., self.failures / self.exposure)
+        values = {a: (1-p*(.4 if a == Action.CANARY else 1))*compute_cost(a,Outcome.SUCCESS,self.config)
+                  +p*(.4 if a == Action.CANARY else 1)*compute_cost(a,Outcome.FAILURE,self.config) for a in Action}
+        return min(values,key=values.get), 1.
+
+    def update(self, context, action, reward):
+        if not reward.censored and math.isfinite(reward.cost):
+            self.failures += reward.outcome == Outcome.FAILURE
+            exposure = .4 if action == Action.CANARY else 1.
+            self.exposure += exposure
+            self.history.append((reward.outcome == Outcome.FAILURE, exposure))
+            if self.window is not None and len(self.history) > self.window:
+                failure, exposure = self.history.pop(0)
+                self.failures -= failure
+                self.exposure -= exposure
+
+
 def build_policies(seed: int, cost_config: CostConfig) -> list:
     """Instantiate all policies for one seed."""
     lc = LinUCBConfig(alpha=1.0, lambda_reg=1.0)
@@ -136,8 +174,16 @@ def build_policies(seed: int, cost_config: CostConfig) -> list:
         cost_config=cost_config,
         reset_on_drift=False,
     )
+    from policies.cost_rules import ConstantActionPolicy
     dim = FeatureEncoder.DIM
     return [
+        *[ConstantActionPolicy(a) for a in Action],
+        MomentRatePolicy(cost_config),
+        MomentRatePolicy(cost_config,50),
+        MomentRatePolicy(cost_config,100),
+        *([CostSensitiveBandit(config=cc,feature_dim=dim,rng=np.random.default_rng(seed),
+            detector=PageHinkleyDetector(PageHinkleyConfig(lambda_=CALIBRATED_THRESHOLD)),
+            policy_id="linucb_with_drift_calibrated")] if CALIBRATED_THRESHOLD is not None else []),
         StaticRulesPolicy(policy_id="static_rules"),
         HeuristicScorePolicy(policy_id="heuristic_score"),
         LinUCBPolicy(config=lc, feature_dim=dim, rng=np.random.default_rng(seed), policy_id="linucb"),
@@ -175,8 +221,8 @@ class DriftTrajectoryResult:
     total_censored: int
     action_counts: dict[str, int]
     drift_resets: int  # only non-zero for LinUCBWithDrift with reset_on_drift=True
-    step_costs: list[float] = field(default_factory=list)    # cost at each reveal step
-    step_regrets: list[float] = field(default_factory=list)  # regret at each reveal step
+    step_costs: list[float] = field(default_factory=list)    # cost at each decision step
+    step_regrets: list[float] = field(default_factory=list)  # expected regret at each decision step
 
 
 def run_drift_trajectory(
@@ -188,111 +234,60 @@ def run_drift_trajectory(
     delay_p: float = 0.3,
     max_delay: int = 20,
 ) -> DriftTrajectoryResult:
-    """Run one policy × drift_mode × seed trajectory.
+    """Evaluate decisions 0..T-1 using current context and a hidden-state oracle.
 
-    Regret uses the realized-empirical approach (§7): after each delayed reward
-    matures, regret += compute_cost(policy_action, outcome) - oracle_cost(outcome)
-    where oracle_cost(outcome) is the minimum cost achievable given the outcome.
-    This is post-hoc and unbiased once outcomes are revealed.
+    Report expected pseudo-regret on the decision axis. Realized costs are
+    attributed to their originating decision, including feedback after T.
+    Terminal flushing affects evaluation only, not the policy or reset counts.
     """
-    schedule_factory = DRIFT_SCHEDULES[drift_mode]
-    schedule = schedule_factory(horizon)
-
-    env = SyntheticEnvironment(
-        rng=np.random.default_rng(seed),
-        horizon=horizon,
-        drift_schedule=schedule,
-        delay_p=delay_p,
-        max_delay=max_delay,
-    )
+    env = SyntheticEnvironment(np.random.default_rng(seed), horizon,
+        DRIFT_SCHEDULES[drift_mode](horizon), delay_p=delay_p, max_delay=max_delay)
     policy.reset()
+    if hasattr(policy, "_rng"):
+        policy._rng = np.random.default_rng(seed)
+    context = env.reset()
+    pending = {}
+    step_costs = [float("nan")] * horizon
+    step_regrets = []
+    counts = {a.value: 0 for a in Action}
+    updates = 0
+    observed_outcomes = []
 
-    cumulative_cost = 0.0
-    cumulative_regret = 0.0
-    total_updates = 0
-    total_censored = 0
-    action_counts: dict[str, int] = {a.value: 0 for a in Action}
-    step_costs: list[float] = []
-    step_regrets: list[float] = []
+    def receive(rewards, learn):
+        nonlocal updates
+        for reward in rewards:
+            index, ctx, action = pending.pop(reward.action_id)
+            if reward.censored:
+                continue
+            cost = compute_cost(action, reward.outcome, cost_config)
+            step_costs[index] = cost
+            if learn:
+                policy.update(ctx, action, replace(reward, cost=cost))
+                observed_outcomes.append(reward.outcome == Outcome.FAILURE)
+                updates += 1
 
-    # Pending rewards: list of (reveal_at_step, context, action, reward)
-    pending: list[tuple[int, Context, Action, Reward]] = []
-
-    ctx = env.reset()
-
-    while not env.done:
-        env.advance_time()
-        step = env.current_step
-
-        # Deliver matured pending rewards to policy and accumulate cost/regret
-        still_pending = []
-        for (reveal_at, pctx, paction, preward) in pending:
-            if step >= reveal_at:
-                if not preward.censored:
-                    cost = compute_cost(paction, preward.outcome, cost_config)
-                    if math.isfinite(cost):
-                        final_reward = Reward(
-                            action_id=preward.action_id,
-                            outcome=preward.outcome,
-                            cost=cost,
-                            delay_steps=preward.delay_steps,
-                            censored=False,
-                            observed_at_step=step,
-                        )
-                        policy.update(pctx, paction, final_reward)
-                        cumulative_cost += cost
-                        # Realized regret: actual cost minus oracle minimum for this outcome
-                        min_cost = _oracle_cost_by_outcome(preward.outcome, cost_config)
-                        step_regret = 0.0
-                        if math.isfinite(min_cost):
-                            step_regret = max(0.0, cost - min_cost)
-                            cumulative_regret += step_regret
-                        # Per-step logging — appended AFTER policy.update(); no RNG calls
-                        step_costs.append(cost)
-                        step_regrets.append(step_regret)
-                        total_updates += 1
-                    else:
-                        total_censored += 1
-                else:
-                    total_censored += 1
-            else:
-                still_pending.append((reveal_at, pctx, paction, preward))
-        pending = still_pending
-
-        # Select action and step environment
-        action, _ = policy.select_action(ctx)
-        action_counts[action.value] += 1
+    for step in range(horizon):
+        if step:
+            receive(env.advance_time(), True)
+            context = env.observe()
+        # The original synthetic field was a direct noisy projection of hidden p.
+        # Use observed history instead of supplying that oracle-like risk feature.
+        context = replace(context, recent_failure_rate=(float(np.mean(observed_outcomes[-50:]))
+                          if observed_outcomes else 0.0))
+        action, _ = policy.select_action(context)
+        counts[action.value] += 1
+        expected = env.expected_action_costs(cost_config)
+        step_regrets.append(expected[action] - min(expected.values()))
         env.step(action)
+        pending[env.last_action_id] = (step, context, action)
 
-        # Record the scheduled reward for later delivery
-        if env._pending:
-            reveal_at, reward = env._pending[-1]
-            pending.append((reveal_at, ctx, action, reward))
-
-        ctx = env.observe()
-
-    # Count remaining pending as censored (flush_at_end=False for clean evaluation)
-    for (_, _, _, preward) in pending:
-        total_censored += 1
-
-    drift_resets = 0
-    if hasattr(policy, "stats") and hasattr(policy.stats, "drift_resets"):
-        drift_resets = policy.stats.drift_resets
-
-    return DriftTrajectoryResult(
-        policy_id=policy.policy_id,
-        drift_mode=drift_mode,
-        seed=seed,
-        cumulative_cost=cumulative_cost,
-        cumulative_regret=cumulative_regret,
-        total_steps=horizon,
-        total_updates=total_updates,
-        total_censored=total_censored,
-        action_counts=action_counts,
-        drift_resets=drift_resets,
-        step_costs=step_costs,
-        step_regrets=step_regrets,
-    )
+    resets = policy.stats.drift_resets if hasattr(policy, "stats") else 0
+    while pending:
+        receive(env.advance_time(), False)
+    censored = sum(not math.isfinite(c) for c in step_costs)
+    return DriftTrajectoryResult(policy.policy_id, drift_mode, seed,
+        float(np.nansum(step_costs)), float(sum(step_regrets)), horizon,
+        updates, censored, counts, resets, step_costs, step_regrets)
 
 
 # ---------------------------------------------------------------------------
@@ -310,7 +305,7 @@ def bootstrap_ci(
     if len(arr) <= 1:
         v = float(arr[0]) if len(arr) == 1 else float("nan")
         return v, v
-    boot_means = np.array([rng.choice(arr, size=len(arr), replace=True).mean() for _ in range(n_boot)])
+    boot_means = rng.choice(arr, size=(n_boot, len(arr)), replace=True).mean(axis=1)
     return float(np.percentile(boot_means, 2.5)), float(np.percentile(boot_means, 97.5))
 
 
@@ -370,13 +365,15 @@ def run_drift_study(
                 "per_seed_costs": costs,
                 "mean_regret": float(np.mean(per_mode_policy_regret[drift_mode][pid])),
                 "mean_drift_resets": float(np.mean(per_mode_policy_resets[drift_mode][pid])),
+                "per_seed_regrets": per_mode_policy_regret[drift_mode][pid],
+                "per_seed_resets": per_mode_policy_resets[drift_mode][pid],
             }
         conditions[drift_mode] = {"policies": policies_summary}
 
     report = {
         "evaluation_mode": "drift_eval_synthetic",
         "warning": (
-            "Synthetic environment only. Regret is relative to oracle with full "
+            "Synthetic environment only. Expected pseudo-regret is relative to oracle with full "
             "hidden-state knowledge. Not a real-world cost estimate."
         ),
         "horizon": horizon,
@@ -385,10 +382,7 @@ def run_drift_study(
         "n_bootstrap": N_BOOTSTRAP,
         "bootstrap_seed": BOOTSTRAP_SEED,
         "n_gradual_segments": N_GRADUAL_SEGMENTS,
-        "cost_config": {
-            "deploy_failure": cost_config.deploy_failure,
-            "block_bad": cost_config.block_bad,
-        },
+        "cost_config": asdict(cost_config),
         "conditions": conditions,
     }
 
@@ -406,7 +400,8 @@ def run_drift_study(
             if seed_arrays and seed_arrays[0]:
                 min_len = min(len(a) for a in seed_arrays)
                 arr = np.array([a[:min_len] for a in seed_arrays], dtype=np.float32)
-                np.save(results_root / f"step_costs_{drift_mode}_{pid}.npy", arr.mean(axis=0))
+                np.save(results_root / f"step_costs_{drift_mode}_{pid}.npy", np.nanmean(arr, axis=0))
+                np.save(results_root / f"per_seed_costs_{drift_mode}_{pid}.npy", arr)
         for pid, seed_arrays in per_mode_policy_step_regrets[drift_mode].items():
             if seed_arrays and seed_arrays[0]:
                 min_len = min(len(a) for a in seed_arrays)

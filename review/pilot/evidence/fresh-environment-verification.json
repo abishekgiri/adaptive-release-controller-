@@ -1,0 +1,35 @@
+{
+  "environment": "fresh venv; no system site packages; offline pinned wheel install",
+  "python": "3.13.1",
+  "sqlite": "3.45.3",
+  "same_host": true,
+  "independent_operator": false,
+  "checks": {
+    "pilot.sqlite": true,
+    "dataset.sql": true,
+    "predictor-export.json": true,
+    "attempt-diagnostics.json": true,
+    "feature-diagnostics.json": true,
+    "strict-feature-snapshots.json": true,
+    "schema-validation.json": true
+  },
+  "pipeline_exit_code": 0,
+  "model_runs": 0,
+  "evidence": "fresh-environment-output.txt",
+  "test_environment_dependencies": {
+    "PyYAML": "6.0.3",
+    "pytest": "9.0.2",
+    "pluggy": "1.6.0",
+    "iniconfig": "2.3.0",
+    "packaging": "25.0",
+    "pygments": "2.19.2"
+  },
+  "transformation_dependencies": {
+    "PyYAML": "6.0.3"
+  },
+  "venv_executable": "/private/tmp/ci-design-v1-pilot-venv/bin/python",
+  "venv_prefix": "/private/tmp/ci-design-v1-pilot-venv",
+  "base_prefix": "/Library/Frameworks/Python.framework/Versions/3.13",
+  "user_site_enabled": false,
+  "yaml_module_path": "/private/tmp/ci-design-v1-pilot-venv/lib/python3.13/site-packages/yaml/__init__.py"
+}

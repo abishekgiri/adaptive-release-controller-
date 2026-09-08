@@ -1,0 +1,9 @@
+{
+  "added_window_drift_files_compared": 119,
+  "added_window_drift_mismatches": [],
+  "files_compared": 10284,
+  "independent_directory": "/private/tmp/arc-submission-audit/clean-reproduction/experiments/results/headline/corrected",
+  "mismatches": [],
+  "note": "Full experiments reproduced without preexisting result files; dependency installation was not repeated.",
+  "same_python_environment": true
+}

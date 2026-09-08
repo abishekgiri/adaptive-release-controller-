@@ -20,7 +20,7 @@ All costs are simulation artefacts using CI outcome as a counterfactual proxy.
 
 Usage:
     python -m experiments.run_cost_sweep \\
-        --dataset data/raw/travistorrent_smoke.csv \\
+        --dataset data/fixtures/travistorrent_smoke.csv \\
         --seeds 0 1 2 3 4 \\
         --results-root experiments/results/cost_sweep
     # For ≥30-seed paper run: --seeds $(seq 0 29 | tr '\\n' ' ')
@@ -39,7 +39,7 @@ import numpy as np
 from experiments.run_bandits import OnlineExperimentConfig, run_experiment
 from rewards.cost_model import CostConfig
 
-DEFAULT_DATASET = Path("data/raw/travistorrent_smoke.csv")
+DEFAULT_DATASET = Path("data/fixtures/travistorrent_smoke.csv")
 DEFAULT_RESULTS_ROOT = Path("experiments/results/cost_sweep")
 N_BOOTSTRAP = 10_000
 BOOTSTRAP_SEED = 42
@@ -97,7 +97,7 @@ def bootstrap_ci(
     if len(arr) <= 1:
         v = float(arr[0]) if len(arr) == 1 else float("nan")
         return v, v
-    boot_means = np.array([rng.choice(arr, size=len(arr), replace=True).mean() for _ in range(n_boot)])
+    boot_means = rng.choice(arr, size=(n_boot, len(arr)), replace=True).mean(axis=1)
     return float(np.percentile(boot_means, 2.5)), float(np.percentile(boot_means, 97.5))
 
 
@@ -197,7 +197,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--dataset",
         default=str(DEFAULT_DATASET),
-        help="Path to TravisTorrent-format CSV (default: data/raw/travistorrent_smoke.csv).",
+        help="Path to TravisTorrent-format CSV (default: data/fixtures/travistorrent_smoke.csv).",
     )
     parser.add_argument(
         "--seeds",

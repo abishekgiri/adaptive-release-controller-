@@ -1,0 +1,9 @@
+{
+  "status": "UNASSIGNED_TEMPLATE_NOT_AN_EVALUATION_FRAME",
+  "sampling_frame_sha256": null,
+  "split_salt": null,
+  "repositories": [
+    {"repository_id": null, "slug": "pallets/flask", "family_id": null, "split": "development"},
+    {"repository_id": null, "slug": "psf/requests", "family_id": null, "split": "development"}
+  ]
+}

@@ -71,9 +71,9 @@ def test_loader_yields_valid_context_objects(tmp_path):
     assert records[0].context.lines_added == 10
     assert records[0].context.lines_deleted == 3
     assert records[0].context.src_churn == 13
-    assert records[0].context.tests_run == 42
+    assert records[0].context.tests_run == 0  # no completed prior build
     assert records[0].context.tests_added == 1
-    assert records[0].context.build_duration_s == 120.0
+    assert records[0].context.build_duration_s == 0.0
     assert records[0].context.is_pr is True
     assert records[0].context.has_dependency_change is True
     assert records[0].action == Action.DEPLOY

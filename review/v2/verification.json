@@ -1,0 +1,25 @@
+{
+  "review": "path-b-access-and-outcome-feasibility",
+  "verified_at": "2026-09-07T23:42:07.397920+00:00",
+  "verdict": "CONDITIONALLY FEASIBLE",
+  "v2_status": "UNRATIFIED; no model execution authorized",
+  "live_enforcement": "UNVERIFIED; no test run",
+  "contacts_sent": 0,
+  "new_repository_api_calls": 0,
+  "new_model_policy_runs": 0,
+  "new_repositories_or_live_tests": 0,
+  "existing_artifacts_verified_unchanged": 10943,
+  "existing_artifact_mismatches": [],
+  "v1_snapshot_sha256": "71c8a3d61f377b028cc6d37116cf5900eb180b01e3d44aabbb051775d36146cb",
+  "v1_integrity_errors": [],
+  "document_link_errors": [],
+  "files": {
+    "review/v2/access-requirements.md": "f459a12baeb0d54e4faeed6973c6d47ef6126c409b9db3cfb614a71f79fd5ae0",
+    "review/v2/mechanism-test-plan.md": "006ce54aabc108dbe2d66f220232f2136c5e935ad7369f35138eff8a66ccaddf",
+    "review/v2/outcome-definition.md": "43c593da9d6dec221cd3a361febeae4cca0e3b6310e25c298e05542f68a6181c",
+    "review/v2/recruitment-protocol.md": "a7a319d3b3180229eac5b8d1367e3f52fbc2f378ad24158ece2d8559c852cb3b",
+    "review/v2/selective-label-analysis.md": "0a2e708b50e4d614fa5162521012b04ee9cff8737bd4f912a5c54ff8319b98c3",
+    "review/v2/stop-criteria.md": "8746964354dd7520811c4a9499dfc6031834b16cd43770bba896162facbcd4c8"
+  },
+  "scope": "Six feasibility documents only. Primary documentation and papers consulted; no new empirical repository data collected."
+}

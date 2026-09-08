@@ -1,0 +1,12 @@
+pallets/flask 103 27
+original 511.0 {'deploy': 46, 'canary': 9, 'block': 245}
+finish_rate_only 511.0 {'deploy': 46, 'canary': 9, 'block': 245}
+alpha_0.1 476.0 {'deploy': 41, 'canary': 17, 'block': 242}
+alpha_5 355.0 {'deploy': 130, 'canary': 58, 'block': 112}
+alpha_10 378.5 {'deploy': 113, 'canary': 78, 'block': 109}
+psf/requests 206 102
+original 158.5 {'deploy': 272, 'canary': 20, 'block': 8}
+finish_rate_only 158.5 {'deploy': 276, 'canary': 16, 'block': 8}
+alpha_0.1 149.5 {'deploy': 295, 'canary': 2, 'block': 3}
+alpha_5 233.5 {'deploy': 189, 'canary': 75, 'block': 36}
+alpha_10 278.5 {'deploy': 147, 'canary': 95, 'block': 58}

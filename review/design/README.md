@@ -1,0 +1,9 @@
+# Frozen data and evaluation design
+
+`ci-design-v1`, 7 September 2026. **NO-GO for policy experiments.** This is a local hash-bound design snapshot, not external preregistration or evidence that the proposed corpus has been collected. `design-lock.json` is generated only after the listed files and focused tests are complete. `python -m review.design_gate --freeze` always creates a NO-GO snapshot; it cannot approve a study.
+
+Start with [collection plan](../data-collection-plan.md), [decision contract](../decision-feedback-contract.md), [feature specification](../feature-specification.md), [evaluation protocol](../evaluation-protocol.md), and [project-selection protocol](../project-selection-protocol.md). The [schema guide](../normalized-dataset-schema.md), [leakage checklist](../leakage-checklist.md), [reproducibility checklist](../reproducibility-checklist.md), [automated invariants](../automated-invariants.md), and [human decisions](../unresolved-design-decisions.md) complete the package.
+
+Machine-readable pieces: `dataset-schema.sql`, `evaluation-spec.json`, deliberately incomplete `project-registry.template.json`, analytic `precision-sensitivity.csv` and `precision-assumptions.json`. No repository IDs, collection dates, variance estimates, feature distributions or approvals are fabricated. The old two-repository profiles remain separate evidence, not a new evaluation sample.
+
+The preflight helper verifies file integrity, explicit status, snapshot-bound human approval, margins, dates, split registry and evidence hashes. Future authentic approval/evidence records must be supplied by the designated reviewer/custodian after the stated gates pass. Changing any frozen file needs a new version and renewed review before holdout access. The helper is not wired into legacy experiment commands; future runner integration is a required test, not a completed protection.

@@ -4,10 +4,9 @@ WARNING — SIMULATION, NOT CAUSAL INFERENCE
 ==========================================
 Each step computes cost as ``compute_cost(policy_action, logged_outcome)`` using
 the logged CI outcome as a counterfactual proxy for the policy's chosen action.
-This is valid only under the assumption that the CI outcome is independent of
-the deployment action (i.e. the build result was determined before the policy
-acted).  This holds approximately for TravisTorrent because CI runs before
-deployment decisions are made.
+This assumes an action-independent CI proxy label, observed only after completion.
+Decisions are simulated at CI start; CI failure is not a deployment incident.
+The mapping supplies counterfactual costs unavailable in a real deployment log.
 
 Do NOT report these numbers as unbiased estimates of real-world cost.
 Use them to:
@@ -15,12 +14,15 @@ Use them to:
   - Debug the delayed-update pipeline.
   - Compare learning curves across policies on the same trajectory.
 
-For unbiased offline policy evaluation see evaluation/replay_eval.py (IPS).
+IPS additionally requires actual logging propensities and action support; these CI files lack both.
 """
 
 from __future__ import annotations
 
 import math
+import bisect
+import hashlib
+from dataclasses import asdict
 from dataclasses import dataclass, field
 from typing import Sequence
 
@@ -49,6 +51,8 @@ class OnlineStepRecord:
     delay_steps: int
     updates_applied: int         # rewards matured and applied to policy at this step
     pending_count_before: int    # pending rewards in buffer before advancing
+    recent_failure_rate: float = 0.0
+    reveal_at_step: int = 0
 
 
 @dataclass
@@ -79,22 +83,38 @@ class OnlineTrajectoryResult:
 # ---------------------------------------------------------------------------
 
 def _effective_outcome(policy_action: Action, logged_outcome: Outcome) -> Outcome:
-    """Map (policy_action, logged_outcome) to a valid cost-matrix outcome.
-
-    The only special case: BLOCK + CENSORED → BLOCKED, because the canonical
-    cost matrix has no (BLOCK, CENSORED) entry — a blocked commit's counterfactual
-    is unknown rather than simply unobserved.
-    """
-    if policy_action == Action.BLOCK and logged_outcome == Outcome.CENSORED:
-        return Outcome.BLOCKED
+    """Keep the same observed/censored CI label for every simulated action."""
+    # Use the same evaluation cohort for every policy. Unknown CI outcomes
+    # cannot be charged to BLOCK while silently dropping them for other arms.
     return logged_outcome
 
 
 def _delay_from_record(record: TravisTorrentRecord, delay_step_seconds: int) -> int:
     """Convert build duration to a discrete delay step count (minimum 1)."""
-    if record.context.build_duration_s <= 0:
+    if delay_step_seconds <= 0:
+        raise ValueError("delay_step_seconds must be positive")
+    duration = ((record.finished_at - record.started_at).total_seconds()
+                if record.finished_at is not None and record.started_at is not None
+                else record.context.build_duration_s)
+    if duration <= 0:
         return 1
-    return max(1, math.ceil(record.context.build_duration_s / delay_step_seconds))
+    return max(1, math.ceil(duration / delay_step_seconds))
+
+
+def reveal_steps(records, timing_mode, delay_step_seconds):
+    """Translate actual finish times or an explicitly artificial delay to decisions."""
+    if timing_mode == "duration_steps":
+        return [i + _delay_from_record(r, delay_step_seconds) for i, r in enumerate(records)]
+    if timing_mode != "event_time":
+        raise ValueError("timing_mode must be event_time or duration_steps")
+    starts = [r.started_at for r in records]
+    if any(t is None for t in starts) or starts != sorted(starts):
+        raise ValueError("event_time requires ordered, observed start timestamps")
+    if any(r.finished_at is None and r.outcome != Outcome.CENSORED for r in records):
+        raise ValueError("event_time requires finish times for observed outcomes")
+    return [bisect.bisect_left(starts, r.finished_at, lo=i + 1)
+            if r.finished_at is not None else len(records)
+            for i, r in enumerate(records)]
 
 
 # ---------------------------------------------------------------------------
@@ -110,6 +130,7 @@ def run_online_trajectory(
     delay_step_seconds: int = 60,
     trajectory_id: str = "",
     flush_at_end: bool = True,
+    timing_mode: str = "duration_steps",
 ) -> OnlineTrajectoryResult:
     """Run one online learning pass over a project trajectory.
 
@@ -140,6 +161,7 @@ def run_online_trajectory(
         OnlineTrajectoryResult with per-step records and aggregated stats.
     """
     records = list(records)
+    reveals = reveal_steps(records, timing_mode, delay_step_seconds)
     project_slug = records[0].context.project_slug if records else ""
 
     if not records:
@@ -158,6 +180,10 @@ def run_online_trajectory(
     # is irrelevant (we pass delay= explicitly in every add() call).
     buffer = PendingRewardBuffer(rng=rng, min_delay=1, max_delay=1)
 
+    finish_by_id = {}
+    def in_observation_order(items):
+        return sorted(items, key=lambda p: finish_by_id[p.reward.action_id]) if timing_mode == "event_time" else items
+
     step_records: list[OnlineStepRecord] = []
     cumulative_cost = 0.0
     total_updates = 0
@@ -167,7 +193,7 @@ def run_online_trajectory(
     for step, record in enumerate(records):
         # 1. Release matured rewards and apply them to the policy.
         pending_before = len(buffer)
-        matured = buffer.pop_available(step)
+        matured = in_observation_order(buffer.pop_available(step))
         updates_this_step = 0
         for pending in matured:
             if pending.reward.censored or not math.isfinite(pending.reward.cost):
@@ -190,8 +216,9 @@ def run_online_trajectory(
             total_censored += 1
 
         # 4. Queue the reward; it will mature after `delay` steps.
-        delay = _delay_from_record(record, delay_step_seconds)
+        delay = reveals[step] - step
         action_id = f"{trajectory_id}:{step}:{record.context.commit_sha}"
+        finish_by_id[action_id] = record.finished_at or record.started_at
         # Pass censored=True and cost=0.0 for NaN costs so the buffer doesn't
         # propagate NaN; the censored flag causes update() to skip.
         buffer.add(
@@ -214,17 +241,16 @@ def run_online_trajectory(
             delay_steps=delay,
             updates_applied=updates_this_step,
             pending_count_before=pending_before,
+            recent_failure_rate=record.context.recent_failure_rate,
+            reveal_at_step=reveals[step],
         ))
 
     # 5. Flush remaining pending rewards so the policy has seen all feedback.
     if flush_at_end and len(buffer) > 0:
         # The furthest-future reveal step is at most:
         #   last_step_index + max(delay_from_record over all records)
-        max_delay_seen = max(
-            _delay_from_record(r, delay_step_seconds) for r in records
-        )
-        flush_step = len(records) + max_delay_seen
-        for pending in buffer.pop_available(flush_step):
+        flush_step = max(reveals)
+        for pending in in_observation_order(buffer.pop_available(flush_step)):
             if pending.reward.censored or not math.isfinite(pending.reward.cost):
                 continue
             policy.update(pending.context, pending.action, pending.reward)
@@ -251,6 +277,7 @@ def run_online_experiment(
     rng: np.random.Generator,
     delay_step_seconds: int = 60,
     flush_at_end: bool = True,
+    timing_mode: str = "duration_steps",
 ) -> dict[str, list[OnlineTrajectoryResult]]:
     """Run online replay for each policy over every project trajectory.
 
@@ -265,12 +292,20 @@ def run_online_experiment(
         p.policy_id: [] for p in policies
     }
     project_keys = sorted(records_by_project)
-    project_seeds = rng.integers(0, 2**31, size=len(project_keys))
+    master_seed = int(rng.integers(0, 2**31))
+    project_seeds = [int.from_bytes(hashlib.sha256(f"{master_seed}:{key}".encode()).digest()[:8], "little")
+                     for key in project_keys]
 
     for project_key, project_seed in zip(project_keys, project_seeds):
         records = records_by_project[project_key]
         for policy in policies:
             policy.reset()
+            # Project-local stochastic streams: adding another project cannot
+            # consume this project's Thompson draws.
+            if hasattr(policy, "_rng"):
+                identity = f"{int(project_seed)}:{project_key}:{policy.policy_id}"
+                local_seed = int.from_bytes(hashlib.sha256(identity.encode()).digest()[:8], "little")
+                policy._rng = np.random.default_rng(local_seed)
             result = run_online_trajectory(
                 policy=policy,
                 records=records,
@@ -279,6 +314,7 @@ def run_online_experiment(
                 delay_step_seconds=delay_step_seconds,
                 trajectory_id=f"online:{project_key}",
                 flush_at_end=flush_at_end,
+                timing_mode=timing_mode,
             )
             results[policy.policy_id].append(result)
 

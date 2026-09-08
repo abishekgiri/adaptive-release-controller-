@@ -38,10 +38,7 @@ def bootstrap_ci(
     stat_fn = _statistic_fn(statistic)
     point = float(stat_fn(array))
     rng = np.random.default_rng(config.seed)
-    samples = np.empty(config.n_resamples, dtype=np.float64)
-    for index in range(config.n_resamples):
-        resample = rng.choice(array, size=array.size, replace=True)
-        samples[index] = stat_fn(resample)
+    samples = stat_fn(rng.choice(array, size=(config.n_resamples, array.size), replace=True), axis=1)
 
     alpha = 1.0 - config.confidence
     lower = float(np.quantile(samples, alpha / 2.0))
@@ -63,15 +60,17 @@ def paired_bootstrap_pvalue(
     if a.size == 0:
         return 1.0
 
+    if config.n_resamples <= 0:
+        raise ValueError("n_resamples must be positive")
+    if not np.all(np.isfinite(a)) or not np.all(np.isfinite(b)):
+        raise ValueError("paired values must be finite")
     diff = a - b
     observed = abs(float(np.mean(diff)))
     rng = np.random.default_rng(config.seed)
     extreme = 0
     centered = diff - np.mean(diff)
-    for _ in range(config.n_resamples):
-        resample = rng.choice(centered, size=centered.size, replace=True)
-        if abs(float(np.mean(resample))) >= observed:
-            extreme += 1
+    draws = rng.choice(centered, size=(config.n_resamples, centered.size), replace=True).mean(axis=1)
+    extreme = int(np.sum(np.abs(draws) >= observed))
     return (extreme + 1) / (config.n_resamples + 1)
 
 

@@ -1,0 +1,47 @@
+# Enforcement mechanisms and protected boundaries
+
+**Live enforcement: UNVERIFIED for every candidate.** The user explicitly prohibited creating, modifying or using a repository for live enforcement testing. All three development repositories have archived read-only permissions. The following distinguishes documented platform capability from a tested controller implementation.
+
+## Four different decisions
+
+| Boundary | Protected computation | Plausible real decision | Consequence for the original question |
+|---|---|---|---|
+| A — Before workflow creation/queueing | An explicitly controlled CI invocation that does not yet exist | Dispatch expensive CI, defer it, or request review | Unit becomes a change/invocation request, not an already-created workflow attempt. Uninvoked CI has no observed result. |
+| B — Workflow exists, no runner has begun any job | Every job/workload in the attempt | Permit CI admission, hold all work, reject it | Requires a preinstalled all-job interlock. A queued event plus cancellation race is insufficient. Must account for parallel jobs, reusable jobs, cleanup and reruns. |
+| C — Before one identified job/workload | One job; previous work may already have run | Run expensive integration tests, gate a sensitive build stage | Job-conditional risk/task. Earlier CI can become legitimate input; “before all CI” is false. |
+| D — After CI, before deployment/release job | A downstream job and its protected deployment side effects | Allow release admission, deny it, or keep waiting for review | A different release-admission problem. The already-known CI result is a feature, not a future label. |
+
+“Before any user code” also needs a threat/ownership definition: controller code, operator runner hooks, selected third-party actions, containers, checkout hooks and application tests are not interchangeable. A gate job running code before an expensive job is pre-expensive-stage, not pre-workflow execution. Protection must cover every path to the declared side effect.
+
+## Candidate mechanisms
+
+| Mechanism | What and when it controls | Action semantics | Effect on feedback | Assessment |
+|---|---|---|---|---|
+| Environment required reviewers | A configured environment job waits for approval before starting | Approve/reject; review is a held state. No native three-way canary choice. | Earlier CI remains observed; denied job/deployment result does not occur. Gate-induced workflow failure is not an intrinsic failure label. | Strong documented D/C barrier, subject to configured bypass/access paths. Live UNVERIFIED. |
+| Custom deployment protection rule | GitHub App receives a protection request and supplies approval/rejection while the job is gated | Binary admission; canary needs separate rollout implementation | Same selection/censoring issue; no production outcome for a denied release | Strong candidate D barrier; requires installation/permissions, exact request binding and current feature availability. Live UNVERIFIED. |
+| Environment wait timer | Prevents immediate start for a configured interval | Delay only; timer expiry is not risk approval | Delay can change environment and outcome distribution | A time allowance alone is not a controller-controlled fail-closed decision. Combine with a real approval gate if pursued. |
+| Required status checks | Branch/ruleset requirement can prevent merge until specified checks satisfy rules | Allow/block merge, possibly review | CI may already have executed; merged/unmerged downstream evidence differs | Legitimate pre-merge decision, not an automatic job-start/deployment interlock. |
+| Branch protection/rulesets | Constrain merge/push and eligible actors/refs | Merge/ref admission | Changes candidate population and downstream release availability | Does not stop unrelated or already-running jobs. Check bypass and alternate refs. |
+| Job `if` plus `needs` | Server evaluates job eligibility using declared dependencies/conditions | Run/skip a job based on earlier controller output | Skipped target yields no natural target-job label | Legitimate C/D if the workflow is designed accordingly. Controller prerequisite already executed. |
+| Repository/workflow dispatch | An authorized controller initiates an explicitly dispatch-driven workflow | Invoke/defer/decline | Declined invocation has no execution outcome | A candidate A design, provided every alternate trigger is excluded and immutable revision is bound. Not an amendment that preserves v1's unit. |
+| Reusable workflow | Encapsulates a declared job sequence/policy interface | Whatever the caller and callee explicitly implement | Depends on which stage actually runs | Reuse itself enforces nothing; every caller, pinned version and bypass route needs review. |
+| Queued cancellation | Requests cancellation after a run exists | Cancel/attempt to abort; not canary | Suppresses or truncates CI, creating policy-dependent missing/terminated labels | Does not establish a before-execution interlock. Network/queue race persists. |
+| Separate downstream release workflow | Upstream completion can trigger a release workflow; protected release job still needs a gate | Release admission after known CI | Upstream label known; downstream result action-dependent | Candidate D, not evidence that release is safe or that CI predicts production risk. |
+| External deployment controller | Owns the only credential/path that can cause a deployment and holds an admission request | Permit/deny; canary only with an actual traffic/rollback implementation | Release outcomes depend on action and exposure | A plausible proposed architecture. No such controlled deployment path or health telemetry is available here. |
+| Self-hosted pre-job hook | Synchronous hook can prevent a job's workload proceeding | Permit/fail this job before workload; controller code itself runs | Hook rejection can manufacture a failed job without testing the workload | Documented C interlock; requires runner ownership and complete runner/path coverage. Does not validate current hosted-runner timing. |
+
+Sources for platform behavior: [deployment/environment gating](https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/control-deployments), [protection-rule options](https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments), [custom protection implementation](https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/create-custom-protection-rules), [protected branches](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches), [job conditions](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-jobs-with-conditions), [workflow triggers](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows), [runner hooks](https://docs.github.com/en/actions/how-tos/manage-runners/self-hosted-runners/run-scripts). Feedback consequences in the table are research-design deductions, not GitHub claims.
+
+## Why cancellation cannot certify the 2–12-second window
+
+GitHub's documented cancellation process reevaluates conditions, sends runner messages and terminates processes through stages. Some work can continue under applicable conditions. An accepted cancellation request is therefore not evidence that no code ran or that all side effects were prevented. A retrospective canceled conclusion cannot settle that question. [Cancellation reference](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-cancellation).
+
+A job-condition skip can also be reported as successful for merge-check purposes; it should not be confused with an explicit negative required-check verdict. Merge requirements and job execution control must be designed and tested separately. [Job-condition semantics](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-jobs-with-conditions).
+
+## Candidate that survives the semantic review
+
+**Boundary D with a preconfigured protected deployment job** is a legitimate prospective admission point. It does not depend on racing notification against a short scheduling gap: the job is held until the configured rules permit it. This is a documented architectural capability, not measured implementation success in this project. GitHub's custom-rule path is currently documented as preview, so a proposed study must verify exact availability and supported configuration before adoption. [Custom protection rules](https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/create-custom-protection-rules).
+
+A future test would have to bind the permission to repository, immutable artifact digest, environment, run/attempt and protected job; preserve a pending request until context is sealed; deny on timeout or uncertain identity; inspect bypass/reviewer paths; and independently verify the first protected side effect. An HTTP response returning after job start is not necessarily a violation: server acceptance can precede client acknowledgment. The relevant ordering is decision/approval-send, server release, then protected execution, with clock uncertainty accounted for.
+
+There is no demonstrated “deploy/canary/block” actuator here. A canary requires distinct rollout behavior, exposure measurement, escalation/rollback rules and outcome semantics. Renaming a GitHub approval decision “canary” would not implement one.

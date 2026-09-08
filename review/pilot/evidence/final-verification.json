@@ -1,0 +1,12 @@
+{
+  "frozen_design_integrity_errors": [],
+  "parent_design_sha256": "71c8a3d61f377b028cc6d37116cf5900eb180b01e3d44aabbb051775d36146cb",
+  "prior_experiment_source_and_delivery_hashes_unchanged": 70,
+  "tests_passed": 68,
+  "pilot_tests_passed": 17,
+  "models_trained": 0,
+  "holdout_repositories_queried": [],
+  "manuscript_rewritten": false,
+  "final_decision": "NO-GO for scaling the current collection route",
+  "completion_limits": "PR temporal/source integration and full learner/runner obligations remain incomplete; no prospective cohort certified"
+}

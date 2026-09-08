@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import math
 from typing import Optional
 
 import numpy as np
@@ -22,7 +23,8 @@ class LinUCBConfig:
 class LinUCBPolicy(Policy):
     """Disjoint LinUCB: one independent ridge-regression model per arm.
 
-    Implements Algorithm 1 from Li et al. 2010. Regret bound: O(√(dT log T)).
+    Implements the disjoint linear UCB rule from Li et al. 2010.
+    No regret guarantee is asserted for this misspecified deployment simulation.
     All three actions (deploy, canary, block) are treated as separate arms.
 
     Per-arm model:
@@ -58,6 +60,8 @@ class LinUCBPolicy(Policy):
             encoder:     Feature encoder; defaults to FeatureEncoder().
             policy_id:   Stable string identifier for logging.
         """
+        if config.alpha < 0 or config.lambda_reg <= 0:
+            raise ValueError("alpha must be nonnegative and lambda_reg positive")
         self._config = config
         self._feature_dim = feature_dim
         self._rng = rng
@@ -100,6 +104,8 @@ class LinUCBPolicy(Policy):
         Converts cost to reward: r = -reward.cost (we minimise cost).
         Called by the experiment loop only after the reward has matured.
         """
+        if reward.censored or not math.isfinite(reward.cost):
+            return
         x = self._encoder.encode(context)
         r = -reward.cost
         self._A[action] = self._A[action] + np.outer(x, x)

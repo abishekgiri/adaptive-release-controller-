@@ -1,0 +1,4 @@
+# Tested with CPython 3.13. TeX Live and Pandoc are separate document-build dependencies.
+numpy==2.3.5
+matplotlib==3.10.7
+pytest==9.0.2

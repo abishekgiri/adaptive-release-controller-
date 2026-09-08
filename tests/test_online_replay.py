@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 import numpy as np
 import pytest
@@ -70,7 +70,7 @@ def _make_record(
         action=Action.DEPLOY,   # TravisTorrent always logs DEPLOY
         outcome=outcome,
         started_at=_NOW,
-        finished_at=_NOW,
+        finished_at=_NOW + timedelta(seconds=build_duration_s),
     )
 
 
@@ -120,9 +120,8 @@ class TestEffectiveOutcome:
     def test_block_failure_unchanged(self) -> None:
         assert _effective_outcome(Action.BLOCK, Outcome.FAILURE) == Outcome.FAILURE
 
-    def test_block_censored_becomes_blocked(self) -> None:
-        # BLOCK + CENSORED has no valid cost-matrix entry; must map to BLOCKED.
-        assert _effective_outcome(Action.BLOCK, Outcome.CENSORED) == Outcome.BLOCKED
+    def test_block_censored_uses_common_missing_outcome_cohort(self) -> None:
+        assert _effective_outcome(Action.BLOCK, Outcome.CENSORED) == Outcome.CENSORED
 
     def test_deploy_censored_stays_censored(self) -> None:
         assert _effective_outcome(Action.DEPLOY, Outcome.CENSORED) == Outcome.CENSORED
